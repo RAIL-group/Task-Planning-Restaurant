@@ -7,13 +7,18 @@ def get_domain():
 
     (:types
         location item - object
-        init_r servingtable shelf fountain coffeemachine bar countertop - location
-        servingtable0 servingtable1 - servingtable
-        shelf0 shelf1 shelf2 - shelf
-        missing coffeegrinds water alcohol bread knife spread - item
+        init_r servingtable shelf fountain coffeemachine sandwichmaker bar dishwasher countertop - location
+        stable1 stable2 stable3 - servingtable
+        shelf0 shelf1 shelf2 shelf3 shelf4 shelf5 shelf6 - shelf
+        missing cup mug coffeegrinds water alcohol bread cutleries spread - item
         wine beer whiskey - alcohol
-        orange strawberry peanutbutter - spread
-        mug cup - missing
+        orangespread strawberryspread peanutbutterspread - spread
+        knife plate bowl- cutleries
+        knife1 - knife
+        plate1 plate2 - plate
+        bowl1 bowl2 - bowl
+        mug1 mug2 mug3 - mug
+        cup1 cup2 - cup
     )
 
     (:predicates
@@ -30,6 +35,8 @@ def get_domain():
         (spread-applied ?obj1 - item ?obj2 - spread)
         (is-spread ?obj - item)
         (is-spreadable ?obj - item)
+        (is-washable ?obj - item)
+        (is-dirty ?obj - item)
     )
 
     (:functions
@@ -94,7 +101,7 @@ def get_domain():
         :effect (and
             (not (rob-at ?start))
             (rob-at ?end)
-            ;(increase (total-cost) (known-cost ?start ?end))
+            (increase (total-cost) (known-cost ?start ?end))
         )
     )
 
@@ -152,7 +159,7 @@ def get_domain():
             (is-at water coffeemachine)
             (is-at coffeegrinds coffeemachine)
             (is-fillable ?c)
-            (is-at ?c coffeemachine) 
+            (is-at ?c coffeemachine)
             (not (filled-with water ?c))
             (not (filled-with coffee ?c))
         )
