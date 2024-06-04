@@ -54,6 +54,8 @@ COPY modules/setup.cfg modules/setup.cfg
 
 COPY modules/taskplan modules/taskplan
 RUN pip3 install modules/taskplan
+COPY modules/gridmap modules/gridmap
+RUN pip3 install modules/gridmap
 
 # Set up the starting point for running the code
 COPY entrypoint.sh /entrypoint.sh
