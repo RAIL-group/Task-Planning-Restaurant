@@ -97,7 +97,7 @@ def get_problem(restaurant):
             # init_states.append(
             #     f"(= (known-cost {c2} {c1}) {val})"
             # )
-            print(f"(= (known-cost {c1} {c2}) {val})")
+            # print(f"(= (known-cost {c1} {c2}) {val})")
 
     # raise NotImplementedError
     # manually initialized required objects
