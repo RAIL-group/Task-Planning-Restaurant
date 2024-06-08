@@ -1,9 +1,13 @@
-import math
 import random
+import itertools
 import numpy as np
 
-import lsp
 import gridmap
+import taskplan
+import lsp_accel
+
+
+IS_FROM_LAST_CHOSEN_REWARD = 0 * 10.0
 
 
 class Subgoal:
@@ -63,6 +67,8 @@ class PartialMap:
         self.cnt_node_idx = graph['cnt_node_idx']
         self.obj_node_idx = graph['obj_node_idx']
         self.node_coords = graph['node_coords']
+        self.idx_map = graph['idx_map']
+        self.distances = graph['distances']
 
         self.target_obj = random.sample(self.obj_node_idx, 1)[0]
         self.container_poses = self._get_container_poses()
@@ -196,20 +202,186 @@ class PartialMap:
         return input_graph
 
 
+class FState(object):
+    """Used to conviently store the 'state' during recursive cost search.
+    """
+    def __init__(self, new_frontier, distances, old_state=None):
+        nf = new_frontier
+        p = nf.prob_feasible
+        # Success cost
+        try:
+            sc = nf.delta_success_cost + distances['goal'][nf]
+        except KeyError:
+            sc = nf.delta_success_cost + distances['goal'][nf.id]
+        # Exploration cost
+        ec = nf.exploration_cost
+
+        if old_state is not None:
+            self.frontier_list = old_state.frontier_list + [nf]
+            # Store the old frontier
+            of = old_state.frontier_list[-1]
+            # Known cost (travel between frontiers)
+            try:
+                kc = distances['frontier'][frozenset([nf, of])]
+            except KeyError:
+                kc = distances['frontier'][frozenset([nf.id, of.id])]
+            self.cost = old_state.cost + old_state.prob * (kc + p * sc +
+                                                           (1 - p) * ec)
+            self.prob = old_state.prob * (1 - p)
+        else:
+            # This is the first frontier, so the robot must accumulate a cost of getting to the frontier
+            self.frontier_list = [nf]
+            # Known cost (travel to frontier)
+            try:
+                kc = distances['robot'][nf]
+            except KeyError:
+                kc = distances['robot'][nf.id]
+
+            if nf.is_from_last_chosen:
+                kc -= IS_FROM_LAST_CHOSEN_REWARD
+            self.cost = kc + p * sc + (1 - p) * ec
+            self.prob = (1 - p)
+
+    def __lt__(self, other):
+        return self.cost < other.cost
+
+
+def get_ordering_cost(subgoals, distances):
+    """A helper function to compute the expected cost of a particular ordering.
+    The function takes an ordered list of subgoals (the order in which the robot
+    aims to explore beyond them). Consistent with the subgoal planning API,
+    'distances' is a dictionary with three keys: 'robot' (a dict of the
+    robot-subgoal distances), 'goal' (a dict of the goal-subgoal distances), and
+    'frontier' (a dict of the frontier-frontier distances)."""
+    fstate = None
+    for s in subgoals:
+        fstate = FState(s, distances, fstate)
+
+    return fstate.cost
+
+
+def get_lowest_cost_ordering(subgoals, distances, do_sort=True):
+    """This computes the lowest cost ordering (the policy) the robot will follow
+    for navigation under uncertainty. It wraps a branch-and-bound search
+    function implemented in C++ in 'lsp_accel'. As is typical of
+    branch-and-bound functions, function evaluation is fastest if the high-cost
+    plans can be ruled out quickly: i.e., if the first expansion is already of
+    relatively low cost, many of the other branches can be pruned. When
+    'do_sort' is True, a handful of common-sense heuristics are run to find an
+    initial ordering that is of low cost to take advantage of this property. The
+    subgoals are sorted by the various heuristics and the ordering that
+    minimizes the expected cost is chosen. That ordering is used as an input to
+    the search function, which searches it first."""
+
+    if len(subgoals) == 0:
+        return None, None
+
+    if do_sort:
+        order_heuristics = []
+        order_heuristics.append({
+            s: ii for ii, s in enumerate(subgoals)
+        })
+        order_heuristics.append({
+            s: 1 - s.prob_feasible for s in subgoals
+        })
+        order_heuristics.append({
+            s: distances['goal'][s] + distances['robot'][s] +
+            s.prob_feasible * s.delta_success_cost +
+            (1 - s.prob_feasible) * s.exploration_cost
+            for s in subgoals
+        })
+        order_heuristics.append({
+            s: distances['goal'][s] + distances['robot'][s]
+            for s in subgoals
+        })
+        order_heuristics.append({
+            s: distances['goal'][s] + distances['robot'][s] +
+            s.delta_success_cost
+            for s in subgoals
+        })
+        order_heuristics.append({
+            s: distances['goal'][s] + distances['robot'][s] +
+            s.exploration_cost
+            for s in subgoals
+        })
+
+        heuristic_ordering_dat = []
+        for heuristic in order_heuristics:
+            ordered_subgoals = sorted(subgoals, reverse=False, key=lambda s: heuristic[s])
+            ordering_cost = get_ordering_cost(ordered_subgoals, distances)
+            heuristic_ordering_dat.append((ordering_cost, ordered_subgoals))
+
+        subgoals = min(heuristic_ordering_dat, key=lambda hod: hod[0])[1]
+
+    s_dict = {hash(s): s for s in subgoals}
+    rd_cpp = {hash(s): distances['robot'][s] for s in subgoals}
+    gd_cpp = {hash(s): distances['goal'][s] for s in subgoals}
+    fd_cpp = {(hash(sp[0]), hash(sp[1])): distances['frontier'][frozenset(sp)]
+              for sp in itertools.permutations(subgoals, 2)}
+    s_cpp = [
+        lsp_accel.FrontierData(s.prob_feasible, s.delta_success_cost,
+                               s.exploration_cost, hash(s),
+                               s.is_from_last_chosen) for s in subgoals
+    ]
+
+    cost, ordering = lsp_accel.get_lowest_cost_ordering(
+        s_cpp, rd_cpp, gd_cpp, fd_cpp)
+    ordering = [s_dict[sid] for sid in ordering]
+
+    return cost, ordering
+
+
+def get_top_n_frontiers(frontiers, goal_dist, robot_dist, n):
+    """This heuristic is for retrieving the 'best' N frontiers"""
+
+    # This sorts the frontiers by (1) any frontiers that "derive their
+    # properties" from the last chosen frontier and (2) the probablity that the
+    # frontiers lead to the goal.
+    frontiers = [f for f in frontiers if f.prob_feasible > 0]
+
+    h_prob = {s: s.prob_feasible for s in frontiers}
+    try:
+        h_dist = {s: goal_dist[s] + robot_dist[s] for s in frontiers}
+    except KeyError:
+        h_dist = {s: goal_dist[s.id] + robot_dist[s.id] for s in frontiers}
+
+    fs_prob = sorted(list(frontiers), key=lambda s: h_prob[s], reverse=True)
+    fs_dist = sorted(list(frontiers), key=lambda s: h_dist[s], reverse=False)
+
+    seen = set()
+    fs_collated = []
+
+    for front_d in fs_dist[:2]:
+        if front_d not in seen:
+            seen.add(front_d)
+            fs_collated.append(front_d)
+
+    for front_p in fs_prob:
+        if front_p not in seen:
+            seen.add(front_p)
+            fs_collated.append(front_p)
+
+    assert len(fs_collated) == len(seen)
+    assert len(fs_collated) == len(fs_prob)
+    assert len(fs_collated) == len(fs_dist)
+
+    return fs_collated[0:n]
+
+
 def get_best_expected_cost_and_frontier_list(subgoals, partial_map, robot_pose, num_frontiers_max):
     # Get goal distances
     goal_distances = {subgoal: 0 for subgoal in subgoals}
 
     # Get robot distances
     robot_distances = get_robot_distances(
-        partial_map.grid, robot_pose, subgoals)
+        partial_map, robot_pose, subgoals)
 
     # Calculate top n subgoals
-    subgoals = lsp.core.get_top_n_frontiers(
+    subgoals = get_top_n_frontiers(
         subgoals, goal_distances, robot_distances, num_frontiers_max)
 
     # Get subgoal pair distances
-    subgoal_distances = get_subgoal_distances(partial_map.grid, subgoals)
+    subgoal_distances = get_subgoal_distances(partial_map, subgoals)
 
     distances = {
         'frontier': subgoal_distances,
@@ -217,63 +389,44 @@ def get_best_expected_cost_and_frontier_list(subgoals, partial_map, robot_pose, 
         'goal': goal_distances,
     }
 
-    out = lsp.core.get_lowest_cost_ordering(subgoals, distances)
+    out = get_lowest_cost_ordering(subgoals, distances)
     return out
 
 
-def get_robot_distances(grid, robot_pose, subgoals):
+def get_robot_distances(partial_map, robot_pose, subgoals):
     ''' This function returns distance from the robot to the subgoals
     where poses are stored in grid cell coordinates.'''
     robot_distances = dict()
 
-    occ_grid = np.copy(grid)
-    occ_grid[int(robot_pose[0])][int(robot_pose[1])] = 0
+    r_idx_map = {partial_map.idx_map[k]: k for k in partial_map.idx_map}
+    idx_pos = taskplan.utils.get_pos_from_coord(
+        robot_pose, partial_map.node_coords)
 
+    if idx_pos is None:
+        curr_rob = 'initial_robot_pose'
+    else:
+        curr_rob = r_idx_map[idx_pos]
     for subgoal in subgoals:
-        occ_grid[int(subgoal.pos[0]), int(subgoal.pos[1])] = 0
-
-    cost_grid = gridmap.planning.compute_cost_grid_from_position(
-        occ_grid,
-        start=[
-            robot_pose[0],
-            robot_pose[1]
-        ],
-        use_soft_cost=True,
-        only_return_cost_grid=True)
-
-    # Compute the cost for each frontier
-    for subgoal in subgoals:
-        f_pt = subgoal.pos
-        cost = cost_grid[int(f_pt[0]), int(f_pt[1])]
-
-        if math.isinf(cost):
-            cost = 100000000000
-            subgoal.set_props(prob_feasible=0.0, is_obstructed=True)
-            subgoal.just_set = False
-
+        next_rob = r_idx_map[subgoal.value]
+        cost = partial_map.distances[curr_rob][next_rob]
         robot_distances[subgoal] = cost
 
     return robot_distances
 
 
-def get_subgoal_distances(grid, subgoals):
+def get_subgoal_distances(partial_map, subgoals):
     ''' This function returns distance from any subgoal to other subgoals
     where poses are stored in grid cell coordinates.'''
     subgoal_distances = {}
-    occ_grid = np.copy(grid)
-    for subgoal in subgoals:
-        occ_grid[int(subgoal.pos[0]), int(subgoal.pos[1])] = 0
+
+    r_idx_map = {partial_map.idx_map[k]: k for k in partial_map.idx_map}
+
     for idx, sg_1 in enumerate(subgoals[:-1]):
-        start = sg_1.pos
-        cost_grid = gridmap.planning.compute_cost_grid_from_position(
-            occ_grid,
-            start=start,
-            use_soft_cost=True,
-            only_return_cost_grid=True)
+        curr = r_idx_map[sg_1.value]
         for sg_2 in subgoals[idx + 1:]:
             fsg_set = frozenset([sg_1, sg_2])
-            fpoints = sg_2.pos
-            cost = cost_grid[int(fpoints[0]), int(fpoints[1])]
+            next = r_idx_map[sg_2.value]
+            cost = partial_map.distances[curr][next]
             subgoal_distances[fsg_set] = cost
 
     return subgoal_distances
