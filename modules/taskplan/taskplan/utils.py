@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from sentence_transformers import SentenceTransformer
 
+import gridmap
 from taskplan.environments.restaurant import world_to_grid
 
 
@@ -22,6 +23,7 @@ def get_graph(data):
     # Create dummy apartment node
     node_count = 0
     nodes = {}
+    assetId_idx_map = {}
     edges = []
     nodes[node_count] = {
         'id': 'apartment|0',
@@ -55,11 +57,13 @@ def get_graph(data):
 
     for container in data.containers:
         id = container['id']
+        assetId = container['assetId']
         name = get_generic_name(container['id'])
         _x, _y = world_to_grid(
             container['position']['x'], container['position']['z'],
             data.grid_min_x, data.grid_min_z, data.grid_res)
         src = room_names.index(container['loc'])
+        assetId_idx_map[assetId] = node_count
         nodes[node_count] = {
             'id': id,
             'name': name,
@@ -76,12 +80,14 @@ def get_graph(data):
     for container in data.containers:
         for connected_object in container['children']:
             id = connected_object['id']
+            assetId = connected_object['assetId']
             name = get_generic_name(connected_object['id'])
             _x, _y = world_to_grid(
                 connected_object['position']['x'],
                 connected_object['position']['z'],
                 data.grid_min_x, data.grid_min_z, data.grid_res)
             src = container_ids.index(container['id'])
+            assetId_idx_map[assetId] = node_count
             nodes[node_count] = {
                     'id': id,
                     'name': name,
@@ -96,7 +102,9 @@ def get_graph(data):
         'nodes': nodes,  # dictionary {id, name, pos, type}
         'edge_index': edges,  # pairwise edge list
         'cnt_node_idx': cnt_node_idx,  # indices of contianers
-        'obj_node_idx': obj_node_idx  # indices of objects
+        'obj_node_idx': obj_node_idx,  # indices of objects
+        'idx_map': assetId_idx_map,  # mapping from assedId to graph index position
+        'distances': data.known_cost  # mapped using assedId-assetId
     }
 
     # # Add edges to get a connected graph if not already connected
@@ -208,3 +216,95 @@ def get_object_color_from_type(encoding):
     if encoding[3] == 1:
         return "orange"
     return "violet"
+
+
+def get_container_pose(cnt_name, partial_map):
+    '''This function takes in a container name and the
+    partial map as input to return the container pose on the grid'''
+    if cnt_name in partial_map.idx_map:
+        return partial_map.container_poses[partial_map.idx_map[cnt_name]]
+    raise ValueError('The container could not be located on the grid!')
+
+
+def get_poses_from_plan(plan, partial_map):
+    ''' This function takes input of a plan and the partial map
+    and produces the robot_poses along known space
+    '''
+    robot_poses = []
+    split_at = None
+    count = 0
+    for action in plan:
+        if action.name == 'move':
+            count += 1
+            container_name = action.args[1]
+            container_pose = get_container_pose(container_name, partial_map)
+            robot_poses.append(container_pose)
+        elif action.name == 'find':
+            split_at = count - 1
+    if split_at is None:
+        split_at = len(robot_poses) - 1
+    if split_at < 0:
+        split_at = 0
+
+    return robot_poses, split_at
+
+
+def get_object_to_find_from_plan(plan, partial_map):
+    '''This function takes in a plan and the partial map as
+    input to return the object index to find; limited to finding
+    single object for now.'''
+    for action in plan:
+        if action.name == 'find':
+            obj_name = action.args[0]
+            if obj_name in partial_map.idx_map:
+                return partial_map.idx_map[obj_name]
+            # for obj_idx in partial_map.obj_node_idx:
+            #     if obj_name == partial_map.org_node_names[obj_idx]:
+            #         return obj_idx
+            raise ValueError('The object could not be found!')
+
+
+def compute_path_cost(grid, path):
+    ''' This function returns the total path and path cost
+    given the occupancy grid and the trjectory as poses, the
+    robot has visited througout the object search process,
+    where poses are stored in grid cell coordinates.'''
+    total_cost = 0
+    total_path = None
+    occ_grid = np.copy(grid)
+
+    for point in path:
+        occ_grid[int(point[0]), int(point[1])] = 0
+
+    for idx, point in enumerate(path[:-1]):
+        cost_grid, get_path = gridmap.planning.compute_cost_grid_from_position(
+            occ_grid,
+            start=point,
+            use_soft_cost=True,
+            only_return_cost_grid=False)
+        next_point = path[idx + 1]
+
+        cost = cost_grid[int(next_point[0]), int(next_point[1])]
+
+        total_cost += cost
+        did_plan, robot_path = get_path([next_point[0], next_point[1]],
+                                        do_sparsify=False,
+                                        do_flip=False)
+        if total_path is None:
+            total_path = robot_path
+        else:
+            total_path = np.concatenate((total_path, robot_path), axis=1)
+
+    return total_cost, total_path
+
+
+def get_pos_from_coord(coords, node_coords):
+    coords_list = []
+    for node in node_coords:
+        coords_list.append(tuple(
+            [node_coords[node][0],
+             node_coords[node][1]]))
+    if coords in coords_list:
+        pos = coords_list.index(coords)
+        return pos
+    return None
