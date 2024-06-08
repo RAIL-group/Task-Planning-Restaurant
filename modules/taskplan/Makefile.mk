@@ -39,4 +39,10 @@ lsp-tp-result-naive:
 
 .PHONY: lsp-tp-eval-naive
 lsp-tp-eval-naive: $(lsp-tp-seeds-naive)
-	$(MAKE) lsp-tp-result-naive
+#	$(MAKE) lsp-tp-result-naive
+
+# Target for downloading sbert
+.PHONY: download-sbert
+download-sbert:
+	@mkdir -p $(DATA_BASE_DIR)/sentence_transformers/
+	@$(DOCKER_PYTHON) -m taskplan.scripts.sentence_bert
