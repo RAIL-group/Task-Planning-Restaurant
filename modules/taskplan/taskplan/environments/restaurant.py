@@ -33,7 +33,7 @@ def draw_line(grid, x1, z1, x2, z2, value):
     for step in range(num_steps + 1):
         inter_x = int(x1 + step * (x2 - x1) / num_steps)
         inter_z = int(z1 + step * (z2 - z1) / num_steps)
-        grid[inter_z, inter_x] = value
+        grid[inter_x, inter_z] = value
 
 
 def draw_polygon_on_grid(polygon, grid, value, min_x, min_z, resolution):
@@ -64,7 +64,7 @@ def update_occupancy_grid_with_rectangles(occupancy_grid, rectangle, min_x, min_
 
             # Check if the point is inside the rectangle
             if rectangle.contains(point) or rectangle.touches(point):
-                occupancy_grid[grid_z, grid_x] = val
+                occupancy_grid[grid_x, grid_z] = val
 
 
 # Function to inflate polygons by a specified distance
@@ -93,9 +93,9 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
 
     # Iterate over the grid cells within the inflated polygon bounds
     for grid_x in range(max(0, grid_min_x_inf),
-                        min(grid_width, grid_max_x_inf + 1)):
+                        min(grid_height, grid_max_x_inf + 1)):
         for grid_z in range(max(0, grid_min_z_inf),
-                            min(grid_height, grid_max_z_inf + 1)):
+                            min(grid_width, grid_max_z_inf + 1)):
             world_x = min_x + grid_x * resolution
             world_z = min_z + grid_z * resolution
             point = Point(world_x, world_z)
@@ -103,7 +103,7 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
             # Check if the point is within the inflated polygon, not within the original polygon, and not occupied
             if inflated_polygon.contains(point) and (
                     not container.contains(
-                        point) and occupancy_grid[grid_z, grid_x] == 0):
+                        point) and occupancy_grid[grid_x, grid_z] == 0):
                 unoccupied_points.append((world_x, world_z))
 
     p1 = (container.centroid.x, container.centroid.y)
@@ -147,14 +147,14 @@ def get_cost_from_occupancy_grid(grid, min_x, min_z,
             cost_grid = gridmap.planning.compute_cost_grid_from_position(
                 occ_grid,
                 start=[
-                    s_z,
-                    s_x
+                    s_x,
+                    s_z
                 ],
                 use_soft_cost=True,
                 only_return_cost_grid=True)
             e_x, e_z = world_to_grid(point2[0], point2[1],
                                      min_x, min_z, resolution)
-            cost = cost_grid[e_z, e_x]
+            cost = cost_grid[e_x, e_z]
             # print(cost)
             if cost < min_distance:
                 min_distance = cost
@@ -207,8 +207,8 @@ class RESTAURANT:
             cost_grid = gridmap.planning.compute_cost_grid_from_position(
                     self.grid,
                     start=[
-                        s_z,
-                        s_x
+                        s_x,
+                        s_z
                     ],
                     use_soft_cost=True,
                     only_return_cost_grid=True)
@@ -219,7 +219,7 @@ class RESTAURANT:
                 e_x, e_z = world_to_grid(point2[0], point2[1],
                                          self.grid_min_x,
                                          self.grid_min_z, self.grid_res)
-                cost = cost_grid[e_z, e_x]
+                cost = cost_grid[e_x, e_z]
                 if item1 not in self.known_cost:
                     self.known_cost[item1] = {}
                 self.known_cost[item1][item2] = cost
@@ -254,8 +254,8 @@ class RESTAURANT:
         min_z, max_z = min(z_coords), max(z_coords)
 
         # Calculate grid dimensions
-        grid_width = int((max_x - min_x) / resolution) + 1
-        grid_height = int((max_z - min_z) / resolution) + 1
+        grid_height = int((max_x - min_x) / resolution) + 1
+        grid_width = int((max_z - min_z) / resolution) + 1
 
         # Initialize the occupancy grid (0 for free space, 1 for occupied)
         occupancy_grid = np.zeros((grid_height, grid_width), dtype=int)
