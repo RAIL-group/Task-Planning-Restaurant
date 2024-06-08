@@ -3,7 +3,7 @@
         "kitchen": {
             "position": {
                 "x": 2.886,
-                "y": 4.375
+                "z": 4.375
             },
             "polygon": [
                 {
@@ -36,7 +36,7 @@
         "servingroom": {
             "position": {
                 "x": 8.192,
-                "y": 5.12
+                "z": 5.12
             },
             "polygon": [
                 {
@@ -56,7 +56,7 @@
                     "z": 2.048
                 }
             ],
-            "name": "kitchen"
+            "name": "servingroom"
         }
     },
     "doors": {
@@ -164,7 +164,8 @@
                     "x": 6.82571277950367,
                     "z": 7.632993111930328
                 }
-            ]
+            ],
+            "loc": "servingroom"
         },
         {
             "description": "table for serving",
@@ -196,7 +197,8 @@
                     "x": 7.986795846923903,
                     "z": 6.5610399759119575
                 }
-            ]
+            ],
+            "loc": "servingroom"
         },
         {
             "description": "table for serving",
@@ -228,7 +230,8 @@
                     "x": 8.430568855192922,
                     "z": 7.358190302204038
                 }
-            ]
+            ],
+            "loc": "servingroom"
         },
         {
             "description": "table for serving",
@@ -260,7 +263,8 @@
                     "x": 9.136241645004292,
                     "z": 3.651149224262447
                 }
-            ]
+            ],
+            "loc": "servingroom"
         },
         {
             "description": "shelf for bread",
@@ -304,7 +308,8 @@
                     "x": 1.4097670879648398,
                     "z": 1.7057715108013174
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "shelf for coffee",
@@ -347,7 +352,8 @@
                     "x": 3.021148600387729,
                     "z": 6.6082918270808655
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "shelf for cup",
@@ -404,7 +410,8 @@
                     "x": 5.0537909163248695,
                     "z": 6.386774412043346
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "shelf for mug",
@@ -473,7 +480,8 @@
                     "x": 1.8204023686982205,
                     "z": 3.973871542813223
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "shelf for cutleries",
@@ -517,7 +525,8 @@
                     "x": 2.395834104764952,
                     "z": 0.8773941672400791
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "shelf for bread spreads",
@@ -583,7 +592,8 @@
                     "x": 3.79008375409474,
                     "z": 3.1417152881729975
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "shelf for dishes",
@@ -649,7 +659,8 @@
                     "x": 1.500858052878672,
                     "z": 4.952164138694425
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "machine to make coffee",
@@ -681,12 +692,13 @@
                     "x": 1.3341905630021351,
                     "z": 6.580884632971537
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
-            "description": "machine to make sanwitch",
-            "id": "sandwichmaker|0",
-            "assetId": "sandwichmaker",
+            "description": "countertop to prepare food",
+            "id": "countertop|0",
+            "assetId": "countertop",
             "children": [],
             "position": {
                 "x": 3.2372475759479973,
@@ -713,7 +725,8 @@
                     "x": 3.670753476501191,
                     "z": 1.6312360439437759
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "fountain for water",
@@ -756,7 +769,8 @@
                     "x": 4.401871078243076,
                     "z": 6.24123722059682
                 }
-            ]
+            ],
+            "loc": "kitchen"
         },
         {
             "description": "dishwasher",
@@ -801,7 +815,8 @@
                     "x": 2.7142461448388304,
                     "z": 5.381575988294981
                 }
-            ]
+            ],
+            "loc": "kitchen"
         }
     ]
 }
