@@ -40,17 +40,18 @@ def plot_plan(plan):
 
 
 def plot_result(partial_map, whole_graph,
-                plan, path, cost_str, args):
+                plan, path, cost_str, args=None):
     ''' This function plots the result in a meaningful way so that
     what happened during the trial can be easily understood.
     '''
     plt.clf()
-    what = partial_map.org_node_names[partial_map.target_obj]
-    where = [partial_map.org_node_names[goal] for goal in partial_map.target_container]
+    if args:
+        what = partial_map.org_node_names[partial_map.target_obj]
+        where = [partial_map.org_node_names[goal] for goal in partial_map.target_container]
+        plt.suptitle(f"Find {what} from {where} in seed: [{args.current_seed}]", fontsize=9)
     dist, trajectory = taskplan.core.compute_path_cost(
         partial_map.grid, path)
     plt.figure(figsize=(10, 5))
-    plt.suptitle(f"Find {what} from {where} in seed: [{args.current_seed}]", fontsize=9)
 
     # plot the plan
     plt.subplot(131)
@@ -101,13 +102,13 @@ def plot_result(partial_map, whole_graph,
     # Plot the points with Viridis color gradient
     for idx, x in enumerate(trajectory[0]):
         y = trajectory[1][idx]
-        if x == args.robot_path[0][0] and y == args.robot_path[0][1] and flag == 'blue':
-            selected_color = red_colors
-            flag = 'red'
-
-        elif x == args.robot_path[-1][0] and y == args.robot_path[-1][1] and flag == 'red':
-            selected_color = blue_colors
-            flag = None
+        if args:
+            if x == args.robot_path[0][0] and y == args.robot_path[0][1] and flag == 'blue':
+                selected_color = red_colors
+                flag = 'red'
+            elif x == args.robot_path[-1][0] and y == args.robot_path[-1][1] and flag == 'red':
+                selected_color = blue_colors
+                flag = None
 
         plt.plot(x, y, color=selected_color[idx], marker='.', markersize=2, alpha=0.9)
 
