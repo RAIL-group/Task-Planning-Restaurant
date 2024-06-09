@@ -199,11 +199,14 @@ class RESTAURANT:
                                             inflation_distance
                                         )
             relative_loc[container['assetId']] = point_cloud
+
+        self.accessible_poses = {}
         for item1 in relative_loc:
             point1 = relative_loc[item1]
             s_x, s_z = world_to_grid(point1[0], point1[1],
                                      self.grid_min_x,
                                      self.grid_min_z, self.grid_res)
+            self.accessible_poses[item1] = (s_x, s_z)
             cost_grid = gridmap.planning.compute_cost_grid_from_position(
                     self.grid,
                     start=[
