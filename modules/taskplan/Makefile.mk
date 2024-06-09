@@ -8,7 +8,7 @@ help::
 LSP_TP_BASENAME ?= taskplan
 LSP_TP_NUM_TRAINING_SEEDS ?= 200
 LSP_TP_NUM_TESTING_SEEDS ?= 50
-LSP_TP_NUM_EVAL_SEEDS ?= 100
+LSP_TP_NUM_EVAL_SEEDS ?= 2#100
 
 
 # Target for a demo
@@ -40,6 +40,23 @@ lsp-tp-result-naive:
 .PHONY: lsp-tp-eval-naive
 lsp-tp-eval-naive: $(lsp-tp-seeds-naive)
 #	$(MAKE) lsp-tp-result-naive
+
+lsp-tp-seeds-pddl = \
+	$(shell for ii in $$(seq 7000 $$((7000 + $(LSP_TP_NUM_EVAL_SEEDS) - 1))); \
+		do echo "$(DATA_BASE_DIR)/$(LSP_TP_BASENAME)/results/$(EXPERIMENT_NAME)/pddl_$${ii}.png"; done)
+$(lsp-tp-seeds-pddl): seed = $(shell echo $@ | grep -Eo '[0-9]+' | tail -1)
+$(lsp-tp-seeds-pddl):
+	@echo "Evaluating Data [$(LSP_TP_BASENAME) | seed: $(seed) | PDDL"]
+	@mkdir -p $(DATA_BASE_DIR)/$(LSP_TP_BASENAME)/results/$(EXPERIMENT_NAME)
+	@$(call xhost_activate)
+	@$(DOCKER_PYTHON) -m taskplan.scripts.eval_pddl \
+		--save_dir /data/$(LSP_TP_BASENAME)/results/$(EXPERIMENT_NAME) \
+	 	--current_seed $(seed) \
+	 	--image_filename pddl_$(seed).png \
+	 	--logfile_name pddl_logfile.txt
+
+.PHONY: eval-pddl
+eval-pddl: $(lsp-tp-seeds-pddl)
 
 # Target for downloading sbert
 .PHONY: download-sbert
