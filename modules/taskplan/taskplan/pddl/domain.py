@@ -13,7 +13,7 @@ def get_domain():
         missing cup mug coffeegrinds water alcohol bread cutleries spread - item
         wine beer whiskey - alcohol
         orangespread strawberryspread peanutbutterspread - spread
-        knife plate bowl- cutleries
+        knife plate bowl - cutleries
         knife1 - knife
         plate1 plate2 - plate
         bowl1 bowl2 - bowl
@@ -51,7 +51,7 @@ def get_domain():
             (rob-at countertop)
             (is-at bread countertop)
             (is-at ?s countertop)
-            (is-holding knife)
+            (is-holding knife1)
             (is-spread ?s)
             (is-spreadable bread)
             (not (spread-applied bread ?s))
@@ -167,6 +167,24 @@ def get_domain():
             (filled-with coffee ?c)
             (not (is-at water coffeemachine))
             (not (is-at coffeegrinds coffeemachine))
+        )
+    )
+
+    (:action turn-dishwasher-on
+        :parameters ()
+        :precondition (and
+            (rob-at dishwasher)
+            ; (exists (?i - item) (is-at ?i dishwasher))
+        )
+
+        :effect (and
+            (forall
+                (?i - item)
+                (when (and (is-at ?i dishwasher) (is-dirty ?i))
+                    (not (is-dirty ?i))
+                )
+            )
+            (increase (total-cost) 50)
         )
     )
 
