@@ -7,7 +7,7 @@ import math
 
 
 def load_restaurant(seed):
-    root = "./modules/taskplan/taskplan/environments/layouts"
+    root = "/modules/taskplan/taskplan/environments/layouts"
     json_file = ''
     for path, _, files in os.walk(root):
         for name in files:
