@@ -27,16 +27,16 @@ def plot_plan(plan):
     # textstr = 'This is a text block.\nYou can add multiple lines of text.'
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 
+    # Add labels and title
+    plt.title('Plan progression', fontsize=6)
+
     # Place a text box in upper left in axes coords
-    plt.text(0, 1, textstr, transform=plt.gca().transAxes, fontsize=5,
+    plt.text(0, .7, textstr, transform=plt.gca().transAxes, fontsize=5,
              verticalalignment='top', bbox=props)
     plt.box(False)
     # Hide x and y ticks
     plt.xticks([])
     plt.yticks([])
-
-    # Add labels and title
-    plt.title('Plan progression', fontsize=6)
 
 
 def plot_result(partial_map, whole_graph,
