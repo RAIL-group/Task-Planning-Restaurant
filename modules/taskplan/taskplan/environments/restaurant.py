@@ -15,7 +15,7 @@ def load_restaurant(seed):
     that you want to place in the corners
     Also keep 'agent' in kitchen container list
     """
-    kitchen_containers_list = ['agent', 'dishwasher', 'fountain', 'coffeemachine', 'sandwichmaker',
+    kitchen_containers_list = ['agent', 'dishwasher', 'fountain', 'coffeemachine', 'countertop',
                                'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf',
                                'mugshelf', 'cupshelf']
     serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
