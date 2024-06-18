@@ -5,8 +5,8 @@ from shapely.geometry import Polygon, Point
 import gridmap
 from taskplan.environments.sampling import generate_restaurant
 
-INFLATE_UP = 0.25
-INFLATE_LOW = 0.2
+INFLATE_UB = 0.25
+INFLATE_LB = 0.2
 
 
 def load_restaurant(seed):
@@ -84,11 +84,11 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
                                            resolution, container,
                                            inflation_distance, mother_poly):
 
-    occupancy_grid = gridmap.utils.inflate_grid(occupancy_grid, INFLATE_LOW*10)
+    occupancy_grid = gridmap.utils.inflate_grid(occupancy_grid, INFLATE_LB*10)
     unoccupied_points = []
     grid_height, grid_width = occupancy_grid.shape
 
-    inflated_container = inflate_polygon(container, INFLATE_LOW)
+    inflated_container = inflate_polygon(container, INFLATE_LB)
     # Inflate the container polygon
     inflated_polygon = inflate_polygon(container, inflation_distance)
 
@@ -190,7 +190,7 @@ class RESTAURANT:
         self.grid, self.grid_min_x, self.grid_min_z, self.grid_max_x, \
             self.grid_max_z, self.grid_res = self.set_occupancy_grid()
 
-        inflation_distance = INFLATE_UP
+        inflation_distance = INFLATE_UB
         relative_loc = {}
 
         relative_loc['initial_robot_pose'] = (self.agent['position']['x'], self.agent['position']['z'])
