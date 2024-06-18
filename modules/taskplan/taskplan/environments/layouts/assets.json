@@ -174,10 +174,10 @@
         "assetId": "coffeemachine",
         "children": []
     },
-    "sandwichmaker": {
-        "description": "machine to make sanwitch",
-        "id": "sandwichmaker|0",
-        "assetId": "sandwichmaker",
+    "countertop": {
+        "description": "place to make food",
+        "id": "countertop|0",
+        "assetId": "countertop",
         "children": []
     },
     "fountain": {
