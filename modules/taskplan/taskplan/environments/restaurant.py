@@ -4,17 +4,28 @@ from shapely.geometry import Polygon, Point
 import numpy as np
 import gridmap
 import math
+from taskplan.environments.sampling import generate_restaurant
 
 
 def load_restaurant(seed):
-    root = "/modules/taskplan/taskplan/environments/layouts"
-    json_file = ''
-    for path, _, files in os.walk(root):
-        for name in files:
-            if 'restaurant_' + str(seed) + '.json' == name:
-                json_file = os.path.join(path, name)
-                datum = json.load(open(json_file))
-                return datum
+    """
+    Keep the name of the containers in ascending order
+    that you want to place in the corners
+    Also keep 'agent' in kitchen container list
+    """
+    kitchen_containers_list = ['dishwasher', 'fountain', 'coffeemachine', 'sandwichmaker', 'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf', 'mugshelf', 'cupshelf', 'agent']
+    serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
+    datum = generate_restaurant(seed, kitchen_containers_list,
+                                serving_room_containers_list)
+    return datum
+    # root = "/modules/taskplan/taskplan/environments/layouts"
+    # json_file = ''
+    # for path, _, files in os.walk(root):
+    #     for name in files:
+    #         if 'restaurant_' + str(seed) + '.json' == name:
+    #             json_file = os.path.join(path, name)
+    #             datum = json.load(open(json_file))
+    #             return datum
 
 
 def world_to_grid(x, z, min_x, min_z, resolution):
@@ -75,10 +86,11 @@ def inflate_polygon(polygon, distance):
 # Function to get points around a single container that are not occupied
 def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
                                            resolution, container,
-                                           inflation_distance):
+                                           inflation_distance, mother_poly):
     unoccupied_points = []
     grid_height, grid_width = occupancy_grid.shape
 
+    inflated_container = inflate_polygon(container, 0.05)
     # Inflate the container polygon
     inflated_polygon = inflate_polygon(container, inflation_distance)
 
@@ -101,17 +113,18 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
             point = Point(world_x, world_z)
 
             # Check if the point is within the inflated polygon, not within the original polygon, and not occupied
-            if inflated_polygon.contains(point) and (
-                    not container.contains(
+            if inflated_polygon.contains(point) and mother_poly.contains(
+                point) and (
+                    not inflated_container.contains(
                         point) and occupancy_grid[grid_x, grid_z] == 0):
                 unoccupied_points.append((world_x, world_z))
 
     p1 = (container.centroid.x, container.centroid.y)
-    min_dis = float('inf')
+    min_dis = -1
     c_point = ()
     for p2 in unoccupied_points:
         dis = euclidean_distance(p1, p2)
-        if (dis < min_dis):
+        if (dis > min_dis):
             min_dis = dis
             c_point = p2
     return c_point
@@ -175,28 +188,37 @@ class RESTAURANT:
         self.containers = self.restaurant['objects']
         self.grid, self.grid_min_x, self.grid_min_z, self.grid_max_x, \
             self.grid_max_z, self.grid_res = self.set_occupancy_grid()
-        agent = Polygon([(point['x'], point['z'])
-                         for point in self.agent['polygon']])
-        inflation_distance = 0.1
+        # agent = Polygon([(point['x'], point['z'])
+        #                  for point in self.agent['polygon']])
+        # print(self.grid.shape)
+        inflation_distance = 0.2
         relative_loc = {}
-        point_cloud = get_unoccupied_points_around_container(
-            self.grid,
-            self.grid_min_x, self.grid_min_z,
-            self.grid_res,
-            agent,
-            inflation_distance
-        )
-        relative_loc['initial_robot_pose'] = point_cloud
+        # mother_poly = Polygon([(point['x'], point['z'])
+        #                            for point in self.rooms['servingroom']['polygon']])
+        # point_cloud = get_unoccupied_points_around_container(
+        #     self.grid,
+        #     self.grid_min_x, self.grid_min_z,
+        #     self.grid_res,
+        #     agent,
+        #     inflation_distance
+        # )
+        relative_loc['initial_robot_pose'] = (self.agent['position']['x'], self.agent['position']['z'])
         self.known_cost = {}
         for container in self.containers:
             cont_ploy = Polygon([(point['x'], point['z'])
                                  for point in container['polygon']])
+            mother_poly = Polygon([(point['x'], point['z'])
+                                   for point in self.rooms['servingroom']['polygon']])
+            if container['loc'] == 'kitchen':
+                mother_poly = Polygon([(point['x'], point['z'])
+                                       for point in self.rooms['kitchen']['polygon']])
             point_cloud = get_unoccupied_points_around_container(
                                             self.grid,
                                             self.grid_min_x, self.grid_min_z,
                                             self.grid_res,
                                             cont_ploy,
-                                            inflation_distance
+                                            inflation_distance,
+                                            mother_poly
                                         )
             relative_loc[container['assetId']] = point_cloud
 
@@ -227,9 +249,9 @@ class RESTAURANT:
                     self.known_cost[item1] = {}
                 self.known_cost[item1][item2] = cost
         # print(self.known_cost)
-        # for item in self.known_cost:
-        #     print(item)
-        #     print(self.known_cost[item])
+        for item in self.known_cost:
+            print(item)
+            print(self.known_cost[item])
         # raise NotImplementedError
 
     def set_occupancy_grid(self):

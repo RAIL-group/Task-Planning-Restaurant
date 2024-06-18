@@ -44,12 +44,13 @@ def get_problem(restaurant):
                 if 'fillable' in child and child['fillable'] == 1:
                     init_states.append(f"(is-fillable {chld_name})")
 
-    print(objects)
+    # print(objects)
     # print(init_states)
 
     for c1 in restaurant.known_cost:
         for c2 in restaurant.known_cost[c1]:
             val = restaurant.known_cost[c1][c2]
+            # print(c1, c2, val)
             init_states.append(
                 f"(= (known-cost {c1} {c2}) {val})"
             )
@@ -57,7 +58,7 @@ def get_problem(restaurant):
             #     f"(= (known-cost {c2} {c1}) {val})"
             # )
             # print(f"(= (known-cost {c1} {c2}) {val})")
-
+    # print(init_states)
     # raise NotImplementedError
     # manually initialized required objects
     # objects = {

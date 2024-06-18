@@ -5,6 +5,9 @@ import os
 
 
 def load_data():
+    """
+    Laods the 1940 layouts for the restaurant
+    """
     root = "./modules/taskplan/taskplan/environments/layouts"
     json_file = ''
     for path, _, files in os.walk(root):
@@ -16,6 +19,9 @@ def load_data():
 
 
 def load_assets():
+    """
+    Laods the assets for the restaurant
+    """
     root = "./modules/taskplan/taskplan/environments/layouts"
     json_file = ''
     for path, _, files in os.walk(root):
@@ -26,7 +32,14 @@ def load_assets():
                 return datum
 
 
-def create_corner_rectangles(room_points, min_width, max_width, min_height, max_height, door_coords, door_buffer, corner_conts=[]):
+def create_corner_rectangles(room_points, min_width, max_width, min_height,
+                             max_height, door_coords, door_buffer,
+                             corner_conts=[]):
+    """
+    Creates containers in the corner of the room if possible.
+    Max width and height is the parameters for container.
+    Door buffer is to place the containers with respect to certain buffer.
+    """
     min_x = min(point['x'] for point in room_points)
     max_x = max(point['x'] for point in room_points)
     min_z = min(point['z'] for point in room_points)
@@ -82,7 +95,13 @@ def create_corner_rectangles(room_points, min_width, max_width, min_height, max_
     return rectangles
 
 
-def create_non_overlapping_containers(room_points, num_rectangles, min_width, max_width, min_height, max_height, door_coords, door_buffer, corner_conts=[]):
+def create_non_overlapping_containers(room_points, num_rectangles, min_width,
+                                      max_width, min_height, max_height,
+                                      door_coords, door_buffer,
+                                      corner_conts=[]):
+    """
+    Creates N number of non-over lapping containers
+    """
     min_x = min(point['x'] for point in room_points)
     max_x = max(point['x'] for point in room_points)
     min_z = min(point['z'] for point in room_points)
@@ -153,7 +172,14 @@ def get_door(kitchen_polygon, serving_room_polygon, door_length=2.0):
     return None
 
 
-def generate_restaurant(seed):
+def generate_restaurant(seed, kitchen_containers_list,
+                        serving_room_containers_list):
+    """
+    Takes a seed and two list of containers.
+    One for kicthen and another for the serving room
+    Returns the restaurant dictinonary
+    """
+    random.seed(seed)
     datum = load_data()
     assets = load_assets()
     kitchen = datum[seed][0]
@@ -201,16 +227,38 @@ def generate_restaurant(seed):
                 'name': 'robot'
             }
     }
-    kitchen_containers_list = ['dishwasher', 'fountain', 'coffeemachine', 'sandwichmaker', 'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf', 'mugshelf', 'cupshelf']
-    serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
+    if len(kitchen_containers_list) == 0:
+        kitchen_containers_list = ['dishwasher', 'fountain', 'coffeemachine', 'sandwichmaker', 'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf', 'mugshelf', 'cupshelf', 'agent']
+    if len(serving_room_containers_list) == 0:
+        serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
 
     # Create non-overlapping rectangles inside the kitchen
-    kitchen_corners = create_corner_rectangles(kitchen, min_width, max_width, min_height, max_height, door_coords, door_buffer)
+    kitchen_corners = create_corner_rectangles(kitchen, min_width, max_width,
+                                               min_height, max_height,
+                                               door_coords, door_buffer)
     min_num_cont_needed = len(kitchen_containers_list) + 1
-    kitchen_random = create_non_overlapping_containers(kitchen, min_num_cont_needed, min_width, max_width, min_height, max_height, door_coords, door_buffer, kitchen_corners)
+    kitchen_random = create_non_overlapping_containers(kitchen,
+                                                       min_num_cont_needed,
+                                                       min_width, max_width,
+                                                       min_height, max_height,
+                                                       door_coords,
+                                                       door_buffer,
+                                                       kitchen_corners)
 
-    service_corners = create_corner_rectangles(serving_room, min_width, max_width, min_height, max_height, door_coords, door_buffer, kitchen_corners + kitchen_random)
-    service_random = create_non_overlapping_containers(serving_room, len(serving_room_containers_list), min_width, max_width, min_height, max_height, door_coords, door_buffer, kitchen_corners + kitchen_random + service_corners)
+    service_corners = create_corner_rectangles(serving_room, min_width,
+                                               max_width, min_height,
+                                               max_height, door_coords,
+                                               door_buffer,
+                                               kitchen_corners + kitchen_random
+                                               )
+    service_random = create_non_overlapping_containers(serving_room,
+                                                       len(serving_room_containers_list),
+                                                       min_width, max_width,
+                                                       min_height, max_height,
+                                                       door_coords,
+                                                       door_buffer,
+                                                       kitchen_corners + kitchen_random + service_corners
+                                                       )
 
     containers = list()
     for item in kitchen_containers_list:
@@ -239,6 +287,8 @@ def generate_restaurant(seed):
         }
         kc['polygon'] = temp
         kc['loc'] = 'kitchen'
+        if item == 'agent':
+            continue
         containers.append(kc)
 
     for item in serving_room_containers_list:
