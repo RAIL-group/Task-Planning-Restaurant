@@ -8,21 +8,22 @@ def load_data():
     """
     Laods the 1940 layouts for the restaurant
     """
-    root = "./modules/taskplan/taskplan/environments/layouts"
+    random_seed = random.randint(0, 1939)
+    root = "/modules/taskplan/taskplan/environments/layouts"
     json_file = ''
     for path, _, files in os.walk(root):
         for name in files:
             if 'restaurant_samples.json' == name:
                 json_file = os.path.join(path, name)
                 datum = json.load(open(json_file))
-                return datum
+                return datum[random_seed]
 
 
 def load_assets():
     """
     Laods the assets for the restaurant
     """
-    root = "./modules/taskplan/taskplan/environments/layouts"
+    root = "/modules/taskplan/taskplan/environments/layouts"
     json_file = ''
     for path, _, files in os.walk(root):
         for name in files:
@@ -180,85 +181,93 @@ def generate_restaurant(seed, kitchen_containers_list,
     Returns the restaurant dictinonary
     """
     random.seed(seed)
-    datum = load_data()
-    assets = load_assets()
-    kitchen = datum[seed][0]
-    serving_room = datum[seed][1]
-    k_polygon = Polygon([(point['x'], point['z']) for point in kitchen])
-    s_polygon = Polygon([(point['x'], point['z']) for point in serving_room])
-    k_cen = k_polygon.centroid
-    s_cen = s_polygon.centroid
-    door_coords = get_door(k_polygon, s_polygon)
-    min_width = 0.5
-    max_width = 1.0
-    min_height = 0.5
-    max_height = 1.0
-    door_buffer = 1.0  # Buffer around the door
-    restaurant = {
-            'rooms': {
-                'kitchen': {
-                    'position': {
-                        'x': k_cen.x,
-                        'z': k_cen.y
+    num_attempt = 100
+    while True:
+        datum = load_data()
+        assets = load_assets()
+        kitchen = datum[0]
+        serving_room = datum[1]
+        k_polygon = Polygon([(point['x'], point['z']) for point in kitchen])
+        s_polygon = Polygon([(point['x'], point['z']) for point in serving_room])
+        k_cen = k_polygon.centroid
+        s_cen = s_polygon.centroid
+        door_coords = get_door(k_polygon, s_polygon)
+        min_width = 0.5
+        max_width = 1.0
+        min_height = 0.5
+        max_height = 1.0
+        door_buffer = 1.0  # Buffer around the door
+        restaurant = {
+                'rooms': {
+                    'kitchen': {
+                        'position': {
+                            'x': k_cen.x,
+                            'z': k_cen.y
+                        },
+                        'polygon': kitchen,
+                        'name': 'kitchen',
+                        "id": "kitchen"
                     },
-                    'polygon': kitchen,
-                    'name': 'kitchen',
-                    "id": "kitchen"
+                    'servingroom': {
+                        'position': {
+                            'x': s_cen.x,
+                            'z': s_cen.y
+                        },
+                        'polygon': serving_room,
+                        "name": "servingroom",
+                        "id": "servingroom"
+                    }
                 },
-                'servingroom': {
-                    'position': {
-                        'x': s_cen.x,
-                        'z': s_cen.y
-                    },
-                    'polygon': serving_room,
-                    "name": "serving room",
-                    "id": "servingroom"
+                'doors': {
+                    'door1': {
+                        'position': [{'x': door_coords[0][0],
+                                    'z': door_coords[0][1]},
+                                    {'x': door_coords[1][0],
+                                    'z': door_coords[1][1]}]
+                    }
+                },
+                'agent': {
+                    'name': 'robot'
                 }
-            },
-            'doors': {
-                'door1': {
-                    'position': [{'x': door_coords[0][0],
-                                  'z': door_coords[0][1]},
-                                 {'x': door_coords[1][0],
-                                  'z': door_coords[1][1]}]
-                }
-            },
-            'agent': {
-                'name': 'robot'
-            }
-    }
-    if len(kitchen_containers_list) == 0:
-        kitchen_containers_list = ['dishwasher', 'fountain', 'coffeemachine', 'sandwichmaker', 'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf', 'mugshelf', 'cupshelf', 'agent']
-    if len(serving_room_containers_list) == 0:
-        serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
+        }
+        if len(kitchen_containers_list) == 0:
+            kitchen_containers_list = ['dishwasher', 'fountain', 'coffeemachine', 'sandwichmaker', 'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf', 'mugshelf', 'cupshelf', 'agent']
+        if len(serving_room_containers_list) == 0:
+            serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
 
-    # Create non-overlapping rectangles inside the kitchen
-    kitchen_corners = create_corner_rectangles(kitchen, min_width, max_width,
-                                               min_height, max_height,
-                                               door_coords, door_buffer)
-    min_num_cont_needed = len(kitchen_containers_list) + 1
-    kitchen_random = create_non_overlapping_containers(kitchen,
-                                                       min_num_cont_needed,
-                                                       min_width, max_width,
-                                                       min_height, max_height,
-                                                       door_coords,
-                                                       door_buffer,
-                                                       kitchen_corners)
+        # Create non-overlapping rectangles inside the kitchen
+        kitchen_corners = create_corner_rectangles(kitchen, min_width, max_width,
+                                                   min_height, max_height,
+                                                   door_coords, door_buffer)
+        min_num_cont_needed = len(kitchen_containers_list) + 1
+        kitchen_random = create_non_overlapping_containers(kitchen,
+                                                           min_num_cont_needed,
+                                                           min_width, max_width,
+                                                           min_height, max_height,
+                                                           door_coords,
+                                                           door_buffer,
+                                                           kitchen_corners)
 
-    service_corners = create_corner_rectangles(serving_room, min_width,
-                                               max_width, min_height,
-                                               max_height, door_coords,
-                                               door_buffer,
-                                               kitchen_corners + kitchen_random
-                                               )
-    service_random = create_non_overlapping_containers(serving_room,
-                                                       len(serving_room_containers_list),
-                                                       min_width, max_width,
-                                                       min_height, max_height,
-                                                       door_coords,
-                                                       door_buffer,
-                                                       kitchen_corners + kitchen_random + service_corners
-                                                       )
+        service_corners = create_corner_rectangles(serving_room, min_width,
+                                                   max_width, min_height,
+                                                   max_height, door_coords,
+                                                   door_buffer,
+                                                   kitchen_corners + kitchen_random
+                                                   )
+        service_random = create_non_overlapping_containers(serving_room,
+                                                           len(serving_room_containers_list),
+                                                           min_width, max_width,
+                                                           min_height, max_height,
+                                                           door_coords,
+                                                           door_buffer,
+                                                           kitchen_corners + kitchen_random + service_corners
+                                                           )
+        if len(kitchen_containers_list) <= len(kitchen_corners) + len(kitchen_random):
+            break
+        num_attempt -= 1
+
+        if num_attempt == 0:
+            raise ValueError('Try increaing number of attempts.')
 
     containers = list()
     for item in kitchen_containers_list:
