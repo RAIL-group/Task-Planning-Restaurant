@@ -1,6 +1,5 @@
+import taskplan
 from taskplan.pddl.helper import generate_pddl_problem
-
-skip_list = set(['beer', 'whiskey', 'wine', 'bar'])
 
 
 def get_problem(restaurant):
@@ -20,8 +19,6 @@ def get_problem(restaurant):
     ]
     for container in containers:
         cnt_name = container['assetId']
-        if cnt_name in skip_list:
-            continue
         objects[cnt_name] = [cnt_name]
         children = container.get('children')
         if children is not None:
@@ -48,52 +45,22 @@ def get_problem(restaurant):
                 if 'fillable' in child and child['fillable'] == 1:
                     init_states.append(f"(is-fillable {chld_name})")
 
-    # print(objects)
-    # print(init_states)
-
     for c1 in restaurant.known_cost:
-        if c1 in skip_list:
-            continue
         for c2 in restaurant.known_cost[c1]:
-            if c1 == c2 or c2 in skip_list:
+            if c1 == c2:
                 continue
             val = restaurant.known_cost[c1][c2]
-            # print(c1, c2, val)
             init_states.append(
                 f"(= (known-cost {c1} {c2}) {val})"
             )
-            # init_states.append(
-            #     f"(= (known-cost {c2} {c1}) {val})"
-            # )
-            # print(f"(= (known-cost {c1} {c2}) {val})")
 
-    goal = [
-        # '(and (is-at mug1 stable2) (is-at cup1 stable1))'
-        # '(and (filled-with water cup1) (is-at cup1 stable1))'
-        # '(and (not (is-dirty plate1)) (not (is-dirty plate2)) (is-at plate1 stable1) (is-at plate2 stable2))'
-        ''' (forall
-                (?plt - plate)
-                (and (not (is-dirty ?plt)) (is-at ?plt stable2))
-            )
-        '''  # Works
-        # '(exists',
-        # '    (?c - mug)',
-        # '        (and (is-at ?c stable1) (filled-with water ?c))'
-        # ')'
-        # ' (and (spread-applied bread peanutbutterspread))'
-        # ' (and (spread-applied bread peanutbutterspread) (is-at bread stable1))'
-        # '(exists',
-        # '    (?c - item)',
-        # '        (and',
-        # '            (is-at ?c stable1)',
-        # '            (exists',
-        # '                (?alc - alcohol)',
-        # '                (and',
-        # '                    (filled-with ?alc ?c))',
-        # '            )',
-        # '        )',
-        # ')'
-    ]
+    # task = taskplan.pddl.task.serve_coffee('servingtable1', 'mug1')
+    # task = taskplan.pddl.task.clean_something('plate2')
+    # task = taskplan.pddl.task.make_sandwich()
+    # task = taskplan.pddl.task.make_sandwich('peanutbutterspread')
+    # task = taskplan.pddl.task.serve_sandwich('servingtable2', 'orangespread')
+    task = taskplan.pddl.task.serve_sandwich('servingtable3')
+    goal = [task]
 
     PROBLEM_PDDL = generate_pddl_problem(
         domain_name='restaurant',
