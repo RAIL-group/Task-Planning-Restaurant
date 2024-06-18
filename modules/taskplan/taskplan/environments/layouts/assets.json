@@ -2,19 +2,19 @@
     "servingtable1": {
         "description": "table for serving",
         "id": "servingtable|1",
-        "assetId": "stable1",
+        "assetId": "servingtable1",
         "children": []
     },
     "servingtable2": {
         "description": "table for serving",
         "id": "servingtable|2",
-        "assetId": "stable2",
+        "assetId": "servingtable2",
         "children": []
     },
     "servingtable3": {
         "description": "table for serving",
         "id": "servingtable|3",
-        "assetId": "stable3",
+        "assetId": "servingtable3",
         "children": []
     },
     "breadshelf": {

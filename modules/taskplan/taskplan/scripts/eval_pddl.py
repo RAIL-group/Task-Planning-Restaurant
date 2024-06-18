@@ -27,7 +27,7 @@ def evaluate_main(args):
     pddl = {}
     pddl['domain'] = taskplan.pddl.domain.get_domain()
     pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant)
-    pddl['planner'] = 'ff-astar2'  # 'max-astar'
+    pddl['planner'] = 'ff-astar2'  # 'max-astar' 'ff-lazy' 'ff-astar2' 'lmcut-astar'
 
     plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'])
 

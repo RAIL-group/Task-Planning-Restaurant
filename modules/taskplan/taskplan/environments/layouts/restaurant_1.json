@@ -606,6 +606,7 @@
                     "id": "plate|1",
                     "washable": 1,
                     "pickable": 1,
+                    "dirty": 1,
                     "position": {
                         "x": 1.1123014632991104,
                         "z": 5.38926701154881
