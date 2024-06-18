@@ -25,10 +25,10 @@ def run_pddl():
     plt.savefig(save_file, dpi=1200)
     pddl['domain'] = taskplan.pddl.domain.get_domain()
     pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant)
-    pddl['planner'] = 'ff-astar2'
+    pddl['planner'] = 'max-astar'
 
     plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
-                                 max_planner_time=180)
+                                 max_planner_time=300)
     print(plan)
 
     if plan:

@@ -6,6 +6,9 @@ import gridmap
 import math
 from taskplan.environments.sampling import generate_restaurant
 
+INFLATE_UP = 0.25
+INFLATE_LOW = 0.2
+
 
 def load_restaurant(seed):
     """
@@ -87,10 +90,12 @@ def inflate_polygon(polygon, distance):
 def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
                                            resolution, container,
                                            inflation_distance, mother_poly):
+
+    occupancy_grid = gridmap.utils.inflate_grid(occupancy_grid, INFLATE_LOW*10)
     unoccupied_points = []
     grid_height, grid_width = occupancy_grid.shape
 
-    inflated_container = inflate_polygon(container, 0.05)
+    inflated_container = inflate_polygon(container, INFLATE_LOW)
     # Inflate the container polygon
     inflated_polygon = inflate_polygon(container, inflation_distance)
 
@@ -116,15 +121,20 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
             if inflated_polygon.contains(point) and mother_poly.contains(
                 point) and (
                     not inflated_container.contains(
-                        point) and occupancy_grid[grid_x, grid_z] == 0):
+                        point)):
+                gx, gz = world_to_grid(world_x, world_z,
+                                       min_x, min_z, resolution)
+                if occupancy_grid[gx, gz] == 1:
+                    continue
                 unoccupied_points.append((world_x, world_z))
 
     p1 = (container.centroid.x, container.centroid.y)
-    min_dis = -1
+    min_dis = float('inf')
     c_point = ()
+    print(len(unoccupied_points))
     for p2 in unoccupied_points:
         dis = euclidean_distance(p1, p2)
-        if (dis > min_dis):
+        if (dis < min_dis):
             min_dis = dis
             c_point = p2
     return c_point
@@ -133,7 +143,7 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
 def get_cost_from_occupancy_grid(grid, min_x, min_z,
                                  resolution, start_poly, end_poly):
     occ_grid = np.copy(grid)
-    inflation_distance = 0.1
+    inflation_distance = 0.3
     point_cloud1 = get_unoccupied_points_around_container(
         occ_grid,
         min_x, min_z,
@@ -191,7 +201,7 @@ class RESTAURANT:
         # agent = Polygon([(point['x'], point['z'])
         #                  for point in self.agent['polygon']])
         # print(self.grid.shape)
-        inflation_distance = 0.2
+        inflation_distance = INFLATE_UP
         relative_loc = {}
         # mother_poly = Polygon([(point['x'], point['z'])
         #                            for point in self.rooms['servingroom']['polygon']])
@@ -205,6 +215,7 @@ class RESTAURANT:
         relative_loc['initial_robot_pose'] = (self.agent['position']['x'], self.agent['position']['z'])
         self.known_cost = {}
         for container in self.containers:
+            print(container['position'])
             cont_ploy = Polygon([(point['x'], point['z'])
                                  for point in container['polygon']])
             mother_poly = Polygon([(point['x'], point['z'])
@@ -235,7 +246,6 @@ class RESTAURANT:
                         s_x,
                         s_z
                     ],
-                    use_soft_cost=True,
                     only_return_cost_grid=True)
             for item2 in relative_loc:
                 # if item2 in self.known_cost and item1 in self.known_cost[item2]:
@@ -249,9 +259,9 @@ class RESTAURANT:
                     self.known_cost[item1] = {}
                 self.known_cost[item1][item2] = cost
         # print(self.known_cost)
-        for item in self.known_cost:
-            print(item)
-            print(self.known_cost[item])
+        # for item in self.known_cost:
+        #     print(item)
+        #     print(self.known_cost[item])
         # raise NotImplementedError
 
     def set_occupancy_grid(self):
