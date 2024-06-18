@@ -12,11 +12,6 @@ from taskplan.environments.restaurant import world_to_grid
 
 def get_robot_pose(data):
     return data.accessible_poses['initial_robot_pose']
-    rob_x = data.agent['position']['x']
-    rob_z = data.agent['position']['z']
-    x, z = world_to_grid(
-        rob_x, rob_z, data.grid_min_x, data.grid_min_z, data.grid_res)
-    return (x, z)
 
 
 def get_graph(data):
@@ -61,9 +56,6 @@ def get_graph(data):
         assetId = container['assetId']
         name = get_generic_name(container['id'])
         _x, _y = data.accessible_poses[assetId]
-        # _x, _y = world_to_grid(
-        #     container['position']['x'], container['position']['z'],
-        #     data.grid_min_x, data.grid_min_z, data.grid_res)
         src = room_names.index(container['loc'])
         assetId_idx_map[assetId] = node_count
         nodes[node_count] = {
@@ -85,8 +77,8 @@ def get_graph(data):
             assetId = connected_object['assetId']
             name = get_generic_name(connected_object['id'])
             _x, _y = world_to_grid(
-                connected_object['position']['x'],
-                connected_object['position']['z'],
+                container['position']['x'],
+                container['position']['z'],
                 data.grid_min_x, data.grid_min_z, data.grid_res)
             src = container_ids.index(container['id'])
             assetId_idx_map[assetId] = node_count
@@ -260,9 +252,6 @@ def get_object_to_find_from_plan(plan, partial_map):
             obj_name = action.args[0]
             if obj_name in partial_map.idx_map:
                 return partial_map.idx_map[obj_name]
-            # for obj_idx in partial_map.obj_node_idx:
-            #     if obj_name == partial_map.org_node_names[obj_idx]:
-            #         return obj_idx
             raise ValueError('The object could not be found!')
 
 
