@@ -1,9 +1,8 @@
-import json
-import os
-from shapely.geometry import Polygon, Point
-import numpy as np
-import gridmap
 import math
+import numpy as np
+from shapely.geometry import Polygon, Point
+
+import gridmap
 from taskplan.environments.sampling import generate_restaurant
 
 INFLATE_UP = 0.25
@@ -16,19 +15,13 @@ def load_restaurant(seed):
     that you want to place in the corners
     Also keep 'agent' in kitchen container list
     """
-    kitchen_containers_list = ['dishwasher', 'fountain', 'coffeemachine', 'sandwichmaker', 'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf', 'mugshelf', 'cupshelf', 'agent']
+    kitchen_containers_list = ['agent', 'dishwasher', 'fountain', 'coffeemachine', 'sandwichmaker',
+                               'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf',
+                               'mugshelf', 'cupshelf']
     serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
     datum = generate_restaurant(seed, kitchen_containers_list,
                                 serving_room_containers_list)
     return datum
-    # root = "/modules/taskplan/taskplan/environments/layouts"
-    # json_file = ''
-    # for path, _, files in os.walk(root):
-    #     for name in files:
-    #         if 'restaurant_' + str(seed) + '.json' == name:
-    #             json_file = os.path.join(path, name)
-    #             datum = json.load(open(json_file))
-    #             return datum
 
 
 def world_to_grid(x, z, min_x, min_z, resolution):
@@ -131,7 +124,6 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
     p1 = (container.centroid.x, container.centroid.y)
     min_dis = float('inf')
     c_point = ()
-    print(len(unoccupied_points))
     for p2 in unoccupied_points:
         dis = euclidean_distance(p1, p2)
         if (dis < min_dis):
@@ -178,7 +170,6 @@ def get_cost_from_occupancy_grid(grid, min_x, min_z,
             e_x, e_z = world_to_grid(point2[0], point2[1],
                                      min_x, min_z, resolution)
             cost = cost_grid[e_x, e_z]
-            # print(cost)
             if cost < min_distance:
                 min_distance = cost
                 # break
@@ -198,24 +189,13 @@ class RESTAURANT:
         self.containers = self.restaurant['objects']
         self.grid, self.grid_min_x, self.grid_min_z, self.grid_max_x, \
             self.grid_max_z, self.grid_res = self.set_occupancy_grid()
-        # agent = Polygon([(point['x'], point['z'])
-        #                  for point in self.agent['polygon']])
-        # print(self.grid.shape)
+
         inflation_distance = INFLATE_UP
         relative_loc = {}
-        # mother_poly = Polygon([(point['x'], point['z'])
-        #                            for point in self.rooms['servingroom']['polygon']])
-        # point_cloud = get_unoccupied_points_around_container(
-        #     self.grid,
-        #     self.grid_min_x, self.grid_min_z,
-        #     self.grid_res,
-        #     agent,
-        #     inflation_distance
-        # )
+
         relative_loc['initial_robot_pose'] = (self.agent['position']['x'], self.agent['position']['z'])
         self.known_cost = {}
         for container in self.containers:
-            print(container['position'])
             cont_ploy = Polygon([(point['x'], point['z'])
                                  for point in container['polygon']])
             mother_poly = Polygon([(point['x'], point['z'])
