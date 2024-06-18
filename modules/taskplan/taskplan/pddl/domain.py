@@ -7,11 +7,10 @@ def get_domain():
 
     (:types
         location item - object
-        init_r servingtable shelf fountain coffeemachine sandwichmaker bar dishwasher countertop - location
-        stable1 stable2 stable3 - servingtable
+        init_r servingtable shelf fountain coffeemachine sandwichmaker dishwasher countertop - location
+        servingtable1 servingtable2 servingtable3 - servingtable
         shelf0 shelf1 shelf2 shelf3 shelf4 shelf5 shelf6 - shelf
-        missing cup mug coffeegrinds water alcohol bread cutleries spread - item
-        wine beer whiskey - alcohol
+        missing cup mug coffeegrinds water bread cutleries spread - item
         orangespread strawberryspread peanutbutterspread - spread
         knife plate bowl - cutleries
         knife1 - knife
