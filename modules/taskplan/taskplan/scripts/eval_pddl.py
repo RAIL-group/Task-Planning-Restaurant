@@ -11,8 +11,7 @@ import taskplan
 
 def evaluate_main(args):
     # Get environment data
-    # TODO make generation possible for variable seed
-    restaurant = taskplan.environments.restaurant.RESTAURANT(seed=1)
+    restaurant = taskplan.environments.restaurant.RESTAURANT(seed=args.current_seed)
 
     # Get graph data and robot start pose from restaurant data
     grid = restaurant.grid
