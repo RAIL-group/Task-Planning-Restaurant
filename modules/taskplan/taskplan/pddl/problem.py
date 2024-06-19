@@ -55,13 +55,12 @@ def get_problem(restaurant):
             )
 
     # task = taskplan.pddl.task.serve_coffee('servingtable1', 'mug1')
-    # task = taskplan.pddl.task.clean_something('plate2')
+    task = taskplan.pddl.task.clean_something('plate2')
     # task = taskplan.pddl.task.make_sandwich()
     # task = taskplan.pddl.task.make_sandwich('peanutbutterspread')
     # task = taskplan.pddl.task.serve_sandwich('servingtable2', 'orangespread')
-    task = taskplan.pddl.task.serve_sandwich('servingtable3')
+    # task = taskplan.pddl.task.serve_sandwich('servingtable3')
     goal = [task]
-
     PROBLEM_PDDL = generate_pddl_problem(
         domain_name='restaurant',
         problem_name='water-problem',

@@ -192,7 +192,7 @@ class RESTAURANT:
 
         inflation_distance = INFLATE_UB
         relative_loc = {}
-
+        # print(self.restaurant)
         relative_loc['initial_robot_pose'] = (self.agent['position']['x'], self.agent['position']['z'])
         self.known_cost = {}
         for container in self.containers:
@@ -211,8 +211,18 @@ class RESTAURANT:
                                             inflation_distance,
                                             mother_poly
                                         )
+            while len(point_cloud) == 0:
+                inflation_distance += 0.05
+                point_cloud = get_unoccupied_points_around_container(
+                                            self.grid,
+                                            self.grid_min_x, self.grid_min_z,
+                                            self.grid_res,
+                                            cont_ploy,
+                                            inflation_distance,
+                                            mother_poly
+                                        )
+            inflation_distance = INFLATE_UB
             relative_loc[container['assetId']] = point_cloud
-
         self.accessible_poses = {}
         for item1 in relative_loc:
             point1 = relative_loc[item1]

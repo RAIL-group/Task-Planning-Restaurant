@@ -1,5 +1,5 @@
 import random
-from shapely.geometry import box, Polygon, LineString
+from shapely.geometry import box, Polygon, LineString, MultiLineString
 import json
 import os
 
@@ -153,6 +153,14 @@ def create_non_overlapping_containers(room_points, num_rectangles, min_width,
 def get_door(kitchen_polygon, serving_room_polygon, door_length=2.0):
     # Find the common wall
     common_wall = kitchen_polygon.intersection(serving_room_polygon.boundary)
+
+    # If the rooms intersects in more than 2 walls, take the longest wall to make the door
+    if isinstance(common_wall, MultiLineString):
+        max_length = 0
+        for line in common_wall.geoms:
+            if line.length > max_length:
+                max_length = line.length
+                common_wall = line
     # Add a door in the middle of the common wall with length 2 and get the door coordinates
     if isinstance(common_wall, LineString):
         x1, z1, x2, z2 = *common_wall.coords[0], *common_wall.coords[1]

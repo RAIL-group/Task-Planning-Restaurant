@@ -6,10 +6,10 @@ import numpy as np
 
 def run_pddl():
     # preparing pddl as input to the solver
-    seed = 1
+    seed = 99
     save_file = '/data/figs/grid' + str(seed) + '.png'
     pddl = {}
-    restaurant = taskplan.environments.restaurant.RESTAURANT(seed=2)
+    restaurant = taskplan.environments.restaurant.RESTAURANT(seed=seed)
     grid = restaurant.grid
     # occupied_cells = np.argwhere(grid == 1)
     # print(occupied_cells)
@@ -20,7 +20,7 @@ def run_pddl():
     # print(restaurant.known_cost)
     un_oc_cells = list(restaurant.accessible_poses.values())
     for x, y in un_oc_cells:
-        print(x, y, grid[x, y])
+        # print(x, y, grid[x, y])
         plt.scatter(y, x, c='green')
     plt.savefig(save_file, dpi=1200)
     pddl['domain'] = taskplan.pddl.domain.get_domain()
