@@ -12,24 +12,34 @@ def get_problem(restaurant):
         '(restrict-move-to initial_robot_pose)',
         '(hand-is-free)',
         '(rob-at initial_robot_pose)',
-        # '(= (find-cost mug1) 0)',
-        # '(= (find-cost mug2) 0)',
-        # '(= (find-cost mug3) 0)',
         '(is-fillable coffeemachine)'
     ]
     for container in containers:
         cnt_name = container['assetId']
-        objects[cnt_name] = [cnt_name]
+        gen_name = ''.join([i for i in cnt_name if not i.isdigit()])
+        if gen_name not in objects:
+            objects[gen_name] = [cnt_name]
+        else:
+            objects[gen_name].append(cnt_name)
         children = container.get('children')
         if children is not None:
             for child in children:
                 chld_name = child['assetId']
-                objects[chld_name] = [chld_name]
-                init_states.append(f"(is-at {chld_name} {cnt_name})")
+                gen_name_child = ''.join([i for i in chld_name if not i.isdigit()])
+                if 'spread' in gen_name_child:
+                    gen_name_child = 'spread'
+                if gen_name_child not in objects:
+                    objects[gen_name_child] = [chld_name]
+                else:
+                    objects[gen_name_child].append(chld_name)
+
                 if 'missing' in child and child['missing'] == 1:
                     init_states.append(f"(not (is-located {chld_name}))")
+                    init_states.append(f"(= (find-cost {chld_name}) 0)")
                 else:
                     init_states.append(f"(is-located {chld_name})")
+                    init_states.append(f"(is-at {chld_name} {cnt_name})")
+                    init_states.append(f"(= (find-cost {chld_name}) 0)")
                 if 'isLiquid' in child and child['isLiquid'] == 1:
                     init_states.append(f"(is-liquid {chld_name})")
                 if 'pickable' in child and child['pickable'] == 1:
@@ -55,11 +65,11 @@ def get_problem(restaurant):
             )
 
     # task = taskplan.pddl.task.serve_coffee('servingtable1', 'mug1')
-    task = taskplan.pddl.task.clean_something('plate2')
+    # task = taskplan.pddl.task.clean_something('plate2')
     # task = taskplan.pddl.task.make_sandwich()
     # task = taskplan.pddl.task.make_sandwich('peanutbutterspread')
     # task = taskplan.pddl.task.serve_sandwich('servingtable2', 'orangespread')
-    # task = taskplan.pddl.task.serve_sandwich('servingtable3')
+    task = taskplan.pddl.task.serve_sandwich('servingtable1')
     goal = [task]
     PROBLEM_PDDL = generate_pddl_problem(
         domain_name='restaurant',
