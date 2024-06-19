@@ -8,16 +8,7 @@ def get_domain():
     (:types
         location item - object
         init_r servingtable shelf fountain coffeemachine dishwasher countertop - location
-        servingtable1 servingtable2 servingtable3 - servingtable
-        shelf0 shelf1 shelf2 shelf3 shelf4 shelf5 shelf6 - shelf
-        missing cup mug coffeegrinds water bread cutleries spread - item
-        orangespread strawberryspread peanutbutterspread - spread
-        knife plate bowl - cutleries
-        knife1 - knife
-        plate1 plate2 - plate
-        bowl1 bowl2 - bowl
-        mug1 mug2 mug3 - mug
-        cup1 cup2 - cup
+        cup mug coffeegrinds water bread knife plate bowl spread - item
     )
 
     (:predicates
@@ -107,7 +98,7 @@ def get_domain():
     )
 
     (:action find
-        :parameters (?obj - missing)
+        :parameters (?obj - item)
         :precondition (and
             (not (is-located ?obj))
             (is-pickable ?obj)
