@@ -7,7 +7,7 @@ def get_domain():
 
     (:types
         location item - object
-        init_r servingtable shelf fountain coffeemachine sandwichmaker dishwasher countertop - location
+        init_r servingtable shelf fountain coffeemachine dishwasher countertop - location
         servingtable1 servingtable2 servingtable3 - servingtable
         shelf0 shelf1 shelf2 shelf3 shelf4 shelf5 shelf6 - shelf
         missing cup mug coffeegrinds water bread cutleries spread - item
@@ -45,19 +45,20 @@ def get_domain():
     )
 
     (:action apply-spread
-        :parameters (?s - spread)
+        :parameters (?s - spread ?k - knife)
         :precondition (and
             (rob-at countertop)
             (is-at bread countertop)
             (is-at ?s countertop)
-            (is-holding knife1)
-            (not (is-dirty knife1))
+            (is-holding ?k)
+            (not (is-dirty ?k))
             (is-spread ?s)
             (is-spreadable bread)
             (not (spread-applied bread ?s))
         )
         :effect (and
             (spread-applied bread ?s)
+            (is-dirty ?k)
         )
     )
 
@@ -169,6 +170,7 @@ def get_domain():
             (filled-with coffee ?c)
             (not (is-at water coffeemachine))
             (not (is-at coffeegrinds coffeemachine))
+            (is-dirty ?c)
         )
     )
 
