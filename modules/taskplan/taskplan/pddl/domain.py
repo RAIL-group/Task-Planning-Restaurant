@@ -8,7 +8,7 @@ def get_domain():
     (:types
         location item - object
         init_r servingtable shelf fountain coffeemachine dishwasher countertop - location
-        cup mug coffeegrinds water bread knife plate bowl spread - item
+        napkin mug coffeegrinds water bread knife plate bowl spread - item
     )
 
     (:predicates
@@ -27,12 +27,29 @@ def get_domain():
         (is-spreadable ?obj - item)
         (is-washable ?obj - item)
         (is-dirty ?obj - item)
+        (is-folded ?obj - item)
+        (is-foldable ?obj - item)
     )
 
     (:functions
         (known-cost ?start ?end)
         (find-cost ?obj)
         (total-cost)
+    )
+
+    (:action fold
+        :parameters (?npkn - napkin)
+        :precondition (and
+            (hand-is-free)
+            (not (is-folded ?npkn))
+            (is-foldable ?npkn)
+            (is-at ?npkn countertop)
+            (rob-at countertop)
+        )
+        :effect (and
+            (is-folded ?npkn)
+            (increase (total-cost) 50)
+        )
     )
 
     (:action apply-spread
