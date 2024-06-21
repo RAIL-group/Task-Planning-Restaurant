@@ -17,7 +17,7 @@ def load_restaurant(seed):
     """
     kitchen_containers_list = ['agent', 'dishwasher', 'fountain', 'coffeemachine', 'countertop',
                                'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf',
-                               'mugshelf', 'cupshelf']
+                               'mugshelf', 'napkinshelf']
     serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
     datum = generate_restaurant(seed, kitchen_containers_list,
                                 serving_room_containers_list)
