@@ -58,6 +58,8 @@ COPY modules/gridmap modules/gridmap
 RUN pip3 install modules/gridmap
 COPY modules/lsp_accel modules/lsp_accel
 RUN pip3 install modules/lsp_accel
+COPY modules/learning modules/learning
+RUN pip3 install modules/learning
 
 # Set up the starting point for running the code
 COPY entrypoint.sh /entrypoint.sh

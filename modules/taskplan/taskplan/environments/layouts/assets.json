@@ -9,13 +9,40 @@
         "description": "table for serving",
         "id": "servingtable|2",
         "assetId": "servingtable2",
-        "children": []
+        "children": [
+            {
+                "description": "mug",
+                "assetId": "mug3",
+                "id": "mug|3",
+                "washable": 1,
+                "pickable": 1,
+                "fillable": 1
+            },
+            {
+                "description": "bowl",
+                "assetId": "bowl2",
+                "id": "bowl|2",
+                "washable": 1,
+                "pickable": 1,
+                "dirty": 1
+            }
+        ]
     },
     "servingtable3": {
         "description": "table for serving",
         "id": "servingtable|3",
         "assetId": "servingtable3",
-        "children": []
+        "children": [
+            {
+                "description": "cup",
+                "assetId": "cup2",
+                "id": "cup|2",
+                "pickable": 1,
+                "washable": 1,
+                "fillable": 1,
+                "dirty": 1
+            }
+        ]
     },
     "breadshelf": {
         "description": "shelf for bread",
@@ -38,8 +65,14 @@
         "children": [
             {
                 "description": "jar of coffeegrinds",
-                "assetId": "coffeegrinds",
+                "assetId": "coffeegrinds1",
                 "id": "coffeegrinds|0",
+                "pickable": 1
+            },
+            {
+                "description": "jar of coffeegrinds",
+                "assetId": "coffeegrinds2",
+                "id": "coffeegrinds|1",
                 "pickable": 1
             }
         ]
@@ -55,14 +88,6 @@
                 "id": "cup|1",
                 "washable": 1,
                 "pickable": 1,
-                "fillable": 1
-            },
-            {
-                "description": "cup",
-                "assetId": "cup2",
-                "id": "cup|2",
-                "pickable": 1,
-                "washable": 1,
                 "fillable": 1
             }
         ]
@@ -84,14 +109,6 @@
                 "description": "mug",
                 "assetId": "mug2",
                 "id": "mug|2",
-                "washable": 1,
-                "pickable": 1,
-                "fillable": 1
-            },
-            {
-                "description": "mug",
-                "assetId": "mug3",
-                "id": "mug|3",
                 "washable": 1,
                 "pickable": 1,
                 "fillable": 1
@@ -153,16 +170,9 @@
                 "pickable": 1
             },
             {
-                "description": "bowl",
-                "assetId": "bowl1",
-                "id": "bowl|1",
-                "washable": 1,
-                "pickable": 1
-            },
-            {
-                "description": "bowl",
-                "assetId": "bowl2",
-                "id": "bowl|2",
+                "description": "knife",
+                "assetId": "knife2",
+                "id": "knife|2",
                 "washable": 1,
                 "pickable": 1
             }
@@ -172,13 +182,23 @@
         "description": "machine to make coffee",
         "id": "coffeemachine|0",
         "assetId": "coffeemachine",
-        "children": []
+        "children": [],
+        "fillable": 1
     },
     "countertop": {
         "description": "place to make food",
         "id": "countertop|0",
         "assetId": "countertop",
-        "children": []
+        "children": [
+            {
+                "description": "bowl",
+                "assetId": "bowl1",
+                "id": "bowl|1",
+                "washable": 1,
+                "pickable": 1,
+                "dirty": 1
+            }
+        ]
     },
     "fountain": {
         "description": "fountain for water",

@@ -7,17 +7,8 @@ def get_domain():
 
     (:types
         location item - object
-        init_r servingtable shelf fountain coffeemachine sandwichmaker dishwasher countertop - location
-        servingtable1 servingtable2 servingtable3 - servingtable
-        shelf0 shelf1 shelf2 shelf3 shelf4 shelf5 shelf6 - shelf
-        missing cup mug coffeegrinds water bread cutleries spread - item
-        orangespread strawberryspread peanutbutterspread - spread
-        knife plate bowl - cutleries
-        knife1 - knife
-        plate1 plate2 - plate
-        bowl1 bowl2 - bowl
-        mug1 mug2 mug3 - mug
-        cup1 cup2 - cup
+        init_r servingtable shelf fountain coffeemachine dishwasher countertop - location
+        cup mug coffeegrinds water bread knife plate bowl spread - item
     )
 
     (:predicates
@@ -45,19 +36,21 @@ def get_domain():
     )
 
     (:action apply-spread
-        :parameters (?s - spread)
+        :parameters (?s - spread ?k - knife)
         :precondition (and
             (rob-at countertop)
             (is-at bread countertop)
             (is-at ?s countertop)
-            (is-holding knife1)
-            (not (is-dirty knife1))
+            (is-holding ?k)
+            (not (is-dirty ?k))
             (is-spread ?s)
             (is-spreadable bread)
             (not (spread-applied bread ?s))
         )
         :effect (and
             (spread-applied bread ?s)
+            (is-dirty ?k)
+            (increase (total-cost) 20)
         )
     )
 
@@ -66,6 +59,7 @@ def get_domain():
         :precondition (and
             (is-pickable ?obj)
             (is-located ?obj)
+            (not (restrict-move-to ?loc))
             (is-at ?obj ?loc)
             (rob-at ?loc)
             (hand-is-free)
@@ -74,6 +68,7 @@ def get_domain():
             (not (is-at ?obj ?loc))
             (is-holding ?obj)
             (not (hand-is-free))
+            (increase (total-cost) 10)
         )
     )
 
@@ -82,12 +77,14 @@ def get_domain():
         :precondition (and
             (not (hand-is-free))
             (rob-at ?loc)
+            (not (restrict-move-to ?loc))
             (is-holding ?obj)
         )
         :effect (and
             (is-at ?obj ?loc)
             (not (is-holding ?obj))
             (hand-is-free)
+            (increase (total-cost) 10)
         )
     )
 
@@ -95,7 +92,6 @@ def get_domain():
         :parameters (?start - location ?end - location)
         :precondition (and
             (not (= ?start ?end))
-            (not (restrict-move-to ?end))
             (rob-at ?start)
         )
         :effect (and
@@ -135,6 +131,7 @@ def get_domain():
         )
         :effect (and
             (filled-with ?liquid ?cnt)
+            (increase (total-cost) 10)
         )
     )
 
@@ -150,6 +147,7 @@ def get_domain():
         :effect (and
             (is-at ?liquid ?loc)
             (not (filled-with ?liquid ?cnt))
+            (increase (total-cost) 10)
         )
     )
 
@@ -158,7 +156,7 @@ def get_domain():
         :precondition (and
             (rob-at coffeemachine)
             (is-at water coffeemachine)
-            (is-at coffeegrinds coffeemachine)
+            (exists (?cg - coffeegrinds) (is-at ?cg coffeemachine))
             (is-fillable ?c)
             (not (is-dirty ?c))
             (is-at ?c coffeemachine)
@@ -167,8 +165,9 @@ def get_domain():
         )
         :effect (and
             (filled-with coffee ?c)
+            (is-dirty ?c)
             (not (is-at water coffeemachine))
-            (not (is-at coffeegrinds coffeemachine))
+            (increase (total-cost) 20)
         )
     )
 
@@ -186,7 +185,7 @@ def get_domain():
                     (not (is-dirty ?i))
                 )
             )
-            (increase (total-cost) 50)
+            (increase (total-cost) 100)
         )
     )
 

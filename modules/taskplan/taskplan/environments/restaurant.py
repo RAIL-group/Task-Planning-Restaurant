@@ -1,6 +1,8 @@
 import math
 import numpy as np
 from shapely.geometry import Polygon, Point
+import random
+import copy
 
 import gridmap
 from taskplan.environments.sampling import generate_restaurant
@@ -187,15 +189,22 @@ class RESTAURANT:
         self.doors = self.restaurant['doors']
         self.agent = self.restaurant['agent']
         self.containers = self.restaurant['objects']
+        self.init_containers = copy.deepcopy(self.containers)
         self.grid, self.grid_min_x, self.grid_min_z, self.grid_max_x, \
             self.grid_max_z, self.grid_res = self.set_occupancy_grid()
 
         inflation_distance = INFLATE_UB
         relative_loc = {}
+        self.initial_object_poses = list()
         # print(self.restaurant)
         relative_loc['initial_robot_pose'] = (self.agent['position']['x'], self.agent['position']['z'])
         self.known_cost = {}
         for container in self.containers:
+            children = container.get('children')
+            for child in children:
+                self.initial_object_poses.append(
+                    {child['assetId']: container['position']}
+                )
             cont_ploy = Polygon([(point['x'], point['z'])
                                  for point in container['polygon']])
             mother_poly = Polygon([(point['x'], point['z'])
@@ -248,6 +257,7 @@ class RESTAURANT:
                 if item1 not in self.known_cost:
                     self.known_cost[item1] = {}
                 self.known_cost[item1][item2] = cost
+        # print(self.initial_object_poses)
         # print(self.known_cost)
         # for item in self.known_cost:
         #     print(item)
@@ -308,3 +318,111 @@ class RESTAURANT:
                                                   min_x, min_z, resolution, 1)
 
         return occupancy_grid, min_x, min_z, max_x, max_z, resolution
+
+    def randomize_objects(self):
+        container_poses = [val for dict in self.initial_object_poses
+                           for val in dict.values()]
+        object_list = [key for dict in self.initial_object_poses
+                       for key in dict.keys()]
+        for container in self.containers:
+            pos = container.get('position')
+            if pos not in container_poses:
+                container_poses.append(pos)
+        random.shuffle(container_poses)
+        return [{object_list[i]: container_poses[i]}
+                for i in range(len(object_list))]
+
+    def get_current_object_poses(self):
+        current_state = list()
+        for container in self.containers:
+            children = container.get('children')
+            if children is None:
+                continue
+            for child in children:
+                current_state.append({
+                    child['assetId']: container['position']
+                })
+        return current_state
+
+    def roll_back_to_init(self):
+        self.containers = copy.deepcopy(self.init_containers)
+
+    def update_container_props(self, object_props):
+        dirty_objs = object_props['dirty_objs']
+        all_clean = object_props['all_clean']
+        water_in_coffee_machine = object_props['water_at_cofeemachine']
+        object_poses = object_props['obj_poses']
+        all_child = list()
+        for container in self.containers:
+            children = container.get('children')
+            if children is None:
+                continue
+            all_child.extend(children)
+            container.update({'children': []})
+        for dict in object_poses:
+            for key, value in dict.items():
+                for child in all_child:
+                    if child.get('assetId') == key:
+                        child.update({'position': value})
+        for container in self.containers:
+            children = []
+            if container.get('assetId') == 'coffeemachine':
+                if water_in_coffee_machine:
+                    container['filled'] = 1
+                else:
+                    container['filled'] = 0
+            for child in all_child:
+                if child.get('position') == container.get('position'):
+                    if container.get('assetId') == 'dishwasher' and all_clean:
+                        child['dirty'] = 0
+                    if child.get('assetId') in dirty_objs:
+                        child['dirty'] = 1
+                    children.append(child)
+            container.update({'children': children})
+
+    def get_container_pos_list(self):
+        return [(container['assetId'], container['position'])
+                for container in self.containers]
+
+    def get_final_state_from_plan(self, plan):
+        objects = self.get_current_object_poses()
+        locations_dict = dict(self.get_container_pos_list())
+        conditions = []
+        props = {
+            'obj_poses': list(),
+            'dirty_objs': set(),
+            'all_clean': False,
+            'water_at_cofeemachine': False
+        }
+        for p in plan:
+            if "place" in p.name:
+                obj = p.args[0]
+                if 'coffeegrinds' in obj:
+                    continue
+                cnt = p.args[1]
+                placed = (obj, cnt)
+                conditions.append(placed)
+            if "make-coffee" in p.name:
+                props['dirty_objs'].add(p.args[0])
+                props['water_at_cofeemachine'] = False
+                # if p.args[0] in objs_filled_with_water:
+                #     objs_filled_with_water.remove(p.args[0])
+            if "turn-dishwasher-on" in p.name:
+                props['all_clean'] = True
+            if "pour" in p.name:
+                props['water_at_cofeemachine'] = True
+            if "apply-spread" in p.name:
+                props['dirty_objs'].add(p.args[1])
+                # if p.args[2] in objs_filled_with_water:
+                #     objs_filled_with_water.remove(p.args[2])
+            # if "fill" in p.name:
+            #     objs_filled_with_water.add(p.args[2])
+        for cond in conditions:
+            for obj_dict in objects:
+                # Directly check if the condition's object key is in the dictionary
+                if cond[0] in obj_dict and cond[1] in locations_dict:
+                    obj_dict[cond[0]] = locations_dict[cond[1]]
+                    break
+        props['obj_poses'] = objects
+        props['dirty_objs'] = list(props['dirty_objs'])
+        return props

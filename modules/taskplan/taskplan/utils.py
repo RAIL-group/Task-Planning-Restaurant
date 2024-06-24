@@ -5,28 +5,49 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from PIL import Image
 from sentence_transformers import SentenceTransformer
-
+import learning
 import gridmap
 from taskplan.environments.restaurant import world_to_grid
+import torch
+from torch_geometric.data import Data
 
 
 def get_robot_pose(data):
     return data.accessible_poses['initial_robot_pose']
 
+# 'attribs:': [isLiquid, pickable, spreadable, spread, fillable, dirty]
+
 
 def get_graph(data):
-    ''' This method creates graph data from the procthor-10k data'''
-    # Create dummy apartment node
+    ''' This method creates graph data from the restaurant data'''
+    # Create dummy restaurant node
     node_count = 0
     nodes = {}
     assetId_idx_map = {}
     edges = []
     nodes[node_count] = {
-        'id': 'apartment|0',
-        'name': 'apartment',
+        'id': 'restaurant',
+        'name': 'restaurant',
+        'desc': 'Restaurant',
         'pos': (0, 0),
-        'type': [1, 0, 0, 0]
+        'type': [1, 0, 0, 0, 0],
+        'attribs': [0, 0, 0, 0, 0, 0]
     }
+    node_count += 1
+
+    # Create robot node and add the edge to the restaurant
+    _x, _y = world_to_grid(
+            data.agent['position']['x'], data.agent['position']['z'],
+            data.grid_min_x, data.grid_min_z, data.grid_res)
+    nodes[node_count] = {
+        'id': 'robot',
+        'name': 'robot',
+        'desc': 'Robot',
+        'pos': (_x, _y),
+        'type': [0, 1, 0, 0, 0],
+        'attribs': [0, 0, 0, 0, 0, 0]
+    }
+    edges.append(tuple([0, node_count]))
     node_count += 1
 
     # Iterate over rooms but skip position coordinate scaling since not
@@ -38,14 +59,16 @@ def get_graph(data):
         nodes[node_count] = {
             'id': room+'|'+str(node_count),
             'name': data.rooms[room]['name'].lower(),
+            'desc': data.rooms[room]['name'].lower(),
             'pos': (_x, _y),
-            'type': [0, 1, 0, 0]
+            'type': [0, 0, 1, 0, 0],
+            'attribs': [0, 0, 0, 0, 0, 0]
         }
         edges.append(tuple([0, node_count]))
         node_count += 1
 
     # add an edge between two rooms adjacent by a passable shared door
-    room_edges = set([(1, 2)])
+    room_edges = set([(2, 3)])
     edges.extend(room_edges)
 
     room_names = [nodes[n]['name'] for n in nodes]
@@ -58,11 +81,17 @@ def get_graph(data):
         _x, _y = data.accessible_poses[assetId]
         src = room_names.index(container['loc'])
         assetId_idx_map[assetId] = node_count
+        if 'fillable' in container and container['fillable'] == 1:
+            attribs = [0, 0, 0, 0, 1, 0]
+        else:
+            attribs = [0, 0, 0, 0, 0, 0]
         nodes[node_count] = {
             'id': id,
             'name': name,
+            'desc': container['description'],
             'pos': (_x, _y),
-            'type': [0, 0, 1, 0]
+            'type': [0, 0, 0, 1, 0],
+            'attribs': attribs
         }
         edges.append(tuple([src, node_count]))
         cnt_node_idx.append(node_count)
@@ -82,11 +111,26 @@ def get_graph(data):
                 data.grid_min_x, data.grid_min_z, data.grid_res)
             src = container_ids.index(container['id'])
             assetId_idx_map[assetId] = node_count
+            attribs = [0, 0, 0, 0, 0, 0]
+            if 'isLiquid' in connected_object and connected_object['isLiquid'] == 1:
+                attribs[0] = 1
+            if 'pickable' in connected_object and connected_object['pickable'] == 1:
+                attribs[1] = 1
+            if 'spreadable' in connected_object and connected_object['spreadable'] == 1:
+                attribs[2] = 1
+            if 'spread' in connected_object and connected_object['spread'] == 1:
+                attribs[3] = 1
+            if 'fillable' in connected_object and connected_object['fillable'] == 1:
+                attribs[4] = 1
+            if 'dirty' in connected_object and connected_object['dirty'] == 1:
+                attribs[5] = 1
             nodes[node_count] = {
                     'id': id,
                     'name': name,
+                    'desc': connected_object['description'],
                     'pos': (_x, _y),
-                    'type': [0, 0, 0, 1]
+                    'type': [0, 0, 0, 0, 1],
+                    'attribs': attribs
                 }
             edges.append(tuple([src, node_count]))
             obj_node_idx.append(node_count)
@@ -104,7 +148,7 @@ def get_graph(data):
     # # Add edges to get a connected graph if not already connected
     # req_edges = get_edges_for_connected_graph(proc_data.occupancy_grid, graph)
     # graph['edge_index'] = graph['edge_index'] + req_edges
-
+    # print(graph)
     return graph
 
 
@@ -122,7 +166,8 @@ def graph_formatting(graph):
         node_names[node_key] = graph['nodes'][node_key]['name']
         node_feature = np.concatenate((
             get_sentence_embedding(graph['nodes'][node_key]['name']),
-            graph['nodes'][node_key]['type']
+            graph['nodes'][node_key]['type'],
+            graph['nodes'][node_key]['attribs'],
         ))
         assert count == node_key
         graph_nodes.append(node_feature)
@@ -134,11 +179,17 @@ def graph_formatting(graph):
     graph['graph_nodes'] = graph_nodes  # node features
     src = []
     dst = []
+    new_feature = []
     for edge in graph['edge_index']:
         src.append(edge[0])
         dst.append(edge[1])
-    graph['graph_edge_index'] = [src, dst]
+        e_cost = np.linalg.norm(np.array(
+            [graph['nodes'][edge[0]]['pos']]) - np.array(
+                                            [graph['nodes'][edge[1]]['pos']]))
+        new_feature.append([e_cost])
 
+    graph['graph_edge_feature'] = 1 - np.array(new_feature)/600
+    graph['graph_edge_index'] = [src, dst]
     graph['graph_image'] = get_graph_image(
         graph['edge_index'],
         node_names, node_color_list
@@ -299,3 +350,72 @@ def get_pos_from_coord(coords, node_coords):
         pos = coords_list.index(coords)
         return pos
     return None
+
+
+def write_datum_to_file(args, datum, counter):
+    data_filename = os.path.join(
+        'pickles', f'dat_{args.current_seed}_{counter}.pgz')
+    learning.data.write_compressed_pickle(
+        os.path.join(args.save_dir, data_filename), datum)
+    csv_filename = f'{args.data_file_base_name}_{args.current_seed}.csv'
+    with open(os.path.join(args.save_dir, csv_filename), 'a') as f:
+        f.write(f'{data_filename}\n')
+
+
+def preprocess_training_data(args=None):
+    def make_graph(data):
+        data = graph_formatting(data)
+        data['node_feats'] = torch.tensor(
+            np.array(data['graph_nodes']), dtype=torch.float)
+        data['edge_index'] = torch.tensor(data['graph_edge_index'],
+                                          dtype=torch.long)
+        data['edge_features'] = torch.tensor(
+            data['graph_edge_feature'], dtype=torch.float)
+        src = data['edge_index'][0]
+        dest = data['edge_index'][1]
+        features = data['edge_features']
+
+        # Create reversed edges
+        rev_src = dest
+        rev_dest = src
+
+        # Efficiently concatenate using torch.cat for both indices and features
+        data['edge_index'] = torch.cat((torch.stack([src, dest], dim=0),
+                                        torch.stack([rev_src, rev_dest],
+                                        dim=0)), dim=1)
+        data['edge_features'] = torch.cat((features, features), dim=0)
+        # print(data['edge_features'])
+        # edge_features = torch.tensor(1-np.array(data['edge_features'])/600,
+        #                              dtype=torch.float)
+        # print(edge_features)
+        # raise NotImplementedError
+        data['label'] = torch.tensor(data['label'], dtype=torch.float)
+        tg_GCN_format = Data(x=data['node_feats'],
+                             edge_index=data['edge_index'],
+                             edge_features=data['edge_features'],
+                             y=data['label'])
+
+        result = tg_GCN_format
+        return result
+    return make_graph
+
+
+def preprocess_gcn_data(datum):
+    data = graph_formatting(datum)
+    data['edge_index'] = torch.tensor(
+        data['graph_edge_index'], dtype=torch.long)
+    data['edge_features'] = torch.tensor(
+            data['graph_edge_feature'], dtype=torch.float)
+    src = data['edge_index'][0]
+    dest = data['edge_index'][1]
+    features = data['edge_features']
+    rev_src = dest
+    rev_dest = src
+    data['edge_data'] = torch.cat((
+        torch.stack([src, dest], dim=0), torch.stack(
+            [rev_src, rev_dest], dim=0)), dim=1)
+    # data['edge_data'] = torch.tensor(data['graph_edge_index'], dtype=torch.long)
+    data['edge_features'] = torch.cat((features, features), dim=0)
+    data['latent_features'] = torch.tensor(np.array(
+        data['graph_nodes']), dtype=torch.float)
+    return data

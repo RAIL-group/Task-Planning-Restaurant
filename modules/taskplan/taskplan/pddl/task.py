@@ -24,6 +24,12 @@ def serve_water(location, container=None):
     return str
 
 
+def fill_coffeemachine_with_water():
+    return '''
+            (is-at water coffeemachine)
+        '''
+
+
 def make_coffee(container=None):
     if container:
         str = f'(filled-with coffee {container})'
@@ -47,11 +53,6 @@ def serve_coffee(location, container=None):
                 (and (filled-with coffee ?c) (is-at ?c {location}))
         )
         '''
-    return str
-
-
-def clean_something(object):
-    str = f'(not (is-dirty {object}))'
     return str
 
 
@@ -79,3 +80,45 @@ def serve_sandwich(location, spread=None):
         )
         '''
     return str
+
+
+def hold_something():
+    return '''
+        (exists
+            (?c - mug)
+                (and (is-holding ?c))
+        )
+    '''
+
+
+def clear_surface(location):
+    return f'''
+        (forall (?i - item)
+            (not (is-at ?i {location}))
+        )
+    '''
+
+
+def clean_everything():
+    return '''
+        (forall (?i - item)
+            (not (is-dirty ?i))
+        )
+    '''
+
+
+def clean_something(object):
+    str = f'(not (is-dirty {object}))'
+    return str
+
+
+def place_something(item, container):
+    return f'''
+            (is-at {item} {container})
+            '''
+
+
+def clean_and_place(item, container):
+    return f'''
+            (and (is-at {item} {container}) (not (is-dirty {item})))
+            '''

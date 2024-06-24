@@ -270,7 +270,10 @@ def generate_restaurant(seed, kitchen_containers_list,
                                                            door_buffer,
                                                            kitchen_corners + kitchen_random + service_corners
                                                            )
-        if len(kitchen_containers_list) <= len(kitchen_corners) + len(kitchen_random):
+        if (len(kitchen_containers_list) <= len(kitchen_corners) + len(
+            kitchen_random)) and (
+                len(serving_room_containers_list) <= len(
+                    service_corners) + len(service_random)):
             break
         num_attempt -= 1
 
@@ -306,6 +309,11 @@ def generate_restaurant(seed, kitchen_containers_list,
         kc['loc'] = 'kitchen'
         if item == 'agent':
             continue
+        for child in kc['children']:
+            child['position'] = {
+                'x': centroid.x,
+                'z': centroid.y
+            }
         containers.append(kc)
 
     for item in serving_room_containers_list:
@@ -331,7 +339,11 @@ def generate_restaurant(seed, kitchen_containers_list,
         }
         kc['polygon'] = temp
         kc['loc'] = 'servingroom'
-        x, y = rectangle.exterior.xy
+        for child in kc['children']:
+            child['position'] = {
+                'x': centroid.x,
+                'z': centroid.y
+            }
         containers.append(kc)
 
     restaurant['objects'] = containers
