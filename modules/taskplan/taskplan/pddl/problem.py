@@ -54,6 +54,10 @@ def get_problem(restaurant):
                     init_states.append(f"(is-spread {chld_name})")
                 if 'fillable' in child and child['fillable'] == 1:
                     init_states.append(f"(is-fillable {chld_name})")
+                if 'folded' in child and child['folded'] == 1:
+                    init_states.append(f"(is-folded {chld_name})")
+                if 'foldable' in child and child['foldable'] == 1:
+                    init_states.append(f"(is-foldable {chld_name})")
 
     for c1 in restaurant.known_cost:
         for c2 in restaurant.known_cost[c1]:
