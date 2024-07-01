@@ -79,3 +79,15 @@ def serve_sandwich(location, spread=None):
         )
         '''
     return str
+
+
+def set_napkin(location, napkin=None):
+    if napkin:
+        str = f'(and (is-folded {napkin}) (is-at {napkin} {location}))'
+    else:
+        str = f'''
+        (exists (?npkn - napkin)
+            (and (is-folded ?npkn) (is-at ?npkn {location}))
+        )
+        '''
+    return str
