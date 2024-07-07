@@ -226,7 +226,7 @@ def get_poses_from_plan(plan, partial_map):
     '''
     robot_poses = []
     split_at = None
-    count = 0
+    count = -1
     for action in plan:
         if action.name == 'move':
             count += 1
@@ -234,7 +234,7 @@ def get_poses_from_plan(plan, partial_map):
             container_pose = get_container_pose(container_name, partial_map)
             robot_poses.append(container_pose)
         elif action.name == 'find':
-            split_at = count - 1
+            split_at = count
     if split_at is None:
         split_at = len(robot_poses) - 1
     if split_at < 0:
