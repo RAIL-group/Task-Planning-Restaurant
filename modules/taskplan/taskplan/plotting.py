@@ -45,13 +45,13 @@ def plot_result(partial_map, whole_graph,
     what happened during the trial can be easily understood.
     '''
     plt.clf()
+    plt.figure(figsize=(10, 5))
     if args:
         what = partial_map.org_node_names[partial_map.target_obj]
         where = [partial_map.org_node_names[goal] for goal in partial_map.target_container]
         plt.suptitle(f"Find {what} from {where} in seed: [{args.current_seed}]", fontsize=9)
     dist, trajectory = taskplan.core.compute_path_cost(
         partial_map.grid, path)
-    plt.figure(figsize=(10, 5))
 
     # plot the plan
     plt.subplot(131)
