@@ -25,7 +25,7 @@ def evaluate_main(args):
     whole_graph = taskplan.utils.graph_formatting(graph)
 
     # Initialize the PartialMap with whole graph
-    partial_map = taskplan.core.PartialMap(whole_graph, grid)
+    partial_map = taskplan.core.PartialMap(whole_graph, grid, distinct=True)
 
     # initialize pddl related contents
     pddl = {}
@@ -49,14 +49,14 @@ def evaluate_main(args):
         get_poses_from_plan(plan, partial_map)
 
     # use the latest robot pose of known space plan before finding object
-    if find_start == 0:
+    if find_start == -1:
         init_robot_pose = start
     else:
         init_robot_pose = known_space_poses[find_start]
 
-    # # Initialize what object to find
-    # partial_map.target_obj = taskplan.utils. \
-    #     get_object_to_find_from_plan(plan, partial_map)
+    # Initialize what object to find
+    partial_map.target_obj = taskplan.utils. \
+        get_object_to_find_from_plan(plan, partial_map)
 
     # Intialize logfile
     logfile = os.path.join(args.save_dir, args.logfile_name)
@@ -69,34 +69,44 @@ def evaluate_main(args):
     #     planner = LearnedPlanner(args, partial_map, verbose=True)
     #     cost_str = 'learned_lsp'
 
-    planning_loop = taskplan.planners.planning_loop.PlanningLoop(
-        partial_map=partial_map, robot=init_robot_pose, args=args,
-        verbose=True)
-    # # update the subgoals of the planning loop
-    # planning_loop.subgoals = init_subgoals.copy()
+    if partial_map.target_obj is not None:
+        planning_loop = taskplan.planners.planning_loop.PlanningLoop(
+            partial_map=partial_map, robot=init_robot_pose, args=args,
+            verbose=True)
+        # # update the subgoals of the planning loop
+        # planning_loop.subgoals = init_subgoals.copy()
+        # print(planning_loop.subgoals)
+        # for k in whole_graph['nodes']:
+        #     print(k, whole_graph['nodes'][k]['id'])
 
-    for counter, step_data in enumerate(planning_loop):
-        # Update the planner objects
-        s_time = time.time()
-        planner.update(
-            step_data['graph'],
-            step_data['subgoals'],
-            step_data['robot_pose'])
-        print(f"Time taken to update: {time.time() - s_time}")
+        for counter, step_data in enumerate(planning_loop):
+            # Update the planner objects
+            s_time = time.time()
+            planner.update(
+                step_data['graph'],
+                step_data['subgoals'],
+                step_data['robot_pose'])
+            print(f"Time taken to update: {time.time() - s_time}")
 
-        # Compute the next subgoal and set to the planning loop
-        s_time = time.time()
-        chosen_subgoal = planner.compute_selected_subgoal()
-        print(f"Time taken to choose subgoal: {time.time() - s_time}")
-        planning_loop.set_chosen_subgoal(chosen_subgoal)
+            # Compute the next subgoal and set to the planning loop
+            s_time = time.time()
+            chosen_subgoal = planner.compute_selected_subgoal()
+            print(f"Time taken to choose subgoal: {time.time() - s_time}")
+            planning_loop.set_chosen_subgoal(chosen_subgoal)
 
-    # Generate the complete path combining move and find actions
-    if start == init_robot_pose:
-        path = planning_loop.robot + known_space_poses
+        # Generate the complete path combining move and find actions
+        if start == init_robot_pose:
+            path = planning_loop.robot + known_space_poses
+        else:
+            path = [start] + known_space_poses[:find_start] + \
+                planning_loop.robot
+            if len(known_space_poses) - len(known_space_poses[:find_start]) > 1:
+                path += known_space_poses[find_start+1:]
+        args.robot_path = planning_loop.robot
+        plot_args = args
     else:
-        path = [start] + known_space_poses[:find_start] + \
-            planning_loop.robot + known_space_poses[find_start+1:]
-    args.robot_path = planning_loop.robot
+        path = [start] + known_space_poses
+        plot_args = None
 
     dist, trajectory = taskplan.core.compute_path_cost(partial_map.grid, path)
 
@@ -109,7 +119,7 @@ def evaluate_main(args):
 
     # Plot the results
     taskplan.plotting.plot_result(partial_map, whole_graph,
-                                  plan, path, cost_str, args)
+                                  plan, path, cost_str, plot_args)
     plt.savefig(f'{args.save_dir}/{args.image_filename}', dpi=800)
 
 
