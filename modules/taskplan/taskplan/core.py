@@ -60,7 +60,7 @@ class PartialMap:
     change is graph based on action, etc.
     container_nodes carries the information about container poses
     '''
-    def __init__(self, graph, grid=None):
+    def __init__(self, graph, grid=None, distinct=False):
         self.org_node_feats = graph['graph_nodes']
         self.org_edge_index = graph['graph_edge_index']
         self.org_node_names = graph['node_names']
@@ -69,6 +69,7 @@ class PartialMap:
         self.node_coords = graph['node_coords']
         self.idx_map = graph['idx_map']
         self.distances = graph['distances']
+        self.distinct = distinct  # when true looks for specific object instance
 
         self.target_obj = random.sample(self.obj_node_idx, 1)[0]
         self.container_poses = self._get_container_poses()
@@ -95,13 +96,16 @@ class PartialMap:
 
     def initialize_graph_and_subgoals(self, seed=0):
         random.seed(seed)
-        # Find the container index containing the target object
-        all_target = []
-        for obj_idx in self.obj_node_idx:
-            if self.org_node_names[obj_idx] == self.org_node_names[self.target_obj]:
-                all_target.append(obj_idx)
-        target_obj_container_idx = {self.org_edge_index[0][self.org_edge_index[1].index(obj_idx)]
-                                    for obj_idx in all_target}
+        if self.distinct:
+            target_obj_container_idx = [self.org_edge_index[0][self.org_edge_index[1].index(self.target_obj)]]
+        else:
+            # Find the container index containing the target object
+            all_target = []
+            for obj_idx in self.obj_node_idx:
+                if self.org_node_names[obj_idx] == self.org_node_names[self.target_obj]:
+                    all_target.append(obj_idx)
+            target_obj_container_idx = {self.org_edge_index[0][self.org_edge_index[1].index(obj_idx)]
+                                        for obj_idx in all_target}
         self.target_container = target_obj_container_idx
 
         # select 50% or above nodes as subgoals from the original
