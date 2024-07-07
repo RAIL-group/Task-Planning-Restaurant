@@ -15,7 +15,25 @@
         "description": "table for serving",
         "id": "servingtable|3",
         "assetId": "servingtable3",
-        "children": []
+        "children": [
+            {
+                "description": "mug",
+                "assetId": "mug2",
+                "id": "mug|2",
+                "washable": 1,
+                "pickable": 1,
+                "fillable": 1,
+                "dirty": 1
+            },
+            {
+                "description": "knife",
+                "assetId": "knife2",
+                "id": "knife|2",
+                "washable": 1,
+                "pickable": 1,
+                "dirty": 1
+            }
+        ]
     },
     "breadshelf": {
         "description": "shelf for bread",
@@ -58,15 +76,6 @@
                 "folded": 1,
                 "foldable": 1,
                 "missing": 1
-            },
-            {
-                "description": "napkin",
-                "assetId": "napkin2",
-                "id": "napkin|2",
-                "pickable": 1,
-                "washable": 1,
-                "folded": 0,
-                "foldable": 1
             }
         ]
     },
@@ -81,23 +90,8 @@
                 "id": "mug|1",
                 "washable": 1,
                 "pickable": 1,
-                "fillable": 1
-            },
-            {
-                "description": "mug",
-                "assetId": "mug2",
-                "id": "mug|2",
-                "washable": 1,
-                "pickable": 1,
-                "fillable": 1
-            },
-            {
-                "description": "mug",
-                "assetId": "mug3",
-                "id": "mug|3",
-                "washable": 1,
-                "pickable": 1,
-                "fillable": 1
+                "fillable": 1,
+                "missing": 1
             }
         ]
     },
@@ -111,7 +105,8 @@
                 "assetId": "knife1",
                 "id": "knife|1",
                 "washable": 1,
-                "pickable": 1
+                "pickable": 1,
+                "missing": 1
             }
         ]
     },
@@ -140,6 +135,14 @@
                 "id": "peanutbutterspread|0",
                 "pickable": 1,
                 "spread": 1
+            },
+            {
+                "description": "napkin",
+                "assetId": "napkin2",
+                "id": "napkin|2",
+                "pickable": 1,
+                "washable": 1,
+                "foldable": 1
             }
         ]
     },
