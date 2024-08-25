@@ -26,7 +26,7 @@ class AnticipateGCN(nn.Module):
         # self.fc2 = nn.Linear(512, 256)
         # self.fc3 = nn.Linear(256, 128)
         # self.fc4 = nn.Linear(128, 64)
-        self.conv1 = TransformerConv(779, 256, edge_dim=1)
+        self.conv1 = TransformerConv(785, 256, edge_dim=1)
         self.conv2 = TransformerConv(256, 128, edge_dim=1)
         self.conv3 = TransformerConv(128, 32, edge_dim=1)
         self.conv4 = TransformerConv(32, 8, edge_dim=1)

@@ -9,174 +9,49 @@
         "description": "table for serving",
         "id": "servingtable|2",
         "assetId": "servingtable2",
-        "children": [
-            {
-                "description": "mug",
-                "assetId": "mug3",
-                "id": "mug|3",
-                "washable": 1,
-                "pickable": 1,
-                "fillable": 1
-            },
-            {
-                "description": "bowl",
-                "assetId": "bowl2",
-                "id": "bowl|2",
-                "washable": 1,
-                "pickable": 1,
-                "dirty": 1
-            }
-        ]
+        "children": []
     },
     "servingtable3": {
         "description": "table for serving",
         "id": "servingtable|3",
         "assetId": "servingtable3",
-        "children": [
-            {
-                "description": "cup",
-                "assetId": "cup2",
-                "id": "cup|2",
-                "pickable": 1,
-                "washable": 1,
-                "fillable": 1,
-                "dirty": 1
-            }
-        ]
+        "children": []
     },
     "breadshelf": {
         "description": "shelf for bread",
         "id": "breadshelf|0",
-        "assetId": "shelf0",
-        "children": [
-            {
-                "description": "bread",
-                "assetId": "bread",
-                "id": "bread|0",
-                "pickable": 1,
-                "spreadable": 1
-            }
-        ]
+        "assetId": "breadshelf",
+        "children": []
+    },
+    "dishshelf": {
+        "description": "shelf for dishes",
+        "assetId": "dishshelf",
+        "id": "dishshelf|6",
+        "children": []
     },
     "coffeeshelf": {
         "description": "shelf for coffee",
         "id": "coffeeshelf|1",
-        "assetId": "shelf1",
-        "children": [
-            {
-                "description": "jar of coffeegrinds",
-                "assetId": "coffeegrinds1",
-                "id": "coffeegrinds|0",
-                "pickable": 1
-            },
-            {
-                "description": "jar of coffeegrinds",
-                "assetId": "coffeegrinds2",
-                "id": "coffeegrinds|1",
-                "pickable": 1
-            }
-        ]
+        "assetId": "coffeeshelf",
+        "children": []
     },
     "cupshelf": {
         "description": "shelf for cup",
         "id": "cupshelf|2",
-        "assetId": "shelf2",
-        "children": [
-            {
-                "description": "cup",
-                "assetId": "cup1",
-                "id": "cup|1",
-                "washable": 1,
-                "pickable": 1,
-                "fillable": 1
-            }
-        ]
-    },
-    "mugshelf": {
-        "description": "shelf for mug",
-        "assetId": "shelf3",
-        "id": "mugshelf|3",
-        "children": [
-            {
-                "description": "mug",
-                "assetId": "mug1",
-                "id": "mug|1",
-                "washable": 1,
-                "pickable": 1,
-                "fillable": 1
-            },
-            {
-                "description": "mug",
-                "assetId": "mug2",
-                "id": "mug|2",
-                "washable": 1,
-                "pickable": 1,
-                "fillable": 1
-            }
-        ]
+        "assetId": "cupshelf",
+        "children": []
     },
     "cutleryshelf": {
         "description": "shelf for cutleries",
-        "assetId": "shelf4",
+        "assetId": "cutleryshelf",
         "id": "cutleryshelf|4",
-        "children": [
-            {
-                "description": "knife",
-                "assetId": "knife1",
-                "id": "knife|1",
-                "washable": 1,
-                "pickable": 1
-            }
-        ]
+        "children": []
     },
     "spreadshelf": {
         "description": "shelf for bread spreads",
-        "assetId": "shelf5",
+        "assetId": "spreadshelf",
         "id": "spreadshelf|5",
-        "children": [
-            {
-                "description": "spread of orange",
-                "assetId": "orangespread",
-                "id": "orangespread|0",
-                "pickable": 1,
-                "spread": 1
-            },
-            {
-                "description": "spread of strawberry",
-                "assetId": "strawberryspread",
-                "id": "strawberryspread|0",
-                "pickable": 1,
-                "spread": 1
-            },
-            {
-                "description": "bottle of peanut butter",
-                "assetId": "peanutbutterspread",
-                "id": "peanutbutterspread|0",
-                "pickable": 1,
-                "spread": 1
-            }
-        ]
-    },
-    "dishshelf": {
-        "description": "shelf for dishes",
-        "assetId": "shelf6",
-        "id": "dishshelf|6",
-        "children": [
-            {
-                "description": "plate",
-                "assetId": "plate1",
-                "id": "plate|1",
-                "washable": 1,
-                "pickable": 1
-            },
-            {
-                "description": "knife",
-                "assetId": "knife2",
-                "id": "knife|2",
-                "washable": 1,
-                "pickable": 1
-            }
-        ]
+        "children": []
     },
     "coffeemachine": {
         "description": "machine to make coffee",
@@ -189,16 +64,7 @@
         "description": "place to make food",
         "id": "countertop|0",
         "assetId": "countertop",
-        "children": [
-            {
-                "description": "bowl",
-                "assetId": "bowl1",
-                "id": "bowl|1",
-                "washable": 1,
-                "pickable": 1,
-                "dirty": 1
-            }
-        ]
+        "children": []
     },
     "fountain": {
         "description": "fountain for water",
@@ -217,15 +83,6 @@
         "description": "dishwasher",
         "id": "dishwasher|0",
         "assetId": "dishwasher",
-        "children": [
-            {
-                "description": "plate",
-                "assetId": "plate2",
-                "id": "plate|2",
-                "washable": 1,
-                "pickable": 1,
-                "dirty": 1
-            }
-        ]
+        "children": []
     }
 }

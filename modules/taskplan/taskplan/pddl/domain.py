@@ -8,7 +8,7 @@ def get_domain():
     (:types
         location item - object
         init_r servingtable shelf fountain coffeemachine dishwasher countertop - location
-        cup mug coffeegrinds water bread knife plate bowl spread - item
+        cup mug jar coffeegrinds water bread knife plate bowl spread apple - item
     )
 
     (:predicates
@@ -27,6 +27,11 @@ def get_domain():
         (is-spreadable ?obj - item)
         (is-washable ?obj - item)
         (is-dirty ?obj - item)
+        (is-jar ?obj - jar)
+        (is-fountain ?loc - fountain)
+        (is-slicable ?obj - item)
+        (is-container ?obj - item)
+        (is-in ?obj1 - apple ?obj2 - item)
     )
 
     (:functions
@@ -50,7 +55,27 @@ def get_domain():
         :effect (and
             (spread-applied bread ?s)
             (is-dirty ?k)
-            (increase (total-cost) 20)
+            (increase (total-cost) 100)
+        )
+    )
+
+    (:action make-fruit-bowl
+        :parameters (?a - apple ?b - bowl ?k - knife)
+        :precondition (and
+            (rob-at countertop)
+            (is-at ?a countertop)
+            (is-at ?b countertop)
+            (is-holding ?k)
+            (not (is-dirty ?k))
+            (not (is-dirty ?b))
+            (is-slicable ?a)
+            (is-container ?b)
+        )
+        :effect (and
+            (is-in ?a ?b)
+            (is-dirty ?k)
+            (is-dirty ?b)
+            (increase (total-cost) 100)
         )
     )
 
@@ -68,7 +93,7 @@ def get_domain():
             (not (is-at ?obj ?loc))
             (is-holding ?obj)
             (not (hand-is-free))
-            (increase (total-cost) 10)
+            (increase (total-cost) 100)
         )
     )
 
@@ -84,7 +109,7 @@ def get_domain():
             (is-at ?obj ?loc)
             (not (is-holding ?obj))
             (hand-is-free)
-            (increase (total-cost) 10)
+            (increase (total-cost) 100)
         )
     )
 
@@ -101,21 +126,6 @@ def get_domain():
         )
     )
 
-    (:action find
-        :parameters (?obj - missing)
-        :precondition (and
-            (not (is-located ?obj))
-            (is-pickable ?obj)
-            (hand-is-free)
-        )
-        :effect (and
-            (is-located ?obj)
-            (not (hand-is-free))
-            (is-holding ?obj)
-            (increase (total-cost) (find-cost ?obj))
-        )
-    )
-
     (:action fill
         :parameters (?liquid - item ?loc - location ?cnt - item)
         :precondition (and
@@ -123,6 +133,7 @@ def get_domain():
             (is-at ?liquid ?loc)
             (is-holding ?cnt)
             (not (is-dirty ?cnt))
+            (is-fountain ?loc)
             (is-liquid ?liquid)
             (is-fillable ?cnt)
             (forall (?i - item)
@@ -131,7 +142,7 @@ def get_domain():
         )
         :effect (and
             (filled-with ?liquid ?cnt)
-            (increase (total-cost) 10)
+            (increase (total-cost) 1000)
         )
     )
 
@@ -147,7 +158,40 @@ def get_domain():
         :effect (and
             (is-at ?liquid ?loc)
             (not (filled-with ?liquid ?cnt))
-            (increase (total-cost) 10)
+            (increase (total-cost) 200)
+        )
+    )
+
+    (:action refill_water
+        :parameters (?liquid - item ?loc - location ?cnt - item ?jr - jar)
+        :precondition (and
+            (rob-at ?loc)
+            (is-at ?jr ?loc)
+            (is-holding ?cnt)
+            (is-jar ?jr)
+            (is-fillable ?cnt)
+            (not (is-dirty ?cnt))
+            (filled-with water ?jr)
+            (forall (?i - item)
+                (not (filled-with ?i ?cnt))
+            )
+        )
+        :effect (and
+            (filled-with ?liquid ?cnt)
+            (increase (total-cost) 50)
+        )
+    )
+
+    (:action drain
+        :parameters (?cnt - item)
+        :precondition (and
+            (filled-with water ?cnt)
+            (is-holding ?cnt)
+            (rob-at fountain)
+        )
+        :effect (and
+            (not (filled-with water ?cnt))
+            (increase (total-cost) 50)
         )
     )
 
@@ -156,7 +200,8 @@ def get_domain():
         :precondition (and
             (rob-at coffeemachine)
             (is-at water coffeemachine)
-            (exists (?cg - coffeegrinds) (is-at ?cg coffeemachine))
+            (is-at coffeegrinds coffeemachine)
+            (not (is-jar ?c))
             (is-fillable ?c)
             (not (is-dirty ?c))
             (is-at ?c coffeemachine)
@@ -167,25 +212,21 @@ def get_domain():
             (filled-with coffee ?c)
             (is-dirty ?c)
             (not (is-at water coffeemachine))
-            (increase (total-cost) 20)
+            (increase (total-cost) 50)
         )
     )
 
-    (:action turn-dishwasher-on
-        :parameters ()
+    (:action wash
+        :parameters (?i - item)
         :precondition (and
             (rob-at dishwasher)
-            ; (exists (?i - item) (is-at ?i dishwasher))
+            (is-at ?i dishwasher)
+            (is-dirty ?i)
         )
 
         :effect (and
-            (forall
-                (?i - item)
-                (when (and (is-at ?i dishwasher) (is-dirty ?i))
-                    (not (is-dirty ?i))
-                )
-            )
-            (increase (total-cost) 100)
+            (not (is-dirty ?i))
+            (increase (total-cost) 200)
         )
     )
 

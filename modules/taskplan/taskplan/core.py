@@ -94,7 +94,7 @@ class PartialMap:
         }
 
     def initialize_graph_and_subgoals(self, seed=0):
-        random.seed(seed)
+        # random.seed(seed)
         # Find the container index containing the target object
         all_target = []
         for obj_idx in self.obj_node_idx:

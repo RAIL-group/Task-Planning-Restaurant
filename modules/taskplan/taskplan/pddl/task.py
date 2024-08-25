@@ -11,6 +11,11 @@ def pour_water(container=None):
     return str
 
 
+def empty_container(container):
+    str = f'(not (filled-with water {container}))'
+    return str
+
+
 def serve_water(location, container=None):
     if container:
         str = f'(and (filled-with water {container}) (is-at {container} {location}))'
@@ -121,4 +126,16 @@ def place_something(item, container):
 def clean_and_place(item, container):
     return f'''
             (and (is-at {item} {container}) (not (is-dirty {item})))
+            '''
+
+
+def move_robot(container):
+    return f'''
+            (rob-at {container})
+            '''
+
+
+def serve_fruit(bowl, table):
+    return f'''
+            (and (is-in apple {bowl}) (is-at {bowl} {table}))
             '''

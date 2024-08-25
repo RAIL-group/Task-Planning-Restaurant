@@ -7,9 +7,11 @@ import taskplan
 import copy
 import matplotlib.pyplot as plt
 import argparse
+import json
+import ast
 
-TASKS_PER_SEQUENCE = 20
-MAX_EVAL = 1000
+TASKS_PER_SEQUENCE = 40
+MAX_EVAL = 100
 TASKS_IN_DISTR = 100
 
 
@@ -28,6 +30,30 @@ def write_props_from_Plan(proc_data, planner, selected_tasks, init_state,
                 f" | num: T{idx+1}"
                 f" | cost: {cost:0.4f}\n"
             )
+
+
+def load_prepared_state(args):
+    file_name = ''
+    root = args.save_dir
+    for path, _, files in os.walk(root):
+        for name in files:
+            if 'learned_' + str(args.current_seed) in name:
+                file_name = os.path.join(path, name)
+                datum = json.load(open(file_name))
+                return datum
+    # print(file_name)
+    # Open and read the content of the file
+    # print(file_name)
+    # with open(file_name, 'r') as file:
+    #     file_content = file.read()
+
+    # # Convert the string content to a Python list
+    # data_list = ast.literal_eval(file_content)
+
+    # Now data_list is a Python list containing your data
+    # print(data_list)
+    # print(type(data_list))
+    # return data_list
 
 
 def plot_state(args, proc_data, name):
@@ -72,39 +98,16 @@ def plot_state(args, proc_data, name):
 
 
 def get_tasks():
-    return [
-        taskplan.pddl.task.serve_water('servingtable1'),
-        taskplan.pddl.task.serve_water('servingtable2'),
-        taskplan.pddl.task.serve_water('servingtable3'),
-        taskplan.pddl.task.serve_coffee('servingtable1'),
-        taskplan.pddl.task.serve_coffee('servingtable2'),
-        taskplan.pddl.task.serve_coffee('servingtable3'),
-        taskplan.pddl.task.fill_coffeemachine_with_water(),
-        taskplan.pddl.task.serve_sandwich('servingtable1'),
-        taskplan.pddl.task.serve_sandwich('servingtable2'),
-        taskplan.pddl.task.serve_sandwich('servingtable3'),
-        taskplan.pddl.task.clear_surface('servingtable1'),
-        taskplan.pddl.task.clear_surface('servingtable2'),
-        taskplan.pddl.task.clear_surface('servingtable3'),
-        taskplan.pddl.task.clear_surface('coffeemachine'),
-        taskplan.pddl.task.clear_surface('countertop'),
-        # taskplan.pddl.task.clean_everything(),
-        taskplan.pddl.task.clean_something('bowl1'),
-        taskplan.pddl.task.clean_something('bowl2'),
-        taskplan.pddl.task.clean_something('cup2'),
-        taskplan.pddl.task.clean_something('mug2'),
-        taskplan.pddl.task.clean_something('knife2'),
-        taskplan.pddl.task.clean_something('plate2'),
-        taskplan.pddl.task.place_something('mug3', 'shelf3'),
-        taskplan.pddl.task.place_something('cup2', 'shelf2'),
-        taskplan.pddl.task.place_something('plate2', 'shelf6'),
-        taskplan.pddl.task.place_something('knife2', 'shelf4'),
-        taskplan.pddl.task.clean_and_place('mug3', 'shelf3'),
-        taskplan.pddl.task.clean_and_place('cup2', 'shelf2'),
-        taskplan.pddl.task.clean_and_place('plate2', 'shelf6'),
-        taskplan.pddl.task.clean_and_place('knife2', 'shelf4'),
-        taskplan.pddl.task.place_something('knife2', 'countertop'),
-    ]
+    t1 = taskplan.pddl.task_distribution.service_tasks()
+    t1.extend(taskplan.pddl.task_distribution.cleaning_task())
+    t1.extend(taskplan.pddl.task_distribution.organizing_task())
+    t1.extend(taskplan.pddl.task_distribution.other_relevent_tasks())
+    # tasks = list()
+    # for task in t1:
+    #     key = list(task.keys())[0]
+    #     val = task[key]
+    #     tasks.append(val)
+    return t1
 
 
 def evaluate_main(args):
@@ -113,17 +116,8 @@ def evaluate_main(args):
     task_distribution = get_tasks()
     # plot_state(args, proc_data, 'Initial Map')
     # print(proc_data.containers)
-    myopic_planner = taskplan.planners.myopic_planner.MyopicPlanner()
-    ant_planner = taskplan.planners.anticipatory_planner.AntcipatoryPlanner(
-        args)
+    myopic_planner = taskplan.planners.myopic_planner.MyopicPlanner(args=args)
     # Prepared State From Task Distribution using A.P
-    prepared_state = ant_planner. \
-        get_prepared_state(proc_data, task_distribution,
-                           n_iterations=500)
-    proc_data.roll_back_to_init()
-    # proc_data.update_container_props(prepared_state)
-    # plot_state(args, proc_data, 'Anneal_Shuffle_Prepared_Map')
-    raise NotImplementedError
 
     logfile_cost = os.path.join(args.save_dir, 'prep_cost_' + args.logfile_name)
     logfile_ex_time = os.path.join(args.save_dir, 'prep_ext_' + args.logfile_name)
@@ -132,53 +126,44 @@ def evaluate_main(args):
         'np_myopic': {
             'cost': list(),
             'ext': list(),
-            'pt': list()
         },
         'ideal_prep': {
             'cost': list(),
             'ext': list(),
-            'pt': list()
         },
     }
+    prepared_state = load_prepared_state(args)
 
-    selected_sequence = task_distribution
-
-    for i in range(MAX_EVAL):
-        random.shuffle(selected_sequence)
-        start_time = time.time()
+    for i in range(MAX_EVAL+1, 200, 1):
+        proc_data.roll_back_to_init()
+        selected_sequence = random.sample(task_distribution,
+                                          TASKS_PER_SEQUENCE)
         seq_cost, seq_time = (
             myopic_planner.get_seq_cost(args, proc_data,
                                         selected_sequence,
-                                        non_prepared_state,
                                         seq_num=i,
-                                        prep=False, rand_state=rnd_state))
+                                        prep=False))
         if seq_cost is None:
             break
-
-        pt = time.time()-start_time
 
         planners['np_myopic']['cost'].append(seq_cost)
         planners['np_myopic']['ext'].append(seq_time)
-        planners['np_myopic']['pt'].append(pt)
 
         # # N.L Prep Myopic
-        proc_data.update_container_props(prepared_state)
-        start_time = time.time()
+        proc_data.update_container_props(prepared_state[0],
+                                         prepared_state[1],
+                                         prepared_state[2])
         seq_cost, seq_time = (
             myopic_planner.get_seq_cost(args, proc_data,
                                         selected_sequence,
-                                        prepared_state,
                                         seq_num=i,
-                                        prep=True, rand_state=rnd_state))
+                                        prep=True))
 
         if seq_cost is None:
             break
 
-        pt = time.time()-start_time
-
         planners['ideal_prep']['cost'].append(seq_cost)
         planners['ideal_prep']['ext'].append(seq_time)
-        planners['ideal_prep']['pt'].append(pt)
 
         with open(logfile_cost, "a+") as f:
             f.write(f"eval: {i}"
@@ -188,10 +173,6 @@ def evaluate_main(args):
             f.write(f"eval: {i}"
                     f"| np_myopic: {planners['np_myopic']['ext'][i]}"
                     f"| ideal_prep: {planners['ideal_prep']['ext'][i]}\n")
-        # with open(logfile_plan_time, "a+") as f:
-        #     f.write(f"eval: {i}"
-        #             f"| np_myopic: {planners['np_myopic']['pt'][i]}"
-        #             f"| prep_myopic: {planners['prep_myopic']['pt'][i]}\n")
 
 
 def get_args():

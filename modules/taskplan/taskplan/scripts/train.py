@@ -16,7 +16,7 @@ from taskplan.models.gcn import AnticipateGCN
 def get_model_prep_fn_and_training_strs(args):
     print("Training AnticipateGCN Model... ...")
     model = AnticipateGCN(args)
-    lr_ep_st_dc = 'beta-v0'
+    lr_ep_st_dc = 'beta-v2'
     prep_fn = taskplan.utils.preprocess_training_data(args)
     train_writer_str = 'train_ap_' + lr_ep_st_dc
     test_writer_str = 'test_ap_' + lr_ep_st_dc
@@ -57,13 +57,15 @@ def train(args, train_path, test_path):
 
     # # Calculate the lengths for each split (30% and 70%)
     total_length = len(train_dataset)
-    print("Total number of graphs:", total_length)
+    # print("Total number of graphs:", total_length)
     test_length = int(0.3 * total_length)
     train_length = total_length - test_length
-    train_dataset, test_dataset = random_split(
+    _, test_dataset = random_split(
         train_dataset, [train_length, test_length])
     print("Number of training graphs:", len(train_dataset))
     print("Number of testing graphs:", len(test_dataset))
+
+    # raise NotImplementedError
 
     train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=8, shuffle=True)
@@ -204,7 +206,7 @@ def get_data_path_names(args):
     training_data_files = glob.glob(
         os.path.join(args.data_csv_dir, "data_training_*.csv"))
     testing_data_files = glob.glob(
-        os.path.join(args.data_csv_dir, "data_testing_*.csv"))
+        os.path.join(args.data_csv_dir, "data_training_*.csv"))
     return training_data_files, testing_data_files
 
 

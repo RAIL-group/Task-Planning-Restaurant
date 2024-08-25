@@ -5,7 +5,7 @@ import random
 import copy
 
 import gridmap
-from taskplan.environments.sampling import generate_restaurant
+from taskplan.environments.sampling import generate_restaurant, load_movables
 
 INFLATE_UB = 0.25
 INFLATE_LB = 0.2
@@ -17,10 +17,16 @@ def load_restaurant(seed):
     that you want to place in the corners
     Also keep 'agent' in kitchen container list
     """
-    kitchen_containers_list = ['agent', 'dishwasher', 'fountain', 'coffeemachine', 'countertop',
-                               'breadshelf', 'coffeeshelf', 'spreadshelf', 'cutleryshelf', 'dishshelf',
-                               'mugshelf', 'cupshelf']
-    serving_room_containers_list = ['servingtable1', 'servingtable2', 'servingtable3']
+    kitchen_containers_list = []
+    temp = ['fountain', 'coffeemachine',
+            'countertop', 'breadshelf', 'coffeeshelf',
+            'spreadshelf', 'cutleryshelf', 'dishshelf',
+            'cupshelf', 'dishwasher']
+    random.shuffle(kitchen_containers_list)
+    temp.append('agent')
+    kitchen_containers_list.extend(temp)
+    serving_room_containers_list = ['servingtable1', 'servingtable2',
+                                    'servingtable3']
     datum = generate_restaurant(seed, kitchen_containers_list,
                                 serving_room_containers_list)
     return datum
@@ -192,19 +198,17 @@ class RESTAURANT:
         self.init_containers = copy.deepcopy(self.containers)
         self.grid, self.grid_min_x, self.grid_min_z, self.grid_max_x, \
             self.grid_max_z, self.grid_res = self.set_occupancy_grid()
-
+        self.rob_at = 'initial_robot_pose'
         inflation_distance = INFLATE_UB
         relative_loc = {}
-        self.initial_object_poses = list()
+        self.initial_object_state = list()
         # print(self.restaurant)
         relative_loc['initial_robot_pose'] = (self.agent['position']['x'], self.agent['position']['z'])
         self.known_cost = {}
         for container in self.containers:
             children = container.get('children')
             for child in children:
-                self.initial_object_poses.append(
-                    {child['assetId']: container['position']}
-                )
+                self.initial_object_state.append(child)
             cont_ploy = Polygon([(point['x'], point['z'])
                                  for point in container['polygon']])
             mother_poly = Polygon([(point['x'], point['z'])
@@ -319,110 +323,217 @@ class RESTAURANT:
 
         return occupancy_grid, min_x, min_z, max_x, max_z, resolution
 
-    def randomize_objects(self):
-        container_poses = [val for dict in self.initial_object_poses
-                           for val in dict.values()]
-        object_list = [key for dict in self.initial_object_poses
-                       for key in dict.keys()]
-        for container in self.containers:
-            pos = container.get('position')
-            if pos not in container_poses:
-                container_poses.append(pos)
-        random.shuffle(container_poses)
-        return [{object_list[i]: container_poses[i]}
-                for i in range(len(object_list))]
+    # def randomize_objects(self):
+    #     container_poses = [val for dict in self.initial_object_poses
+    #                        for val in dict.values()]
+    #     object_list = [key for dict in self.initial_object_poses
+    #                    for key in dict.keys()]
+    #     for container in self.containers:
+    #         pos = container.get('position')
+    #         if pos not in container_poses:
+    #             container_poses.append(pos)
+    #     random.shuffle(container_poses)
+    #     return [{object_list[i]: container_poses[i]}
+    #             for i in range(len(object_list))]
 
-    def get_current_object_poses(self):
+    def get_current_object_state(self):
         current_state = list()
+        water_at_cofeemachine = False
         for container in self.containers:
-            children = container.get('children')
+            if container.get('assetId') == 'coffeemachine' and 'filled' in \
+                    container and container['filled'] == 1:
+                water_at_cofeemachine = True
+            children = copy.deepcopy(container.get('children'))
             if children is None:
                 continue
             for child in children:
-                current_state.append({
-                    child['assetId']: container['position']
-                })
-        return current_state
+                current_state.append(child)
+        return current_state, water_at_cofeemachine, self.rob_at
 
     def roll_back_to_init(self):
         self.containers = copy.deepcopy(self.init_containers)
+        self.rob_at = 'initial_robot_pose'
 
-    def update_container_props(self, object_props):
-        dirty_objs = object_props['dirty_objs']
-        all_clean = object_props['all_clean']
-        water_in_coffee_machine = object_props['water_at_cofeemachine']
-        object_poses = object_props['obj_poses']
-        all_child = list()
+    def get_objects_by_container_name(self, name):
+        if name == 'initial_robot_pose':
+            return []
         for container in self.containers:
-            children = container.get('children')
-            if children is None:
-                continue
-            all_child.extend(children)
-            container.update({'children': []})
-        for dict in object_poses:
-            for key, value in dict.items():
-                for child in all_child:
-                    if child.get('assetId') == key:
-                        child.update({'position': value})
+            if container.get('assetId') == name:
+                temp = copy.deepcopy(container.get('children'))
+                return temp
+
+    def update_container_props(self, object_state,
+                               water_at_cofeemachine=False,
+                               rob_at='initial_robot_pose'):
         for container in self.containers:
             children = []
             if container.get('assetId') == 'coffeemachine':
-                if water_in_coffee_machine:
+                if water_at_cofeemachine:
                     container['filled'] = 1
                 else:
                     container['filled'] = 0
-            for child in all_child:
+            for child in object_state:
                 if child.get('position') == container.get('position'):
-                    if container.get('assetId') == 'dishwasher' and all_clean:
-                        child['dirty'] = 0
-                    if child.get('assetId') in dirty_objs:
-                        child['dirty'] = 1
                     children.append(child)
             container.update({'children': children})
+        self.rob_at = rob_at
 
     def get_container_pos_list(self):
         return [(container['assetId'], container['position'])
                 for container in self.containers]
 
+    def get_container_pos(self, name):
+        for container in self.containers:
+            if container['assetId'] == name:
+                return container['position']
+        return None
+
+    def get_container_name_by_pos(self, pos):
+        for container in self.containers:
+            if container['position'] == pos:
+                return container['assetId']
+        return None
+
+    def get_object_props_by_name(self, name):
+        state = self.get_current_object_state()
+        for objct in state[0]:
+            if objct['assetId'] == name:
+                return copy.deepcopy(objct)
+        return None
+
+    def place_object(self, obj, loc):
+        state = self.get_current_object_state()
+        name = self.get_container_name_by_pos(loc)
+        if name is None:
+            name = 'initial_robot_pose'
+        new_objs = list()
+        for objct in state[0]:
+            if objct['assetId'] == obj['assetId']:
+                objct.update({'position': loc})
+            new_objs.append(objct)
+        return new_objs, state[1], name
+
+    def place_n__clean_object(self, obj, loc):
+        state = self.get_current_object_state()
+        name = self.get_container_name_by_pos(loc)
+        if name is None:
+            name = 'initial_robot_pose'
+        new_objs = list()
+        for objct in state[0]:
+            if objct['assetId'] == obj['assetId']:
+                objct.update({'position': loc})
+            new_objs.append(objct)
+        return new_objs, state[1], name
+
+    def fill_up_jar_n_place(self, obj, loc):
+        state = self.get_current_object_state()
+        name = self.get_container_name_by_pos(loc)
+        if name is None:
+            name = 'initial_robot_pose'
+        new_objs = list()
+        for objct in state[0]:
+            if objct['assetId'] == obj['assetId']:
+                objct.update({'position': loc})
+                objct.update({'filled': 1})
+            new_objs.append(objct)
+        return new_objs, state[1], name
+
+    def get_random_state(self, no_dirty=False):
+        movables = load_movables()
+        obj_state = list()
+        random.shuffle(movables)
+        containers = self.get_container_pos_list()
+        water_at_cofeemachine = False
+        if random.random() > 0.5:
+            water_at_cofeemachine = True
+        for cnt_nm, cnt_ps in containers:
+            if cnt_nm == 'fountain':
+                obj_state.append(
+                    {
+                        "description": "water",
+                        "assetId": "water",
+                        "id": "water|0",
+                        "isLiquid": 1,
+                        "position": cnt_ps
+                    })
+                break
+
+        for obj in movables:
+            cnt_name, cnt_pos = random.choice(containers)
+            if 'washable' in obj:
+                if no_dirty:
+                    obj['dirty'] = 0
+                elif random.random() > 0.5:
+                    obj['dirty'] = 1
+            obj['position'] = cnt_pos
+            obj_state.append(obj)
+        return obj_state, water_at_cofeemachine, self.rob_at
+
     def get_final_state_from_plan(self, plan):
-        objects = self.get_current_object_poses()
+        objects, water_at_cofeemachine, rob_at = self.get_current_object_state()
         locations_dict = dict(self.get_container_pos_list())
         conditions = []
-        props = {
-            'obj_poses': list(),
-            'dirty_objs': set(),
-            'all_clean': False,
-            'water_at_cofeemachine': False
-        }
+        dirty_objs = set()
+        cleaned_obsj = set()
+        filled_ww = set()
+        drain_ww = set()
         for p in plan:
             if "place" in p.name:
                 obj = p.args[0]
-                if 'coffeegrinds' in obj:
-                    continue
                 cnt = p.args[1]
+                # if 'bread' in obj and 'servingtable' in cnt:
+                #     continue
                 placed = (obj, cnt)
                 conditions.append(placed)
+                if 'servingtable' in cnt and ('cup' in obj or 'mug' in obj):
+                    if obj in filled_ww:
+                        filled_ww.remove(obj)
+            if 'fill' in p.name or 'refill_water' in p.name:
+                filled_ww.add(p.args[2])
+                if p.args[2] in drain_ww:
+                    drain_ww.remove(p.args[2])
+            if 'drain' in p.name:
+                if p.args[0] in filled_ww:
+                    filled_ww.remove(p.args[0])
+                drain_ww.add(p.args[0])
             if "make-coffee" in p.name:
-                props['dirty_objs'].add(p.args[0])
-                props['water_at_cofeemachine'] = False
+                dirty_objs.add(p.args[0])
+                if p.args[0] in cleaned_obsj:
+                    cleaned_obsj.remove(p.args[0])
+                water_at_cofeemachine = False
                 # if p.args[0] in objs_filled_with_water:
                 #     objs_filled_with_water.remove(p.args[0])
-            if "turn-dishwasher-on" in p.name:
-                props['all_clean'] = True
+            if "wash" in p.name:
+                cleaned_obsj.add(p.args[0])
+                if p.args[0] in dirty_objs:
+                    dirty_objs.remove(p.args[0])
             if "pour" in p.name:
-                props['water_at_cofeemachine'] = True
+                water_at_cofeemachine = True
+                if p.args[2] in filled_ww:
+                    filled_ww.remove(p.args[2])
+                drain_ww.add(p.args[2])
             if "apply-spread" in p.name:
-                props['dirty_objs'].add(p.args[1])
+                dirty_objs.add(p.args[1])
+            if "make-fruit-bowl" in p.name:
+                dirty_objs.add(p.args[1])
+                dirty_objs.add(p.args[2])
+            if "move" in p.name:
+                rob_at = p.args[1]
                 # if p.args[2] in objs_filled_with_water:
                 #     objs_filled_with_water.remove(p.args[2])
             # if "fill" in p.name:
             #     objs_filled_with_water.add(p.args[2])
-        for cond in conditions:
-            for obj_dict in objects:
-                # Directly check if the condition's object key is in the dictionary
-                if cond[0] in obj_dict and cond[1] in locations_dict:
-                    obj_dict[cond[0]] = locations_dict[cond[1]]
-                    break
-        props['obj_poses'] = objects
-        props['dirty_objs'] = list(props['dirty_objs'])
-        return props
+
+        for obj_dict in objects:
+            if obj_dict['assetId'] in dirty_objs:
+                obj_dict['dirty'] = 1
+            elif obj_dict['assetId'] in cleaned_obsj:
+                obj_dict['dirty'] = 0
+            if obj_dict['assetId'] in filled_ww:
+                obj_dict['filled'] = 1
+            if obj_dict['assetId'] in drain_ww:
+                obj_dict['filled'] = 0
+            for cond in conditions:  # Directly check if the condition's object key is in the dictionary
+                if cond[0] == obj_dict['assetId'] and cond[1] in locations_dict:
+                    obj_dict['position'] = locations_dict[cond[1]]
+        return objects, water_at_cofeemachine, rob_at

@@ -15,7 +15,7 @@ from torch_geometric.data import Data
 def get_robot_pose(data):
     return data.accessible_poses['initial_robot_pose']
 
-# 'attribs:': [isLiquid, pickable, spreadable, spread, fillable, dirty]
+# 'attribs:': [isLiquid, pickable, spreadable, spread, fillable, dirty, container, jar, slicable, filled]
 
 
 def get_graph(data):
@@ -31,25 +31,25 @@ def get_graph(data):
         'desc': 'Restaurant',
         'pos': (0, 0),
         'type': [1, 0, 0, 0, 0],
-        'attribs': [0, 0, 0, 0, 0, 0]
+        'attribs': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     }
     node_count += 1
 
     # Create robot node and add the edge to the restaurant
-    _x, _y = world_to_grid(
-            data.agent['position']['x'], data.agent['position']['z'],
-            data.grid_min_x, data.grid_min_z, data.grid_res)
+    _x, _y = data.accessible_poses[data.rob_at]
     nodes[node_count] = {
         'id': 'robot',
         'name': 'robot',
         'desc': 'Robot',
         'pos': (_x, _y),
         'type': [0, 1, 0, 0, 0],
-        'attribs': [0, 0, 0, 0, 0, 0]
+        'attribs': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     }
-    edges.append(tuple([0, node_count]))
+    # edges.append(tuple([0, node_count]))
     node_count += 1
-
+    rob_loc = 'kitchen'
+    if 'servingtable' in data.rob_at:
+        rob_loc = 'servingroom'
     # Iterate over rooms but skip position coordinate scaling since not
     # required in distance calculations
     for room in data.rooms:
@@ -62,9 +62,11 @@ def get_graph(data):
             'desc': data.rooms[room]['name'].lower(),
             'pos': (_x, _y),
             'type': [0, 0, 1, 0, 0],
-            'attribs': [0, 0, 0, 0, 0, 0]
+            'attribs': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         }
         edges.append(tuple([0, node_count]))
+        if room == rob_loc:
+            edges.append(tuple([1, node_count]))
         node_count += 1
 
     # add an edge between two rooms adjacent by a passable shared door
@@ -82,9 +84,12 @@ def get_graph(data):
         src = room_names.index(container['loc'])
         assetId_idx_map[assetId] = node_count
         if 'fillable' in container and container['fillable'] == 1:
-            attribs = [0, 0, 0, 0, 1, 0]
+            if 'filled' in container and container['filled'] == 1:
+                attribs = [0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+            else:
+                attribs = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
         else:
-            attribs = [0, 0, 0, 0, 0, 0]
+            attribs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         nodes[node_count] = {
             'id': id,
             'name': name,
@@ -111,7 +116,7 @@ def get_graph(data):
                 data.grid_min_x, data.grid_min_z, data.grid_res)
             src = container_ids.index(container['id'])
             assetId_idx_map[assetId] = node_count
-            attribs = [0, 0, 0, 0, 0, 0]
+            attribs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             if 'isLiquid' in connected_object and connected_object['isLiquid'] == 1:
                 attribs[0] = 1
             if 'pickable' in connected_object and connected_object['pickable'] == 1:
@@ -124,6 +129,14 @@ def get_graph(data):
                 attribs[4] = 1
             if 'dirty' in connected_object and connected_object['dirty'] == 1:
                 attribs[5] = 1
+            if 'container' in connected_object and connected_object['container'] == 1:
+                attribs[6] = 1
+            if 'jar' in connected_object and connected_object['jar'] == 1:
+                attribs[7] = 1
+            if 'slicable' in connected_object and connected_object['slicable'] == 1:
+                attribs[8] = 1
+            if 'filled' in connected_object and connected_object['filled'] == 1:
+                attribs[9] = 1
             nodes[node_count] = {
                     'id': id,
                     'name': name,
@@ -167,12 +180,12 @@ def graph_formatting(graph):
         node_feature = np.concatenate((
             get_sentence_embedding(graph['nodes'][node_key]['name']),
             graph['nodes'][node_key]['type'],
+            graph['nodes'][node_key]['pos'],
             graph['nodes'][node_key]['attribs'],
         ))
         assert count == node_key
         graph_nodes.append(node_feature)
-        node_color_list.append(get_object_color_from_type(
-            graph['nodes'][node_key]['type']))
+        node_color_list.append(get_object_color_from_type(graph['nodes'][node_key]))
 
     graph['node_coords'] = node_coords
     graph['node_names'] = node_names
@@ -251,16 +264,25 @@ def get_graph_image(edge_index, node_names, color_map):
     return img
 
 
-def get_object_color_from_type(encoding):
+def get_object_color_from_type(node):
+    encoding = node['type']
     if encoding[0] == 1:
-        return "red"
+        return "black"
     if encoding[1] == 1:
-        return "blue"
+        return "gray"
     if encoding[2] == 1:
-        return "green"
+        return "blue"
     if encoding[3] == 1:
-        return "orange"
-    return "violet"
+        return "green"
+    if encoding[4] == 1:
+        if node['attribs'][0] == 1:
+            return "orange"
+        if node['attribs'][5] == 1:
+            return "red"
+        if node['attribs'][9] == 1:
+            return "yellow"
+        return "violet"
+    return "pink"
 
 
 def get_container_pose(cnt_name, partial_map):

@@ -11,19 +11,24 @@ def get_problem(restaurant, task):
         '(= (total-cost) 0)',
         '(restrict-move-to initial_robot_pose)',
         '(hand-is-free)',
-        '(rob-at initial_robot_pose)',
+        # '(rob-at cupshelf)',
         # '(= (find-cost mug1) 0)',
         # '(= (find-cost mug2) 0)',
         # '(= (find-cost mug3) 0)',
         '(is-fillable coffeemachine)'
     ]
+    init_states.append(f"(rob-at {restaurant.rob_at})")
     for container in containers:
         cnt_name = container['assetId']
         if cnt_name == 'coffeemachine':
             init_states.append("(is-fillable coffeemachine)")
             if 'filled' in container and container['filled'] == 1:
                 init_states.append(f"(is-at water {cnt_name})")
+        if cnt_name == 'fountain':
+            init_states.append(f"(is-fountain {cnt_name})")
         gen_name = ''.join([i for i in cnt_name if not i.isdigit()])
+        if 'shelf' in gen_name:
+            gen_name = 'shelf'
         if gen_name not in objects:
             objects[gen_name] = [cnt_name]
         else:
@@ -59,6 +64,14 @@ def get_problem(restaurant, task):
                     init_states.append(f"(is-spread {chld_name})")
                 if 'fillable' in child and child['fillable'] == 1:
                     init_states.append(f"(is-fillable {chld_name})")
+                if 'filled' in child and child['filled'] == 1:
+                    init_states.append(f"(filled-with water {chld_name})")
+                if 'jar' in child and child['jar'] == 1:
+                    init_states.append(f"(is-jar {chld_name})")
+                if 'slicable' in child and child['slicable'] == 1:
+                    init_states.append(f"(is-slicable {chld_name})")
+                if 'container' in child and child['container'] == 1:
+                    init_states.append(f"(is-container {chld_name})")
     for c1 in restaurant.known_cost:
         for c2 in restaurant.known_cost[c1]:
             if c1 == c2:
@@ -80,7 +93,7 @@ def get_problem(restaurant, task):
     # task = taskplan.pddl.task.hold_something()
     # task = taskplan.pddl.task.clear_surface('shelf5')
     # task = taskplan.pddl.task.clean_everything()
-    goal = [f'(and (hand-is-free) (rob-at initial_robot_pose) {task})']
+    goal = [f'(and (hand-is-free) {task})']
     # goal = [task]
     PROBLEM_PDDL = generate_pddl_problem(
         domain_name='restaurant',
