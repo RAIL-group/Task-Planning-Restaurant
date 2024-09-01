@@ -201,7 +201,7 @@ def process_text_file(files):
         df = df.dropna(axis=1, how='all')
         # df.columns = ['eval', 'oracle', 'baseline', 'np_myopic',
         #               'prep_myopic', 'np_ap', 'prep_ap']
-        df.columns = ['eval', 'np_myopic', 'np_ap']
+        df.columns = ['eval', 'np_myopic', 'np_ap', 'prep_myopic', 'prep_ap']
 
         # Clean up the data by stripping whitespace and removing unnecessary characters
 
@@ -210,24 +210,24 @@ def process_text_file(files):
         # df['baseline'] = df['baseline'].str.strip().str.split(':').str[1].str.strip().astype(float)
         df['np_myopic'] = df['np_myopic'].str.strip().str.split(':').str[1].str.strip().astype(float)
         df['np_ap'] = df['np_ap'].str.strip().str.split(':').str[1].str.strip().astype(float)
-        # df['np_ap'] = df['np_ap'].str.strip().str.split(':').str[1].str.strip().astype(float)
-        # df['prep_ap'] = df['prep_ap'].str.strip().str.split(':').str[1].str.strip().astype(float)
+        df['prep_myopic'] = df['prep_myopic'].str.strip().str.split(':').str[1].str.strip().astype(float)
+        df['prep_ap'] = df['prep_ap'].str.strip().str.split(':').str[1].str.strip().astype(float)
 
         dfs.append(df)
 
     merged_df = pd.concat(dfs, ignore_index=True)
     # Calculate the average cost group by 'task num' and total cost group by 'task seq'
-    # nmyp_cost = merged_df['np_myopic'].mean()
-    # pmyp_cost = merged_df['prep_myopic'].mean()
-    # nap_cost = merged_df['np_ap'].mean()
-    # pap_cost = merged_df['prep_ap'].mean()
+    nmyp_cost = merged_df['np_myopic'].mean()/40
+    pmyp_cost = merged_df['prep_myopic'].mean()/40
+    nap_cost = merged_df['np_ap'].mean()/40
+    pap_cost = merged_df['prep_ap'].mean()/40
     # base_cost = merged_df['baseline'].mean()
 
-    # print(base_cost, nmyp_cost, nap_cost, pmyp_cost, pap_cost)
+    print(nmyp_cost, nap_cost, pmyp_cost, pap_cost)
     # merged_df.to_csv(args.save_dir + 'analyzed.csv', index=False)
     # plot_bar_analysis(merged_df)
     # plot_total_cost(merged_df['np_myopic'], merged_df['prep_myopic'], label_text='Myopic (with Preparation)', image_path='pm-vs-npm-comp')
-    plot_total_cost(merged_df['np_myopic'], merged_df['np_ap'], label_text='Anticipatory Planning (without Preparation)', image_path='nap-vs-npm-comp' + str(SUFFIX))
+    # plot_total_cost(merged_df['np_myopic'], merged_df['np_ap'], label_text='Anticipatory Planning (without Preparation)', image_path='nap-vs-npm-comp' + str(SUFFIX))
     # plot_total_cost(merged_df['np_myopic'], merged_df['prep_ap'], label_text='Anticipatory Planning (with Preparation)', image_path='pap-vs-npm-comp' + str(SUFFIX))
 
     return merged_df
@@ -293,8 +293,8 @@ def compare(args):
     # prep_base_tasks = process_task_files(task_files_base)
     # print(np_myopic_tasks)
     # print(np_ant_tasks)
-    # seq_df = process_text_file(seq_cost_files)
-    # print(seq_df)
+    seq_df = process_text_file(seq_cost_files)
+    print(seq_df)
 
     np_myopic_tasks['label'] = 'No-Prep Myopic'  # str(seq_df['np_myopic'].mean())
     np_ant_tasks['label'] = 'No-Prep Anticipatory'  # str(seq_df['np_ap'].mean())
