@@ -7,6 +7,21 @@ import pandas as pd
 import learning
 import os
 import random
+from skimage.morphology import erosion
+
+COLLISION_VAL = 1
+FREE_VAL = 0
+UNOBSERVED_VAL = -1
+assert (COLLISION_VAL > FREE_VAL)
+assert (FREE_VAL > UNOBSERVED_VAL)
+OBSTACLE_THRESHOLD = 0.5 * (FREE_VAL + COLLISION_VAL)
+
+
+FOOT_PRINT = np.array([
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+])
 
 
 def are_lists_equal(list1, list2):
@@ -158,29 +173,38 @@ def test_pddl():
     print(exp_cost)
 
 
+def make_plotting_grid(grid_map):
+    grid = np.ones([grid_map.shape[0], grid_map.shape[1], 3]) * 0.75
+    collision = grid_map >= OBSTACLE_THRESHOLD
+    # Take one pixel boundary of the region collision
+    thinned = erosion(collision, footprint=FOOT_PRINT)
+    boundary = np.logical_xor(collision, thinned)
+    free = np.logical_and(grid_map < OBSTACLE_THRESHOLD, grid_map >= FREE_VAL)
+    grid[:, :, 0][free] = 1
+    grid[:, :, 1][free] = 1
+    grid[:, :, 2][free] = 1
+    grid[:, :, 0][boundary] = 0
+    grid[:, :, 1][boundary] = 0
+    grid[:, :, 2][boundary] = 0
+
+    return grid
+
 def run_pddl():
     # preparing pddl as input to the solver
-    seed = 3
+    seed = 19
     random.seed(seed)
-    # save_file = '/data/figs/grid' + str(seed) + '.png'
+    plt.figure(figsize=(10, 10))
+    save_file = '/data/figs/grid' + str(seed) + '.png'
     pddl = {}
     restaurant = taskplan.environments.restaurant.RESTAURANT(seed=seed)
-    conts = restaurant.get_container_pos_list()
-    objs = restaurant.get_current_object_state()
-    print(restaurant.get_current_object_state())
-    print(objs[0][1])
-    print(conts[0][1])
-    ns = restaurant.place_object(objs[0][1], conts[0][1])
-    print(ns)
-    raise NotImplementedError
+    grid = np.transpose(restaurant.grid)
+    img = make_plotting_grid(grid)
+    plt.imshow(img, cmap='gray_r', alpha=0.5)
+    plt.axis('off')  # Hides the axis
+    plt.savefig(save_file, dpi=1200)
     pddl['domain'] = taskplan.pddl.domain.get_domain()
     pddl['planner'] = 'ff-astar'
-    # task1 = taskplan.pddl.task.pour_water('jar')
-    # task2 = taskplan.pddl.task.place_something('jar', 'servingtable2')
-    # task3 = taskplan.pddl.task.serve_water('servingtable2', 'mug2')
-    # task = f'(and {task2} {task1} {task3})'
     task = taskplan.pddl.task.serve_water('servingtable1', 'cup1')
-    # print(restaurant.get_objects_by_container_name('countertop'))
     pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
     plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
                                  max_planner_time=60)
@@ -189,6 +213,7 @@ def run_pddl():
         for p in plan:
             print(p)
         print(cost)
+    raise NotImplementedError
     final_state = restaurant.get_random_state()
     restaurant.update_container_props(final_state[0],
                                       final_state[1],
@@ -201,7 +226,6 @@ def run_pddl():
         for p in plan:
             print(p)
         print(cost)
-    raise NotImplementedError
     task = taskplan.pddl.task.serve_water('servingtable2', 'mug2')
     pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
     plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
@@ -216,38 +240,10 @@ def run_pddl():
                                           final_state[1],
                                           final_state[2])
     print(restaurant.get_objects_by_container_name('servingtable2'))
-    tot_cost += cost
-    # task = taskplan.pddl.task.serve_coffee('servingtable1')
-    # pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
-    # plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
-    #                              max_planner_time=300)
-    # # print(plan)
-    # if plan:
-    #     for p in plan:
-    #         print(p)
-    #     print(cost)
-    #     final_state = restaurant.get_final_state_from_plan(plan)
-    #     restaurant.update_container_props(final_state[0],
-    #                                       final_state[1],
-    #                                       final_state[2])
-    # # print(test_state(restaurant))
-    # tot_cost += cost
-    # test_states(seed)
-    print(tot_cost)
-    # task = taskplan.pddl.task.clean_something('cup2')
-    # pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
-    # plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
-    #                              max_planner_time=300)
-    # if plan:
-    #     for p in plan:
-    #         print(p)
-    #     print(cost)
-        # final_state, water_at_cm = restaurant.get_final_state_from_plan(plan)
-        # restaurant.update_container_props(final_state, water_at_cm)
 
 
 if __name__ == "__main__":
-    test_antplan_model_output()
-    # run_pddl()
+    # test_antplan_model_output()
+    run_pddl()
     # test_states(10)
     # test_pddl()

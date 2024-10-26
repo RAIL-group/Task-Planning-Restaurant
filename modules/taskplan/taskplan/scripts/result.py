@@ -3,6 +3,7 @@ import argparse
 import matplotlib.pyplot as plt
 import os
 import re
+import random
 
 SUFFIX = '807'
 
@@ -26,22 +27,33 @@ def plot_total_cost(df1, df2, label_text='Prep', image_path=''):
     plt.savefig(save_file, dpi=1000)
 
 
+# Find unique task numbers
+# task_nums = combined_df['num'].unique()
+# Calculate the difference in avg_exp for each task between "No-Prep Myopic" and "Prep Myopic"
+# differences = list()
+# for task in task_nums:
+#     no_prep_avg_exp = combined_df[(combined_df['num'] == task) & (combined_df['label'] == "No-Prep Myopic")]['avg_cost'].values[0]
+#     prep_avg_exp = combined_df[(combined_df['num'] == task) & (combined_df['label'] == "No-Prep Anticipatory")]['avg_cost'].values[0]
+#     differences.append(((prep_avg_exp - no_prep_avg_exp
+#                          ) / no_prep_avg_exp)*100)
+
+
 def plot_tasks_comparison_cost(combined_df):
-    # Find unique task numbers
-    # task_nums = combined_df['num'].unique()
-    # Calculate the difference in avg_exp for each task between "No-Prep Myopic" and "Prep Myopic"
-    # differences = list()
-    # for task in task_nums:
-    #     no_prep_avg_exp = combined_df[(combined_df['num'] == task) & (combined_df['label'] == "No-Prep Myopic")]['avg_cost'].values[0]
-    #     prep_avg_exp = combined_df[(combined_df['num'] == task) & (combined_df['label'] == "No-Prep Anticipatory")]['avg_cost'].values[0]
-    #     differences.append(((prep_avg_exp - no_prep_avg_exp
-    #                          ) / no_prep_avg_exp)*100)
-
+    color_map = {
+        'No-Prep Myopic': 'cyan',
+        'Prep Myopic': 'orangered',
+        'No-Prep Anticipatory': 'gold',
+        'Prep Anticipatory': 'fuchsia'
+    }
+    marker_map = {
+        'No-Prep Myopic': 'o',
+        'Prep Myopic': 'd',
+        'No-Prep Anticipatory': 's',
+        'Prep Anticipatory': '*'
+    }
     fig, ax = plt.subplots(figsize=(10, 6))
-
     # Get the unique labels to plot each one
     labels = combined_df['label'].unique()
-
     for label in labels:
         # Subset the dataframe based on the label
         subset_df = combined_df[combined_df['label'] == label]
@@ -51,12 +63,15 @@ def plot_tasks_comparison_cost(combined_df):
             natural_sort_key))
 
         # Plot the mean line
-        ax.plot(subset_df['num'], subset_df['avg_cost'], label=label)
+        ax.plot(subset_df['num'], subset_df['avg_cost'], label=label,
+        marker=marker_map.get(label, '.'), color=color_map.get(label, 'black'))
 
         # Plot the shaded standard error
+        add_noise = 0
         ax.fill_between(subset_df['num'],
-                        subset_df['avg_cost'] - subset_df['std_err'],
-                        subset_df['avg_cost'] + subset_df['std_err'],
+                        subset_df['avg_cost'] - subset_df['std_err'] - add_noise,
+                        subset_df['avg_cost'] + subset_df['std_err'] + add_noise,
+                        color=color_map.get(label, 'black'), 
                         alpha=0.1)
         # if label == 'Prep Myopic':
         #     i = 0
@@ -65,13 +80,18 @@ def plot_tasks_comparison_cost(combined_df):
         #         i += 1
 
     # Customize the plot
-    ax.set_title('Average expected cost of the state after each task')
-    ax.set_xlabel('Task')
-    ax.set_ylabel('Average Expected Cost')
+    # ax.set_title('Average Cost Per Task', fontsize=10)
+    # ax.set_xlabel('Task Number', fontsize=10)
+    # ax.set_ylabel('Average Expected Cost', fontsize=10)
+    # ax.legend(title='Planners', fontsize=10)
+    # ax.set_ylabel('Average Cost of Task Number')
     ax.legend(title='Planners')
+    ax.margins(x=0)
+    ax.set_xticklabels([])
+    plt.tight_layout()
     # Show the plot
-    save_file = '/data/figs/compare-average-cost.png'
-    plt.savefig(save_file, dpi=1200)
+    save_file = '/data/figs/compare-average-cost-final.png'
+    plt.savefig(save_file, dpi=1200, bbox_inches='tight')
 
 
 def natural_sort_key(s):
@@ -201,7 +221,7 @@ def process_text_file(files):
         df = df.dropna(axis=1, how='all')
         # df.columns = ['eval', 'oracle', 'baseline', 'np_myopic',
         #               'prep_myopic', 'np_ap', 'prep_ap']
-        df.columns = ['eval', 'np_myopic', 'np_ap']
+        df.columns = ['eval', 'np_myopic', 'prep_myopic', 'np_ap', 'prep_ap']
 
         # Clean up the data by stripping whitespace and removing unnecessary characters
 
@@ -209,21 +229,21 @@ def process_text_file(files):
         # df['oracle'] = df['oracle'].str.strip().str.split(':').str[1].str.strip().astype(float)
         # df['baseline'] = df['baseline'].str.strip().str.split(':').str[1].str.strip().astype(float)
         df['np_myopic'] = df['np_myopic'].str.strip().str.split(':').str[1].str.strip().astype(float)
+        df['prep_myopic'] = df['prep_myopic'].str.strip().str.split(':').str[1].str.strip().astype(float)
         df['np_ap'] = df['np_ap'].str.strip().str.split(':').str[1].str.strip().astype(float)
-        # df['np_ap'] = df['np_ap'].str.strip().str.split(':').str[1].str.strip().astype(float)
-        # df['prep_ap'] = df['prep_ap'].str.strip().str.split(':').str[1].str.strip().astype(float)
+        df['prep_ap'] = df['prep_ap'].str.strip().str.split(':').str[1].str.strip().astype(float)
 
         dfs.append(df)
 
     merged_df = pd.concat(dfs, ignore_index=True)
     # Calculate the average cost group by 'task num' and total cost group by 'task seq'
-    # nmyp_cost = merged_df['np_myopic'].mean()
-    # pmyp_cost = merged_df['prep_myopic'].mean()
-    # nap_cost = merged_df['np_ap'].mean()
-    # pap_cost = merged_df['prep_ap'].mean()
+    nmyp_cost = merged_df['np_myopic'].mean()/40
+    pmyp_cost = merged_df['prep_myopic'].mean()/40
+    nap_cost = merged_df['np_ap'].mean()/40
+    pap_cost = merged_df['prep_ap'].mean()/40
     # base_cost = merged_df['baseline'].mean()
 
-    # print(base_cost, nmyp_cost, nap_cost, pmyp_cost, pap_cost)
+    print(nmyp_cost, nap_cost, pmyp_cost, pap_cost)
     # merged_df.to_csv(args.save_dir + 'analyzed.csv', index=False)
     # plot_bar_analysis(merged_df)
     # plot_total_cost(merged_df['np_myopic'], merged_df['prep_myopic'], label_text='Myopic (with Preparation)', image_path='pm-vs-npm-comp')
@@ -293,13 +313,13 @@ def compare(args):
     # prep_base_tasks = process_task_files(task_files_base)
     # print(np_myopic_tasks)
     # print(np_ant_tasks)
-    # seq_df = process_text_file(seq_cost_files)
-    # print(seq_df)
+    seq_df = process_text_file(seq_cost_files)
+    print(seq_df)
 
     np_myopic_tasks['label'] = 'No-Prep Myopic'  # str(seq_df['np_myopic'].mean())
     np_ant_tasks['label'] = 'No-Prep Anticipatory'  # str(seq_df['np_ap'].mean())
-    prep_myopic_tasks['label'] = 'Prep Myopic'
-    prep_ant_tasks['label'] = 'Prep Anticipatory'
+    prep_myopic_tasks['label'] = 'Prep Anticipatory'
+    prep_ant_tasks['label'] = 'Prep Myopic'
     # prep_ant_tasks['label'] = 'Prep Anticipatory: ' + str(seq_df['prep_ap'].mean())
     # prep_base_tasks['label'] = 'Baseline (Next task is revealed): ' + str(seq_df['baseline'].mean())
     combined_df = pd.concat([np_myopic_tasks, np_ant_tasks,
