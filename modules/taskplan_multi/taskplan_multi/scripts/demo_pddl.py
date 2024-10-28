@@ -1,14 +1,33 @@
 from pddlstream.algorithms.search import solve_from_pddl
 import taskplan_multi
 import random
+import matplotlib.pyplot as plt
+import os
+import argparse
+import time
 
-def run_pddl():
+def run_pddl(args):
     # preparing pddl as input to the solver
-    seed = 19
+    seed = 10
     pddl = {}
-    random.seed(seed)
+    # random.seed(seed)
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed)
-    print(restaurant.containers)
+
+    grid = restaurant.grid
+    # occupied_cells = np.argwhere(grid == 1)
+    # print(occupied_cells)
+    plt.clf()
+    plt.imshow(grid, cmap='gray_r')
+    # plt.scatter(occupied_cells[:, 1], occupied_cells[:, 0], c='red', label='Occupied Cells')
+    # print(restaurant.accessible_poses)
+    # print(restaurant.known_cost)
+    # robot_poses = [restaurant.agent_tall["position"], restaurant.agent_tiny["position"]]
+ 
+    plt.scatter(restaurant.agent_tall["position"]["x"], restaurant.agent_tall["position"]["z"], c='red', s=200)
+    plt.scatter(restaurant.agent_tiny["position"]["x"], restaurant.agent_tiny["position"]["z"], c='green', s=200)
+    plt.savefig(os.path.join(args.output_image_file), dpi=2000)
+
+    # print(restaurant.containers)
     pddl['domain'] = taskplan_multi.pddl.domain.get_domain()
     pddl['planner'] = 'ff-astar'
     # task = taskplan_multi.pddl.task.move_robot('agent_tall', 'servingtable1')
@@ -50,5 +69,16 @@ def run_pddl():
     # print(restaurant.get_objects_by_container_name('servingtable2'))
 
 
+
 if __name__ == "__main__":
-    run_pddl()
+
+    parser = argparse.ArgumentParser(
+        description="TAMP Example Planner.."
+    )
+    parser.add_argument("--output_image_file", type=str, default="/results/")
+    args = parser.parse_args()
+    start_time = time.time()
+    run_pddl(args) 
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Process took {elapsed_time:.2f} seconds to finish.")
