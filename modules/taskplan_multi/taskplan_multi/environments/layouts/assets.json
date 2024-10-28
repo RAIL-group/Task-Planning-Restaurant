@@ -1,0 +1,26 @@
+{
+    "servingtable1": {
+        "description": "table for serving",
+        "id": "servingtable|1",
+        "assetId": "servingtable1",
+        "children": []
+    },
+    "cabinet": {
+        "description": "cabinet",
+        "id": "cabinet|0",
+        "assetId": "cabinet",
+        "children": []
+    },
+    "countertop": {
+        "description": "place to make food",
+        "id": "countertop|0",
+        "assetId": "countertop",
+        "children": []
+    },
+    "dishwasher": {
+        "description": "dishwasher",
+        "id": "dishwasher|0",
+        "assetId": "dishwasher",
+        "children": []
+    }
+}

@@ -167,3 +167,4 @@ notebook: build
 
 # ==== Includes ====
 include modules/taskplan/Makefile.mk
+include modules/taskplan_multi/Makefile.mk
