@@ -277,15 +277,15 @@ class RESTAURANT:
 
         return occupancy_grid, min_x, min_z, max_x, max_z, resolution
 
-    # def get_current_object_state(self):
-    #     current_state = list()
-    #     for container in self.containers:
-    #         children = copy.deepcopy(container.get('children'))
-    #         if children is None:
-    #             continue
-    #         for child in children:
-    #             current_state.append(child)
-    #     return current_state, water_at_cofeemachine, self.rob_at
+    def get_current_object_state(self):
+        current_state = list()
+        for container in self.containers:
+            children = copy.deepcopy(container.get('children'))
+            if children is None:
+                continue
+            for child in children:
+                current_state.append(child)
+        return current_state
 
     def roll_back_to_init(self):
         self.containers = copy.deepcopy(self.init_containers)
@@ -322,3 +322,23 @@ class RESTAURANT:
             if objct['assetId'] == name:
                 return copy.deepcopy(objct)
         return None
+    
+
+    def get_final_state_from_plan(self, plan):
+        objects = self.get_current_object_state()
+        locations_dict = dict(self.get_container_pos_list())
+        conditions = []
+        for p in plan:
+            if "place" in p.name:
+                obj = p.args[1]
+                cnt = p.args[2]
+                placed = (obj, cnt)
+                conditions.append(placed)
+            # if "move" in p.name:
+            #     rob_at = p.args[1]
+
+        for obj_dict in objects:
+            for cond in conditions:  # Directly check if the condition's object key is in the dictionary
+                if cond[0] == obj_dict['assetId'] and cond[1] in locations_dict:
+                    obj_dict['position'] = locations_dict[cond[1]]
+        return objects
