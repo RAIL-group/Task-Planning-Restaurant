@@ -42,6 +42,25 @@ def make_plotting_grid(grid_map):
 
     return grid
 
+def plot_plan(plan):
+    # Add a text block
+    textstr = ''
+    for p in plan:
+        textstr += str(p) + '\n'
+    # textstr = 'This is a text block.\nYou can add multiple lines of text.'
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+
+    # Add labels and title
+    plt.title('Plan progression', fontsize=6)
+
+    # Place a text box in upper left in axes coords
+    plt.text(0, .7, textstr, transform=plt.gca().transAxes, fontsize=5,
+             verticalalignment='top', bbox=props)
+    plt.box(False)
+    # Hide x and y ticks
+    plt.xticks([])
+    plt.yticks([])
+
 def run_pddl(args):
     # preparing pddl as input to the solver
     seed = 23
@@ -51,6 +70,8 @@ def run_pddl(args):
     object_state = restaurant.get_current_object_state()
     grid = np.transpose(restaurant.grid)
     img = make_plotting_grid(grid)
+    plt.figure(figsize=(10, 5))
+    plt.subplot(131)
     plt.imshow(img, cmap='gray_r', alpha=0.5)
     for container_name, container_pos in restaurant.get_container_pos_list():
         _x, _z = world_to_grid(container_pos['x'], container_pos['z'],
@@ -128,7 +149,9 @@ def run_pddl(args):
             path_line = geometry.LineString(path_points)
             x, y = path_line.xy
             plt.plot(x, y, color='orange')
-        
+    
+    plt.subplot(132)
+    plot_plan(plan)
     plt.savefig(os.path.join(args.output_image_file), dpi=2000)
     # raise NotImplementedError
     # final_state = restaurant.get_random_state()
