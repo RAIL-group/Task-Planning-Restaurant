@@ -351,7 +351,7 @@ def generate_restaurant(seed, kitchen_containers_list,
                     # if 'jar' in t:
                     #     if random.random() > 0.5:
                     #         t['filled'] = 1
-                    if 'washable' in t:
+                    if 'washable' in t and item != 'cabinet':
                         if random.random() > 0.5:
                             t['dirty'] = 1
                     children.append(t)

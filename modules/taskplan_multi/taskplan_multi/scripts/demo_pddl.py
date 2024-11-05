@@ -66,7 +66,7 @@ def run_pddl(args):
     seed = 23
     pddl = {}
     random.seed(seed)
-    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed)
+    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, active='tall')
     object_state = restaurant.get_current_object_state()
     grid = np.transpose(restaurant.grid)
     img = make_plotting_grid(grid)
@@ -74,9 +74,7 @@ def run_pddl(args):
     plt.subplot(131)
     plt.imshow(img, cmap='gray_r', alpha=0.5)
     for container_name, container_pos in restaurant.get_container_pos_list():
-        _x, _z = world_to_grid(container_pos['x'], container_pos['z'],
-                                         restaurant.grid_min_x,
-                                         restaurant.grid_min_z, restaurant.grid_res)
+        _x, _z = restaurant.accessible_poses[container_name]
         plt.text(_x + 2, _z + 2, container_name, color='black', fontsize=6, rotation=45)
 
     for obj_state in object_state:
@@ -87,13 +85,9 @@ def run_pddl(args):
         plt.text(_x, _z, obj_state['assetId'], color='black', fontsize=6, rotation=45)
         
 
-    tall_x, tall_z = world_to_grid(restaurant.agent_tall['position']['x'], restaurant.agent_tall['position']['z'],
-                                         restaurant.grid_min_x,
-                                         restaurant.grid_min_z, restaurant.grid_res)
+    tall_x, tall_z = restaurant.accessible_poses['init_tall']
     plt.text(tall_x, tall_z, 'tall robot', color='red', fontsize=6, rotation=45)
-    tiny_x, tiny_z = world_to_grid(restaurant.agent_tiny['position']['x'], restaurant.agent_tiny['position']['z'],
-                                         restaurant.grid_min_x,
-                                         restaurant.grid_min_z, restaurant.grid_res)
+    tiny_x, tiny_z = restaurant.accessible_poses['init_tiny']
     plt.text(tiny_x, tiny_z, 'tiny robot', color='green', fontsize=6, rotation=45)
     plt.scatter(tall_x, tall_z, c='red', s=100)
     plt.scatter(tiny_x, tiny_z, c='green', s=100)
@@ -115,37 +109,28 @@ def run_pddl(args):
         move_poses = list()
         for move in move_plans:
             if move.args[1] == 'init_tall':
-                pos1 = restaurant.agent_tall['position']
+                pos1 = restaurant.accessible_poses['init_tall']
             elif move.args[1] == 'init_tiny':
-                pos1 = restaurant.agent_tiny['position']
+                pos1 = restaurant.accessible_poses['init_tiny']
             else:
-                pos1 = restaurant.get_container_pos(move.args[1])
+                pos1 = restaurant.accessible_poses[move.args[1]]
             if move.args[2] == 'init_tall':
-                pos2 = restaurant.agent_tall['position']
+                pos2 = restaurant.accessible_poses['init_tall']
             elif move.args[2] == 'init_tiny':
-                pos2 = restaurant.agent_tiny['position']
+                pos2 = restaurant.accessible_poses['init_tiny']
             else:
-                pos2 = restaurant.get_container_pos(move.args[2])
-            _x1, _z1 = world_to_grid(pos1['x'], pos1['z'],
-                                         restaurant.grid_min_x,
-                                         restaurant.grid_min_z, restaurant.grid_res)
-            _x2, _z2 = world_to_grid(pos2['x'], pos2['z'],
-                                         restaurant.grid_min_x,
-                                         restaurant.grid_min_z, restaurant.grid_res)
-            move_poses.append(((_x1, _z1), (_x2, _z2)))
-        print(move_poses)
+                pos2 = restaurant.accessible_poses[move.args[2]]
+            
+            move_poses.append((pos1, pos2))
         for pos in move_poses:
             src, target = (pos)
-            print(src)
-            print(target)
-            _, get_path = gridmap.planning.compute_cost_grid_from_position(
-                grid, [src[0], src[1]])
+            cost_grid, get_path = gridmap.planning.compute_cost_grid_from_position(
+                restaurant.grid, start = [src[0], src[1]], )
+            cost = cost_grid[target[0], target[1]]
+            print(cost)
             did_plan, path = get_path([target[0], target[1]])
-            print(path)
-            print(did_plan)
             path_points = [(path[0][idx], path[1][idx])
                         for idx in range(len(path[0]))]
-            print(path_points)
             path_line = geometry.LineString(path_points)
             x, y = path_line.xy
             plt.plot(x, y, color='orange')

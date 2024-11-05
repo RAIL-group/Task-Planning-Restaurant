@@ -19,9 +19,11 @@ def get_problem(restaurant, task):
         '(can-reach agent_tall servingtable1)',
         '(can-reach agent_tiny countertop)',
         '(can-reach agent_tiny dishwasher)',
+        '(can-reach agent_tiny servingtable1)',
     ]
     init_states.append(f"(rob-at agent_tall {restaurant.tall_agent_at})")
     init_states.append(f"(rob-at agent_tiny {restaurant.tiny_agent_at})")
+    init_states.append(f"(robot-active {restaurant.active_robot})")
     for container in containers:
         cnt_name = container['assetId']
         gen_name = ''.join([i for i in cnt_name if not i.isdigit()])

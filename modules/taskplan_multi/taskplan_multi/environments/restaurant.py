@@ -139,7 +139,7 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
 
 
 class RESTAURANT:
-    def __init__(self, seed):
+    def __init__(self, seed, active='tall'):
         self.seed = seed
         self.restaurant = load_restaurant(self.seed)
         self.rooms = self.restaurant['rooms']
@@ -147,6 +147,9 @@ class RESTAURANT:
         self.agent_tall = self.restaurant['agent_tall']
         self.agent_tiny = self.restaurant['agent_tiny']
         self.containers = self.restaurant['objects']
+        self.active_robot = 'agent_tall'
+        if active == 'tiny':
+            self.active_robot = 'agent_tiny'
         self.init_containers = copy.deepcopy(self.containers)
         self.grid, self.grid_min_x, self.grid_min_z, self.grid_max_x, \
             self.grid_max_z, self.grid_res = self.set_occupancy_grid()
@@ -155,9 +158,52 @@ class RESTAURANT:
         inflation_distance = INFLATE_UB
         relative_loc = {}
         self.initial_object_state = list()
-        # print(self.restaurant)
-        relative_loc['init_tall'] = (self.agent_tall['position']['x'], self.agent_tall['position']['z'])
-        relative_loc['init_tiny'] = (self.agent_tiny['position']['x'], self.agent_tiny['position']['z'])
+        tall_poly = Polygon([(point['x'], point['z'])
+                                for point in self.agent_tall['polygon']])
+        mother_poly = Polygon([(point['x'], point['z'])
+                                    for point in self.rooms['kitchen']['polygon']])
+        point_cloud = get_unoccupied_points_around_container(
+                                            self.grid,
+                                            self.grid_min_x, self.grid_min_z,
+                                            self.grid_res,
+                                            tall_poly,
+                                            inflation_distance,
+                                            mother_poly
+                                        )
+        while len(point_cloud) == 0:
+            inflation_distance += 0.05
+            point_cloud = get_unoccupied_points_around_container(
+                                        self.grid,
+                                        self.grid_min_x, self.grid_min_z,
+                                        self.grid_res,
+                                        tall_poly,
+                                        inflation_distance,
+                                        mother_poly
+                                    )
+        relative_loc['init_tall'] = point_cloud
+        inflation_distance = INFLATE_UB
+        tiny_poly = Polygon([(point['x'], point['z'])
+                                for point in self.agent_tiny['polygon']])
+        point_cloud = get_unoccupied_points_around_container(
+                                            self.grid,
+                                            self.grid_min_x, self.grid_min_z,
+                                            self.grid_res,
+                                            tiny_poly,
+                                            inflation_distance,
+                                            mother_poly
+                                        )
+        while len(point_cloud) == 0:
+            inflation_distance += 0.05
+            point_cloud = get_unoccupied_points_around_container(
+                                        self.grid,
+                                        self.grid_min_x, self.grid_min_z,
+                                        self.grid_res,
+                                        tiny_poly,
+                                        inflation_distance,
+                                        mother_poly
+                                    )
+        relative_loc['init_tiny'] = point_cloud
+        inflation_distance = INFLATE_UB
         self.known_cost = {}
         for container in self.containers:
             children = container.get('children')
@@ -274,6 +320,15 @@ class RESTAURANT:
                                  for point in container['polygon']])
             update_occupancy_grid_with_rectangles(occupancy_grid, rectangle,
                                                   min_x, min_z, resolution, 1)
+        rectangle_1 = Polygon([(point['x'], point['z'])
+                                for point in self.agent_tiny['polygon']])
+        update_occupancy_grid_with_rectangles(occupancy_grid, rectangle_1,
+                                                min_x, min_z, resolution, 1)
+        rectangle_2 = Polygon([(point['x'], point['z'])
+                                for point in self.agent_tall['polygon']])
+        update_occupancy_grid_with_rectangles(occupancy_grid, rectangle_2,
+                                                min_x, min_z, resolution, 1)
+
 
         return occupancy_grid, min_x, min_z, max_x, max_z, resolution
 
@@ -342,3 +397,11 @@ class RESTAURANT:
                 if cond[0] == obj_dict['assetId'] and cond[1] in locations_dict:
                     obj_dict['position'] = locations_dict[cond[1]]
         return objects
+
+    def update_container_props(self, object_state):
+        for container in self.containers:
+            children = []
+            for child in object_state:
+                if child.get('position') == container.get('position'):
+                    children.append(child)
+            container.update({'children': children})

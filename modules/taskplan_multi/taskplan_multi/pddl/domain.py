@@ -14,6 +14,7 @@ def get_domain():
 
     (:predicates
         (rob-at ?r - robot ?loc - location)
+        (robot-active ?r - robot)
         (is-at ?obj - item ?loc - location)
         (hand-is-free ?r - robot)
         (restrict-place-to ?loc - location)
@@ -31,6 +32,7 @@ def get_domain():
         :precondition (and
             (not (= ?start ?end))
             (rob-at ?r ?start)
+            (robot-active ?r)
         )
         :effect (and
             (not (rob-at ?r ?start))
@@ -45,6 +47,7 @@ def get_domain():
             (rob-at ?r ?loc)
             (hand-is-free ?r)
             (can-reach ?r ?loc)
+            (robot-active ?r)
         )
         :effect (and
             (not (is-at ?obj ?loc))
@@ -61,6 +64,7 @@ def get_domain():
             (not (restrict-place-to ?loc))
             (is-holding ?r ?obj)
             (can-reach ?r ?loc)
+            (robot-active ?r)
         )
         :effect (and
             (is-at ?obj ?loc)

@@ -120,7 +120,7 @@ kill:
 .PHONY: shell
 shell: DOCKER_ARGS ?= -it
 shell:
-	@$(DOCKER_BASE) bash
+	@$(DOCKER_BASE) bashke 
 
 
 ## ==== Running tests & cleanup ====
@@ -137,7 +137,6 @@ test: build
 		--ignore-glob=**/pybind11/* \
 		--html=/data/test_logs/report.html \
 		--xpassthrough=$(XPASSTHROUGH) \
-		--unity-path=/unity/$(UNITY_BASENAME).x86_64 \
 		$(TEST_ADDITIONAL_ARGS) \
 		/modules/
 
