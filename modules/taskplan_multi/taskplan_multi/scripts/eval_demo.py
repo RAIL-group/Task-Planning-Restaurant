@@ -106,7 +106,7 @@ def eval_main(args):
     print(f"Myopic Exp Cost (Computed): Tiny {exp_cost_tiny} & Tall : {exp_cost_tall}")
     print(f"Myopic Exp Cost (Learned): Tiny {ant_cost_tiny} & Tall : {ant_cost_tall}")
     restaurant.roll_back_to_init()
-    task_extra = taskplan_multi.pddl.task.place_something('mug1', 'countertop')
+    task_extra = taskplan_multi.pddl.task.place_something('mug1', 'countertop') # this should come from a process, this probably is our contribution.
     comb_task = f'(and {tasks[0]} {task_extra})'
     restaurant.active_robot = 'agent_tiny'
     plan, cost = myopic_planner.get_cost_and_state_from_task(
