@@ -16,7 +16,7 @@ from taskplan_multi.models.gcn import AnticipateGCN
 def get_model_prep_fn_and_training_strs(args):
     print("Training AnticipateGCN Model... ...")
     model = AnticipateGCN(args)
-    lr_ep_st_dc = 'tiny'
+    lr_ep_st_dc = 'tall'
     prep_fn = taskplan_multi.utils.preprocess_training_data(args)
     train_writer_str = 'train_ap_' + lr_ep_st_dc
     test_writer_str = 'test_ap_' + lr_ep_st_dc

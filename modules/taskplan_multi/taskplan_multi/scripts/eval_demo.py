@@ -25,7 +25,7 @@ FOOT_PRINT = np.array([
     [1, 1, 1],
 ])
 
-
+EVAL_NO = 5
 
 def make_plotting_grid(grid_map):
     grid = np.ones([grid_map.shape[0], grid_map.shape[1], 3]) * 0.75
@@ -56,77 +56,39 @@ def get_tasks(restaurant):
             else:
                 clean_items.append(child['assetId'])
     
-    if restaurant.active_robot == 'agent_tall':
-        t1 = taskplan_multi.pddl.task_distribution.tall_robots_tasks(clean_items)
-    else:
-        t1 = taskplan_multi.pddl.task_distribution.tiny_robots_tasks(dirty_items)
-    tasks = list()
-    for task in t1:
-        key = list(task.keys())[0]
-        val = task[key]
-        tasks.append(val)
-    return tasks
+    tall_tasks = taskplan_multi.pddl.task_distribution.tall_robots_tasks(clean_items)
+    tiny_tasks = taskplan_multi.pddl.task_distribution.tiny_robots_tasks(dirty_items)
+    if len(tall_tasks) > 0 and len(tiny_tasks):
+        tasks = list()
+        for task in tall_tasks:
+            key = list(task.keys())[0]
+            val = task[key]
+            tasks.append(('agent_tall', val))
+        for task in tiny_tasks:
+            key = list(task.keys())[0]
+            val = task[key]
+            tasks.append(('agent_tiny', val))
+        random.shuffle(tasks)
+        return tasks
+    return None
 
 
 def eval_main(args):
     # Get restaurant data for a send and extract initial object states
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
-    eval_net_tall = taskplan_multi.models.gcn.AnticipateGCN.get_net_eval_fn(
-        network_file=args.tall_network, device=device)
-    eval_net_tiny = taskplan_multi.models.gcn.AnticipateGCN.get_net_eval_fn(
-        network_file=args.tiny_network, device=device)
     myopic_planner = taskplan_multi.planners.myopic_planner.MyopicPlanner()
-    active_agent = 'tiny'
-    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=args.current_seed, active=active_agent)
-    tiny_tasks = get_tasks(restaurant)
-    restaurant.active_robot = 'agent_tall'
-    tall_tasks = get_tasks(restaurant)
-    restaurant.active_robot = 'agent_tiny'
-    tasks = [
-        taskplan_multi.pddl.task.place_something('bowl2', 'dishwasher'),
-        taskplan_multi.pddl.task.place_something('mug1', 'cabinet'),
-        taskplan_multi.pddl.task.place_something('mug2', 'cabinet')
-    ]
-    plan, cost = myopic_planner.get_cost_and_state_from_task(
-        restaurant, tasks[0])
-    new_state = restaurant.get_final_state_from_plan(plan)
-    restaurant.update_container_props(new_state)
-    restaurant.active_robot = 'agent_tiny'
-    exp_cost_tiny = myopic_planner.get_expected_cost(
-            restaurant, tiny_tasks)
-    whole_graph = taskplan_multi.utils.get_graph(restaurant)
-    ant_cost_tiny = eval_net_tiny(whole_graph)
-    restaurant.active_robot = 'agent_tall'
-    whole_graph = taskplan_multi.utils.get_graph(restaurant)
-    ant_cost_tall = eval_net_tall(whole_graph)
-    exp_cost_tall = myopic_planner.get_expected_cost(
-            restaurant, tall_tasks)
-    print(f"Myopic Cost: For Tiny Robot {cost}")
-    print(f"Myopic Exp Cost (Computed): Tiny {exp_cost_tiny} & Tall : {exp_cost_tall}")
-    print(f"Myopic Exp Cost (Learned): Tiny {ant_cost_tiny} & Tall : {ant_cost_tall}")
-    restaurant.roll_back_to_init()
-    task_extra = taskplan_multi.pddl.task.place_something('mug1', 'countertop') # this should come from a process, this probably is our contribution.
-    comb_task = f'(and {tasks[0]} {task_extra})'
-    restaurant.active_robot = 'agent_tiny'
-    plan, cost = myopic_planner.get_cost_and_state_from_task(
-        restaurant, comb_task)
-    new_state = restaurant.get_final_state_from_plan(plan)
-    restaurant.update_container_props(new_state)
-    restaurant.active_robot = 'agent_tiny'
-    whole_graph = taskplan_multi.utils.get_graph(restaurant)
-    ant_cost_tiny = eval_net_tiny(whole_graph)
-    exp_cost_tiny = myopic_planner.get_expected_cost(
-            restaurant, tiny_tasks)
-    restaurant.active_robot = 'agent_tall'
-    whole_graph = taskplan_multi.utils.get_graph(restaurant)
-    ant_cost_tall = eval_net_tall(whole_graph)
-    exp_cost_tall = myopic_planner.get_expected_cost(
-            restaurant, tall_tasks)
-    print(f"AP Cost: For Tiny Robot {cost}")
-    print(f"AP Exp Cost (Computed): Tiny {exp_cost_tiny} & Tall : {exp_cost_tall}")
-    print(f"AP Exp Cost (Learned): Tiny {ant_cost_tiny} & Tall : {ant_cost_tall}")
-    raise NotImplementedError
+    ant_planner = taskplan_multi.planners.anticipatory_planner.AntcipatoryPlanner(args)
+    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=args.current_seed)
+    task_sequence = get_tasks(restaurant)
+    for i in range(EVAL_NO):
+        restaurant.roll_back_to_init()
+        myopic_planner.get_seq_cost(args, restaurant, task_sequence, i)
+        restaurant.roll_back_to_init()
+        ant_planner.get_seq_cost(args, restaurant, task_sequence, i, ap_concern='joint')
+        restaurant.roll_back_to_init()
+        ant_planner.get_seq_cost(args, restaurant, task_sequence, i, ap_concern='self')
+        restaurant.roll_back_to_init()
+        ant_planner.get_seq_cost(args, restaurant, task_sequence, i, ap_concern='other')
+        random.shuffle(task_sequence)
 
 def get_args():
     parser = argparse.ArgumentParser(

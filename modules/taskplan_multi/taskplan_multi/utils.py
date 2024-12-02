@@ -175,10 +175,10 @@ def graph_formatting(graph):
 
     graph['graph_edge_feature'] = 1 - np.array(new_feature)/600
     graph['graph_edge_index'] = [src, dst]
-    graph['graph_image'] = get_graph_image(
-        graph['edge_index'],
-        node_names, node_color_list
-    )
+    # graph['graph_image'] = get_graph_image(
+    #     graph['edge_index'],
+    #     node_names, node_color_list
+    # )
 
     return graph
 

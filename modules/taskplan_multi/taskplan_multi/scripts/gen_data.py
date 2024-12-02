@@ -87,7 +87,7 @@ def gen_data_main(args):
     plt.clf()
     plt.title(f'Seed: {args.current_seed} : ExC: {exp_cost}')
     plt.imshow(image_graph['graph_image'])
-    plt.savefig(f'{args.save_dir}data_completion_logs/{args.data_file_base_name}_{args.current_seed}.png', dpi=600)
+    plt.savefig(f'{args.save_dir}data_completion_logs/{args.data_file_base_name}_{args.current_seed}.png', dpi=100)
 
 
 def get_args():

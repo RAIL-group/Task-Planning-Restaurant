@@ -1,3 +1,4 @@
+import os
 import taskplan_multi
 import pddlstream
 import pddlstream.algorithms.meta
@@ -32,3 +33,34 @@ class MyopicPlanner:
         # print(expected_costs)
         expected_cost = sum(expected_costs)/len(expected_costs)
         return expected_cost
+    
+    def get_seq_cost(self, args, restaurant, task_seq, seq_num):
+        file_name = 'myopic.txt'
+        logfile = os.path.join(args.save_dir, file_name)
+        costs = list()
+        for idx, item in enumerate(task_seq):
+            active_agent = item[0]
+            task = item[1]
+            restaurant.active_robot = active_agent
+            plan, cost = (
+                self.get_cost_and_state_from_task(
+                    restaurant, task)
+            )
+            if plan is None:
+                costs.append(10000)
+                with open(logfile, "a+") as f:
+                    f.write(
+                        f" | seq: S{seq_num}"
+                        f" | num: T{idx+1}"
+                        f" | cost: 10000 \n"
+                    )
+                continue
+            with open(logfile, "a+") as f:
+                f.write(
+                    f" | seq: S{seq_num}"
+                    f" | num: T{idx+1}"
+                    f" | cost: {cost:0.4f} \n"
+                )
+            costs.append(cost)
+            new_state = restaurant.get_final_state_from_plan(plan)
+            restaurant.update_container_props(new_state)

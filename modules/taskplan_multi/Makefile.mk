@@ -2,9 +2,9 @@ help::
 	@echo "Multi agent anticipatory taskplanning in a restaurant setting (multi-ap):"
 
 MA_AP_BASENAME ?= restaurant-multi
-MA_AP_NUM_TRAINING_SEEDS ?= 5000
+MA_AP_NUM_TRAINING_SEEDS ?= 2000
 MA_AP_NUM_TESTING_SEEDS ?= 0
-MA_AP_NUM_EVAL_SEEDS ?= 10
+MA_AP_NUM_EVAL_SEEDS ?= 0
 EXPERIMENT_NAME = beta-v0
 
 # Target for a demo
@@ -12,7 +12,9 @@ EXPERIMENT_NAME = beta-v0
 multi-agent-demo: build
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/ma_taskplan_demo/
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.demo_pddl \
-		--output_image_file /data/$(MA_AP_BASENAME)/ma_taskplan_demo/ma_taskplan.png
+		--output_image_file /data/$(MA_AP_BASENAME)/ma_taskplan_demo/task_plan_myopic.png \
+		--tall_network /data/restaurant-multi-tall/logs/beta-v0/ap_tall.pt \
+		--tiny_network /data/restaurant-multi-tiny/logs/beta-v0/ap_tiny.pt
 
 
 ma-data-gen-seeds = \
@@ -42,7 +44,7 @@ ma-train-file = $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/logs/$(EXPERIMENT_NAME)/antic
 $(ma-train-file): 
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/logs/$(EXPERIMENT_NAME)
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.train \
-		--num_steps 5000 \
+		--num_steps 2000 \
 		--learning_rate 0.05 \
 		--learning_rate_decay_factor 0.5 \
 		--epoch_size 500 \
@@ -55,9 +57,18 @@ ma-train: $(ma-train-file)
 .PHONY: ma-eval-demo
 ma-eval-demo: 
 	@echo "Evaluation Data"
-	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results 
+	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results
+	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results/$(EXP_NUM)
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo \
-		--current_seed 1 \
-		--save_dir /data/$(MA_AP_BASENAME)/results \
+		--current_seed 0 \
+		--save_dir /data/$(MA_AP_BASENAME)/results/$(EXP_NUM) \
 		--tall_network /data/restaurant-multi-tall/logs/beta-v0/ap_tall.pt \
 		--tiny_network /data/restaurant-multi-tiny/logs/beta-v0/ap_tiny.pt
+
+
+.PHONY: ma-result-demo
+ma-result-demo: 
+	@echo "Result"
+	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results/figure
+	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.results_demo \
+		--save_dir /data/$(MA_AP_BASENAME)/results/ \
