@@ -5,6 +5,18 @@
         "assetId": "servingtable1",
         "children": []
     },
+    "servingtable2": {
+        "description": "table for serving",
+        "id": "servingtable|2",
+        "assetId": "servingtable2",
+        "children": []
+    },
+    "bussingcart": {
+        "description": "cart for keeping dirty items",
+        "id": "bussingcart|0",
+        "assetId": "bussingcart",
+        "children": []
+    },
     "cabinet": {
         "description": "cabinet",
         "id": "cabinet|0",
@@ -21,6 +33,18 @@
         "description": "dishwasher",
         "id": "dishwasher|0",
         "assetId": "dishwasher",
+        "children": []
+    },
+    "stove": {
+        "description": "stove",
+        "id": "stove|0",
+        "assetId": "stove",
+        "children": []
+    },
+    "fridge": {
+        "description": "fridge",
+        "id": "fridge|0",
+        "assetId": "fridge",
         "children": []
     }
 }

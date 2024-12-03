@@ -218,10 +218,10 @@ def generate_restaurant(seed, kitchen_containers_list,
         k_cen = k_polygon.centroid
         s_cen = s_polygon.centroid
         door_coords = get_door(k_polygon, s_polygon)
-        min_width = 0.5
-        max_width = 1.0
-        min_height = 0.5
-        max_height = 1.0
+        min_width = 0.25
+        max_width = 0.75
+        min_height = 0.25
+        max_height = 0.75
         door_buffer = 1.0  # Buffer around the door
         restaurant = {
                 'rooms': {
@@ -252,22 +252,11 @@ def generate_restaurant(seed, kitchen_containers_list,
                                     'z': door_coords[1][1]}]
                     }
                 },
-                'agent_tall': {
-                    'name': 'tall_robot'
-                },
-                'agent_tiny': {
-                    'name': 'tiny_robot'
-                },
         }
         if len(kitchen_containers_list) == 0:
-            kitchen_containers_list = ['dishwasher', 'fountain',
-                                       'coffeemachine', 'countertop',
-                                       'breadshelf', 'coffeeshelf',
-                                       'spreadshelf', 'cutleryshelf',
-                                       'cupshelf', 'agent']
+            raise ValueError('Kitchen is Empty')
         if len(serving_room_containers_list) == 0:
-            serving_room_containers_list = ['servingtable1', 'servingtable2',
-                                            'servingtable3']
+            raise ValueError('Servingroom can not be Empty')
 
         # Create non-overlapping rectangles inside the kitchen
         kitchen_corners = create_corner_rectangles(kitchen, min_width, max_width,
@@ -289,7 +278,7 @@ def generate_restaurant(seed, kitchen_containers_list,
                                                    kitchen_corners + kitchen_random
                                                    )
         service_random = create_non_overlapping_containers(serving_room,
-                                                           len(serving_room_containers_list),
+                                                           len(serving_room_containers_list) + 1,
                                                            min_width, max_width,
                                                            min_height, max_height,
                                                            door_coords,
@@ -323,10 +312,11 @@ def generate_restaurant(seed, kitchen_containers_list,
                 'z': cz
             }
             temp.append(t_cords)
-        if item == 'agent_tall':
-            kc = restaurant['agent_tall']
-        elif item == 'agent_tiny':
-            kc = restaurant['agent_tiny']
+        if '_bot' in item:
+            restaurant[item] = {
+                'name': item
+            }
+            kc = restaurant[item]
         else:
             kc = assets[item]
         kc['position'] = {
@@ -335,26 +325,22 @@ def generate_restaurant(seed, kitchen_containers_list,
         }
         kc['polygon'] = temp
         kc['loc'] = 'kitchen'
-        if 'agent' in item:
+        if '_bot' in item:
             continue
         children = list()
         if 'children' in kc:
             children = kc['children']
-        if item != 'fountain':
-            if len(movables) > 0:
-                if len(movables) == 1:
-                    rand_item = 1
-                else:
-                    rand_item = random.randint(0, 2)
-                for i in range(rand_item):
-                    t = movables.pop()
-                    # if 'jar' in t:
-                    #     if random.random() > 0.5:
-                    #         t['filled'] = 1
-                    if 'washable' in t and random.random() > 0.5:
-                        t['dirty'] = 1
-                    children.append(t)
-            kc['children'] = children
+        if len(movables) > 0:
+            if len(movables) == 1:
+                rand_item = 1
+            else:
+                rand_item = random.randint(0, 2)
+            for i in range(rand_item):
+                t = movables.pop()
+                if 'washable' in t and random.random() > 0.5:
+                    t['dirty'] = 1
+                children.append(t)
+        kc['children'] = children
         for child in kc['children']:
             child['position'] = {
                 'x': centroid.x,
@@ -378,13 +364,23 @@ def generate_restaurant(seed, kitchen_containers_list,
                 'z': cz
             }
             temp.append(t_cords)
-        kc = assets[item]
+        
+        if '_bot' in item:
+            restaurant[item] = {
+                'name': item
+            }
+            kc = restaurant[item]
+        else:
+            kc = assets[item]
+        
         kc['position'] = {
                     'x': centroid.x,
                     'z': centroid.y
         }
         kc['polygon'] = temp
         kc['loc'] = 'servingroom'
+        if '_bot' in item:
+            continue
         children = list()
         if 'children' in kc:
             children = kc['children']
@@ -397,12 +393,8 @@ def generate_restaurant(seed, kitchen_containers_list,
                 rand_item = len(movables)
             for i in range(rand_item):
                 t = movables.pop()
-                # if 'jar' in t:
-                #     if random.random() > 0.5:
-                #         t['filled'] = 1
-                if 'washable' in t:
-                    if random.random() > 0.5:
-                        t['dirty'] = 1
+                if 'washable' in t and random.random() > 0.5:
+                    t['dirty'] = 1
                 children.append(t)
         kc['children'] = children
         for child in kc['children']:

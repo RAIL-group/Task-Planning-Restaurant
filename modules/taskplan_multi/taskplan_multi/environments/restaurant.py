@@ -11,19 +11,39 @@ INFLATE_UB = 0.25
 INFLATE_LB = 0.2
 
 
-def load_restaurant(seed):
+def load_restaurant(seed, agents):
     """
     Keep the name of the containers in ascending order
     that you want to place in the corners
     Also keep 'agent' in kitchen container list
     """
-    kitchen_containers_list = []
-    temp = ['countertop','dishwasher', 'cabinet']
+    kitchen_containers_list = ['countertop','dishwasher', 'cabinet', 'stove', 'fridge']
     random.shuffle(kitchen_containers_list)
-    agents = ['agent_tall', 'agent_tiny']
-    temp.extend(agents)
-    kitchen_containers_list.extend(temp)
-    serving_room_containers_list = ['servingtable1']
+    if 'cook_bot' in agents:
+        kitchen_containers_list.extend(['cook_bot'])
+    serving_room_containers_list = ['servingtable1', 'servingtable2', 'bussingcart']
+    if 'server_bot' in agents and 'cleaner_bot' in agents:
+        if random.random() > 0.75:
+            serving_room_containers_list.extend(['server_bot'])
+            kitchen_containers_list.extend(['cleaner_bot'])
+        elif > 0.5:
+            serving_room_containers_list.extend(['cleaner_bot'])
+            kitchen_containers_list.extend(['server_bot'])
+        elif > 0.25:
+            serving_room_containers_list.extend(['cleaner_bot', 'server_bot'])
+        else:
+            kitchen_containers_list.extend(['cleaner_bot', 'server_bot'])
+    elif 'server_bot' in agents:
+        if random.random() > 0.5:
+            serving_room_containers_list.extend(['server_bot'])
+        else:
+            kitchen_containers_list.extend(['server_bot'])
+    elif 'cleaner_bot' in agents:
+        if random.random() > 0.5:
+            serving_room_containers_list.extend(['cleaner_bot'])
+        else:
+            kitchen_containers_list.extend(['cleaner_bot'])
+
     datum = generate_restaurant(seed, kitchen_containers_list,
                                 serving_room_containers_list)
     return datum
@@ -139,29 +159,28 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
 
 
 class RESTAURANT:
-    def __init__(self, seed, active='tall'):
+    def __init__(self, seed, agents=['cook_bot'. 'server_bot', 'cleaner_bot'], active='cook_bot'):
         self.seed = seed
-        self.restaurant = load_restaurant(self.seed)
+        self.restaurant = load_restaurant(self.seed, agents)
         self.rooms = self.restaurant['rooms']
         self.doors = self.restaurant['doors']
-        self.agent_tall = self.restaurant['agent_tall']
-        self.agent_tiny = self.restaurant['agent_tiny']
         self.containers = self.restaurant['objects']
-        self.active_robot = 'agent_tall'
-        if active == 'tiny':
-            self.active_robot = 'agent_tiny'
+        self.active_robot = active
         self.init_containers = copy.deepcopy(self.containers)
         self.grid, self.grid_min_x, self.grid_min_z, self.grid_max_x, \
             self.grid_max_z, self.grid_res = self.set_occupancy_grid()
-        self.tall_agent_at = 'init_tall'
-        self.tiny_agent_at = 'init_tiny'
         inflation_distance = INFLATE_UB
         relative_loc = {}
         self.initial_object_state = list()
-        tall_poly = Polygon([(point['x'], point['z'])
-                                for point in self.agent_tall['polygon']])
-        mother_poly = Polygon([(point['x'], point['z'])
-                                    for point in self.rooms['kitchen']['polygon']])
+        for agent in agents:
+            agent_poly = Polygon([(point['x'], point['z'])
+                                    for point in self.restaurant[agent]['polygon']])
+            if self.restaurant[agent]['loc'] == 'kitchen':
+                mother_poly = Polygon([(point['x'], point['z'])
+                                            for point in self.rooms['kitchen']['polygon']])
+            else:
+                mother_poly = Polygon([(point['x'], point['z'])
+                                            for point in self.rooms['servingroom']['polygon']])
         point_cloud = get_unoccupied_points_around_container(
                                             self.grid,
                                             self.grid_min_x, self.grid_min_z,

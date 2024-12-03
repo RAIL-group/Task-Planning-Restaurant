@@ -6,10 +6,10 @@ def get_domain():
     (:requirements :strips :typing :action-costs :existential-preconditions)
 
     (:types
-        robot location item - object
-        agent_tall agent_tiny - robot
-        init_tall init_tiny servingtable cabinet dishwasher countertop - location
-        cup mug bowl - item
+        location item robot - object
+        cook_bot server_bot cleaner_bot - robot
+        base servingtable bussingcart stove cabinet dishwasher countertop fridge - location
+        choppingboard pan cup mug bowl apple orange tomato oats milk egg - item
     )
 
     (:predicates

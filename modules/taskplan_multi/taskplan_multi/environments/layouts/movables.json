@@ -1,50 +1,80 @@
 [
     {
         "description": "bowl",
-        "assetId": "bowl1",
+        "assetId": "bowl",
         "id": "bowl|1",
         "washable": 1,
         "pickable": 1,
         "container": 1
     },
     {
-        "description": "bowl",
-        "assetId": "bowl2",
-        "id": "bowl|2",
+        "description": "pan",
+        "assetId": "pan",
+        "id": "pan|1",
         "washable": 1,
         "pickable": 1,
         "container": 1
     },
     {
+        "description": "choppingboard",
+        "assetId": "choppingboard",
+        "id": "choppingboard|1",
+        "washable": 1,
+        "pickable": 1
+    },
+    {
         "description": "mug",
-        "assetId": "mug1",
+        "assetId": "mug",
         "id": "mug|1",
         "washable": 1,
         "pickable": 1,
         "fillable": 1
     },
     {
-        "description": "mug",
-        "assetId": "mug2",
-        "id": "mug|2",
-        "washable": 1,
-        "pickable": 1,
-        "fillable": 1
-    },
-    {
         "description": "cup",
-        "assetId": "cup1",
+        "assetId": "cup",
         "id": "cup|1",
         "washable": 1,
         "pickable": 1,
         "fillable": 1
     },
     {
-        "description": "cup",
-        "assetId": "cup2",
-        "id": "cup|2",
+        "description": "apple",
+        "assetId": "apple",
+        "id": "apple|1",
         "pickable": 1,
-        "washable": 1,
-        "fillable": 1
+        "slicable": 1
+    },
+    {
+        "description": "tomato",
+        "assetId": "tomato",
+        "id": "tomato|1",
+        "pickable": 1,
+        "slicable": 1
+    },
+    {
+        "description": "orange",
+        "assetId": "orange",
+        "id": "orange|1",
+        "pickable": 1,
+        "slicable": 1
+    },
+    {
+        "description": "milk bottle",
+        "assetId": "milk",
+        "id": "milk|1",
+        "pickable": 1
+    },
+    {
+        "description": "egg",
+        "assetId": "egg",
+        "id": "egg|1",
+        "pickable": 1
+    },
+    {
+        "description": "oats",
+        "assetId": "oats",
+        "id": "oats|1",
+        "pickable": 1
     }
 ]
