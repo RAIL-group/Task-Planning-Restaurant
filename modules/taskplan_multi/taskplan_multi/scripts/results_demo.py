@@ -53,12 +53,15 @@ def plot_tasks_comparison_cost(args, combined_df):
     # ax.set_ylabel('Average Expected Cost', fontsize=10)
     # ax.legend(title='Planners', fontsize=10)
     # ax.set_ylabel('Average Cost of Task Number')
+    ax.set_title('Average Number of Failure Per Task', fontsize=10)
+    ax.set_xlabel('Task Number', fontsize=10)
+    ax.set_ylabel('Average Number of Failure', fontsize=10)
     ax.legend(title='Planners')
     ax.margins(x=0)
     ax.set_xticklabels([])
     plt.tight_layout()
     # Show the plot
-    save_file = args.save_dir + '/figure/compare-average-cost-final-new.png'
+    save_file = args.save_dir + 'figure/compare-failures.png'
     print(args.save_dir)
     print(save_file)
     plt.savefig(save_file, dpi=1200, bbox_inches='tight')
@@ -86,13 +89,20 @@ def process_task_files(files):
         df['seq'] = df['seq'].str.strip().str.split(':').str[1].str.strip()
         df['num'] = df['num'].str.strip().str.split(':').str[1].str.strip()
         df['cost'] = df['cost'].str.strip().str.split(':').str[1].str.strip().astype(float)
+        df['fail'] = (df['cost'] >= 10000).astype(int)
 
         dfs.append(df)
 
     # Calculate the average cost group by 'task num' and total cost group by 'task seq'
 
     merged_df = pd.concat(dfs, ignore_index=True)
-    avg_cost_by_task = merged_df.groupby('num').agg({'cost': ['mean', 'sem']}).reset_index()
+    # avg_cost_by_task = merged_df.groupby('num').agg({'cost': ['mean', 'sem']}).reset_index()
+    # avg_cost_by_task.columns = ['num', 'avg_cost', 'std_err']
+    # avg_cost_by_task_df = avg_cost_by_task.sort_values(
+    #     by='num', key=lambda x: x.map(natural_sort_key))
+    # print(avg_cost_by_task)
+    # raise NotImplementedError
+    avg_cost_by_task = merged_df.groupby('num').agg({'fail': ['mean', 'sem']}).reset_index()
     avg_cost_by_task.columns = ['num', 'avg_cost', 'std_err']
     avg_cost_by_task_df = avg_cost_by_task.sort_values(
         by='num', key=lambda x: x.map(natural_sort_key))
