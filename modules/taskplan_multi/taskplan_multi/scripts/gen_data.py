@@ -26,6 +26,7 @@ FOOT_PRINT = np.array([
 ])
 
 
+MAX_MAP = 100
 
 def make_plotting_grid(grid_map):
     grid = np.ones([grid_map.shape[0], grid_map.shape[1], 3]) * 0.75
@@ -44,22 +45,36 @@ def make_plotting_grid(grid_map):
     return grid
 
 def get_tasks(restaurant):
-    clean_items = list()
-    dirty_items = list()
+    # clean_items = list()
+    # dirty_items = list()
+    # for container in restaurant.containers:
+    #     children = container.get('children')
+    #     if children is None:
+    #         continue
+    #     for child in children:
+    #         if 'dirty' in child and child['dirty'] == 1:
+    #             dirty_items.append(child['assetId'])
+    #         else:
+    #             clean_items.append(child['assetId'])
+
+    food_items = list()
+    utensils = list()
+    item_to_remove = list()
     for container in restaurant.containers:
         children = container.get('children')
         if children is None:
             continue
         for child in children:
-            if 'dirty' in child and child['dirty'] == 1:
-                dirty_items.append(child['assetId'])
-            else:
-                clean_items.append(child['assetId'])
-    
-    if restaurant.active_robot == 'agent_tall':
-        t1 = taskplan_multi.pddl.task_distribution.tall_robots_tasks(clean_items)
+            if 'cookable' in child:
+                food_items.append(child['assetId'])
+            if 'washable' in child:
+                utensils.append(child['assetId'])
+    if restaurant.active_robot == 'cook_bot':
+        t1 = taskplan_multi.pddl.task_distribution.tasks_for_cook(food_items)
+    elif restaurant.active_robot == 'server_bot':
+        t1 = taskplan_multi.pddl.task_distribution.tasks_for_server(utensils)
     else:
-        t1 = taskplan_multi.pddl.task_distribution.tiny_robots_tasks(dirty_items)
+        t1 = taskplan_multi.pddl.task_distribution.tasks_for_cleaner(utensils, food_items)
     tasks = list()
     for task in t1:
         key = list(task.keys())[0]
@@ -67,28 +82,30 @@ def get_tasks(restaurant):
         tasks.append(val)
     return tasks
 
-
 def gen_data_main(args):
     # Get restaurant data for a send and extract initial object states
     map_counter = 0
-    if args.agent:
-        active_agent = args.agent
+    random_choices = [0, 0.25, 0.5, 0.75, 1]
+    active_agent = args.agent
     myopic_planner = taskplan_multi.planners.myopic_planner.MyopicPlanner()
-    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=args.current_seed, active=active_agent)
+    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=args.current_seed, agents=[active_agent], active=active_agent)
     tasks = get_tasks(restaurant)
-    exp_cost = None
-    whole_graph = taskplan_multi.utils.get_graph(restaurant)
-    if len(tasks) > 0:
+    while (map_counter < MAX_MAP):
+        exp_cost = None
+        whole_graph = taskplan_multi.utils.get_graph(restaurant)
         exp_cost = myopic_planner.get_expected_cost(
             restaurant, tasks)
         whole_graph['label'] = exp_cost
         taskplan_multi.utils.write_datum_to_file(args, whole_graph, map_counter)
-    image_graph = taskplan_multi.utils.graph_formatting(whole_graph)
-    plt.clf()
-    plt.title(f'Seed: {args.current_seed} : ExC: {exp_cost}')
-    plt.imshow(image_graph['graph_image'])
-    plt.savefig(f'{args.save_dir}data_completion_logs/{args.data_file_base_name}_{args.current_seed}.png', dpi=100)
+        map_counter+=1
+        random_state = restaurant.randomize_objects_state(randomness=[random.randint(0, 1), random.choice(random_choices), random.choice(random_choices)])
+        restaurant.update_container_props(random_state)
 
+    image_graph = taskplan_multi.utils.get_image_for_data(whole_graph)
+    plt.clf()
+    plt.title(f'Seed: {args.current_seed}: Map : {map_counter} : ExC: {exp_cost}')
+    plt.imshow(image_graph)
+    plt.savefig(f'{args.save_dir}data_completion_logs/{args.data_file_base_name}_{args.current_seed}.png', dpi=50)
 
 def get_args():
     parser = argparse.ArgumentParser(

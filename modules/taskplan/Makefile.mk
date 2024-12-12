@@ -49,7 +49,7 @@ ap-res-train: $(ap-res-train-file)
 
 ap-res-prep-seeds = \
 	$(shell for ii in $$(seq 1 $$((1 + $(AP_RES_NUM_EVAL_SEEDS) - 1))); \
-		do echo "$(DATA_BASE_DIR)/$(AP_RES_BASENAME)/results/$(EXPERIMENT_NAME)/evaluation_no_$${ii}.png"; done)
+		do echo "$(DATA_BASE_DIR)/$(AP_RES_BASENAME)/results/$(EXPERIMENT_NAME)/prep_evaluation_no_$${ii}.png"; done)
 $(ap-res-prep-seeds): seed = $(shell echo $@ | grep -Eo '[0-9]+' | tail -1)
 $(ap-res-prep-seeds):
 	@echo "Debugging Data [$(AP_RES_BASENAME) | seed: $(seed) | Debug"]

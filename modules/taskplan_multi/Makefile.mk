@@ -1,11 +1,12 @@
 help::
 	@echo "Multi agent anticipatory taskplanning in a restaurant setting (multi-ap):"
 
-MA_AP_BASENAME ?= restaurant-multi
-MA_AP_NUM_TRAINING_SEEDS ?= 2000
+MA_AP_BASENAME ?= 3robot
+MA_AP_NUM_TRAINING_SEEDS ?= 30
 MA_AP_NUM_TESTING_SEEDS ?= 0
 MA_AP_NUM_EVAL_SEEDS ?= 0
 EXPERIMENT_NAME = beta-v0
+EXP_NUM = 1
 
 # Target for a demo
 .PHONY: multi-agent-demo
@@ -33,7 +34,7 @@ $(ma-data-gen-seeds):
 	@$(call xhost_activate)
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.gen_data \
 		--current_seed $(seed) \
-		--agent tiny \
+		--agent cleaner_bot \
 	 	--data_file_base_name data_$(traintest) \
 		--save_dir /data/$(MA_AP_BASENAME)/ 
 
@@ -48,6 +49,7 @@ $(ma-train-file):
 		--learning_rate 0.05 \
 		--learning_rate_decay_factor 0.5 \
 		--epoch_size 500 \
+		--agent server \
 		--save_dir /data/$(MA_AP_BASENAME)/logs/$(EXPERIMENT_NAME) \
 		--data_csv_dir /data/$(MA_AP_BASENAME)/ 
 
@@ -62,8 +64,9 @@ ma-eval-demo:
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo \
 		--current_seed 0 \
 		--save_dir /data/$(MA_AP_BASENAME)/results/$(EXP_NUM) \
-		--tall_network /data/restaurant-multi-tall/logs/beta-v0/ap_tall.pt \
-		--tiny_network /data/restaurant-multi-tiny/logs/beta-v0/ap_tiny.pt
+		--cook_network /data/cook-agent/logs/beta-v0/ap_cook.pt \
+		--cleaner_network /data/cleaner-agent/logs/beta-v0/ap_cleaner.pt \
+		--server_network /data/server-agent/logs/beta-v0/ap_server.pt
 
 
 .PHONY: ma-result-demo

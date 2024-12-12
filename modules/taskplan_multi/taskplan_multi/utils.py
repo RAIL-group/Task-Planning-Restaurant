@@ -10,6 +10,7 @@ import gridmap
 from taskplan_multi.environments.restaurant import world_to_grid
 import torch
 from torch_geometric.data import Data
+import copy
 
 
 def get_robot_pose(data):
@@ -30,18 +31,17 @@ def get_graph(data):
         'type': [1, 0, 0, 0, 0],
     }
     node_count += 1
+    loc_rob_map = dict()
 
-    # Create robot node and add the edge to the restaurant
-    _x, _y = data.accessible_poses[data.tall_agent_at]
-    rob_name = 'tall robot'
-    rob_loc = 'kitchen'
-    if 'servingtable' in data.tall_agent_at:
-        rob_loc = 'servingroom'
-    if data.active_robot == 'agent_tiny':
-        _x, _y = data.accessible_poses[data.tiny_agent_at]
-        rob_name = 'tiny robot'
-        if 'servingtable' in data.tiny_agent_at:
-            rob_loc = 'servingroom'
+    agent = data.active_robot
+    agent_at = data.restaurant[agent]['rob_at']
+    _x, _y = data.accessible_poses[agent_at]
+    rob_name = data.restaurant[agent]['name'].split('_')[0]
+    rob_loc = data.restaurant[agent]['loc']
+    if rob_loc not in loc_rob_map:
+        loc_rob_map[rob_loc] = list()
+    loc_rob_map[rob_loc].append(node_count)
+    rob_name = rob_name + ' active'
     nodes[node_count] = {
         'id': 'robot',
         'name': rob_name,
@@ -51,9 +51,31 @@ def get_graph(data):
     }
     # edges.append(tuple([0, node_count]))
     node_count += 1
+    # for agent in data.agent_list:
+    # # Create robot node and add the edge to the restaurant
+    #     agent_at = data.restaurant[agent]['rob_at']
+    #     _x, _y = data.accessible_poses[agent_at]
+    #     rob_name = data.restaurant[agent]['name'].split('_')[0]
+    #     rob_loc = data.restaurant[agent]['loc']
+    #     if rob_loc not in loc_rob_map:
+    #         loc_rob_map[rob_loc] = list()
+    #     loc_rob_map[rob_loc].append(node_count)
+    #     if data.active_robot == agent:
+    #         rob_name = rob_name + ' active'
+    #     nodes[node_count] = {
+    #         'id': 'robot',
+    #         'name': rob_name,
+    #         'desc': 'Robot',
+    #         'pos': (_x, _y),
+    #         'type': [0, 1, 0, 0, 0],
+    #     }
+    #     # edges.append(tuple([0, node_count]))
+    #     node_count += 1
     # Iterate over rooms but skip position coordinate scaling since not
     # required in distance calculations
+    room_nodes = list()
     for room in data.rooms:
+        room_nodes.append(node_count)
         _x, _y = world_to_grid(
             data.rooms[room]['position']['x'], data.rooms[room]['position']['z'],
             data.grid_min_x, data.grid_min_z, data.grid_res)
@@ -65,12 +87,13 @@ def get_graph(data):
             'type': [0, 0, 1, 0, 0],
         }
         edges.append(tuple([0, node_count]))
-        if room == rob_loc:
-            edges.append(tuple([1, node_count]))
+        if room in loc_rob_map:
+            for item in loc_rob_map[room]:
+                edges.append(tuple([item, node_count]))
         node_count += 1
 
     # add an edge between two rooms adjacent by a passable shared door
-    room_edges = set([(2, 3)])
+    room_edges = set([(room_nodes[0], room_nodes[1])])
     edges.extend(room_edges)
 
     room_names = [nodes[n]['name'] for n in nodes]
@@ -104,6 +127,8 @@ def get_graph(data):
             name = get_generic_name(oid)
             if 'dirty' in connected_object and connected_object['dirty'] == 1:
                 name = 'dirty ' + name
+            if 'cooked' in connected_object and connected_object['cooked'] == 1:
+                name = 'cooked ' + name
             _x, _y = world_to_grid(
                 container['position']['x'],
                 container['position']['z'],
@@ -120,7 +145,6 @@ def get_graph(data):
             edges.append(tuple([src, node_count]))
             obj_node_idx.append(node_count)
             node_count += 1
-
     graph = {
         'nodes': nodes,  # dictionary {id, name, pos, type}
         'edge_index': edges,  # pairwise edge list
@@ -165,22 +189,43 @@ def graph_formatting(graph):
     src = []
     dst = []
     new_feature = []
-    for edge in graph['edge_index']:
-        src.append(edge[0])
-        dst.append(edge[1])
+    for (e1, e2) in graph['edge_index']:
+        src.append(e1)
+        dst.append(e2)
+        # print(e1)
+        # print(e2)
         e_cost = np.linalg.norm(np.array(
-            [graph['nodes'][edge[0]]['pos']]) - np.array(
-                                            [graph['nodes'][edge[1]]['pos']]))
+            [graph['nodes'][e1]['pos']]) - np.array(
+                                            [graph['nodes'][e2]['pos']]))
         new_feature.append([e_cost])
 
     graph['graph_edge_feature'] = 1 - np.array(new_feature)/600
     graph['graph_edge_index'] = [src, dst]
-    # graph['graph_image'] = get_graph_image(
-    #     graph['edge_index'],
-    #     node_names, node_color_list
-    # )
+    graph['graph_image'] = get_graph_image(
+        graph['edge_index'],
+        node_names, node_color_list
+    )
 
     return graph
+
+
+def get_image_for_data(graph):
+    ''' This method formats the graph data from procthor-10k data
+    to be used in PartialMap that maintains graph during object search
+    '''
+    node_names = {}
+    node_color_list = []
+
+    for count, node_key in enumerate(graph['nodes']):
+        node_names[node_key] = graph['nodes'][node_key]['name']
+        node_color_list.append(get_object_color_from_type(graph['nodes'][node_key]))
+
+    image = get_graph_image(
+        graph['edge_index'],
+        node_names, node_color_list
+    )
+
+    return image
 
 
 def get_generic_name(name):
@@ -395,7 +440,8 @@ def preprocess_training_data(args=None):
 
 
 def preprocess_gcn_data(datum):
-    data = graph_formatting(datum)
+    data = copy.deepcopy(datum)
+    data = graph_formatting(data)
     data['edge_index'] = torch.tensor(
         data['graph_edge_index'], dtype=torch.long)
     data['edge_features'] = torch.tensor(

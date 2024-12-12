@@ -63,12 +63,16 @@ def plot_plan(plan, cost):
 
 def run_pddl(args):
     # preparing pddl as input to the solver
-    seed = 3
+    seed = 0
     pddl = {}
     random.seed(seed)
-    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, active='tiny')
+    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, agents=['cleaner_bot'], active='cleaner_bot')
     ant_planner = taskplan_multi.planners.anticipatory_planner.AntcipatoryPlanner(args)
     object_state = restaurant.get_current_object_state()
+    print(object_state)
+    # raise NotImplementedError
+    random_state = restaurant.randomize_objects_state(randomness=[0, 2, 0])
+    restaurant.update_container_props(random_state)
     grid = np.transpose(restaurant.grid)
     img = make_plotting_grid(grid)
     plt.figure(figsize=(10, 5))
@@ -85,27 +89,34 @@ def run_pddl(args):
     #     plt.scatter(_x, _z, c='blue')
     #     plt.text(_x, _z, obj_state['assetId'], color='black', fontsize=6, rotation=45)
         
-
-    tall_x, tall_z = restaurant.accessible_poses['init_tall']
-    plt.text(tall_x, tall_z, 'tall robot', color='red', fontsize=6, rotation=45)
-    tiny_x, tiny_z = restaurant.accessible_poses['init_tiny']
-    plt.text(tiny_x, tiny_z, 'tiny robot', color='green', fontsize=6, rotation=45)
-    plt.scatter(tall_x, tall_z, c='red')
-    plt.scatter(tiny_x, tiny_z, c='green')
-
+    for agent in restaurant.agent_list:
+        tall_x, tall_z = restaurant.accessible_poses['base_' + agent]
+        plt.text(tall_x, tall_z, agent, color='red', fontsize=6, rotation=45)
+        plt.scatter(tall_x, tall_z, c='red')
     # print(restaurant.containers)
     pddl['domain'] = taskplan_multi.pddl.domain.get_domain()
     pddl['planner'] = 'ff-astar'
     # task = taskplan_multi.pddl.task.move_robot('agent_tall', 'servingtable1')
-    task = taskplan_multi.pddl.task.place_something('cup1', 'dishwasher')
+    # task = taskplan_multi.pddl.task.place_something('cup', 'stove')
+    # task = taskplan_multi.pddl.task.clean_something('mug')
+    # task = taskplan_multi.pddl.task.clear_surface('bussingcart', 'mug')
+    # task = taskplan_multi.pddl.task.clear_surface('bussingcart', 'mug')
+    task = taskplan_multi.pddl.task.clear_surface('bussingcart', 'mug')
+    # t2 = taskplan_multi.pddl.task.clear_surface('bussingcart', 'bowl')
+    # t3 = taskplan_multi.pddl.task.clear_surface('bussingcart', 'pan')
+    # t3 = taskplan_multi.pddl.task.clear_surface('bussingcart', 'milk')
+    # task = f'(and {t1} {t2} {t3})'
+    # task = taskplan_multi.pddl.task.serve_oats('milk', 'servingtable1')
     pddl['problem'] = taskplan_multi.pddl.problem.get_problem(restaurant, task)
     plan, plan_cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
                                  max_planner_time=60)
     # tot_cost = 0
+    print(plan)
+    print(plan_cost)
+    raise NotImplementedError
     if plan:
         for p in plan:
             print(p)
-        print(plan_cost)
         move_plans = [p for p in plan if p.name == "move"]
         move_poses = list()
         for move in move_plans:

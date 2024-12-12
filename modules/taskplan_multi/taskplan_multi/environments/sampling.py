@@ -3,6 +3,7 @@ from shapely.geometry import box, Polygon, LineString, MultiLineString
 import json
 import os
 
+MAX_OBJ_PER_CONT = 5
 
 def load_data():
     """
@@ -330,16 +331,19 @@ def generate_restaurant(seed, kitchen_containers_list,
         children = list()
         if 'children' in kc:
             children = kc['children']
-        if len(movables) > 0:
-            if len(movables) == 1:
-                rand_item = 1
-            else:
-                rand_item = random.randint(0, 2)
-            for i in range(rand_item):
-                t = movables.pop()
-                if 'washable' in t and random.random() > 0.5:
-                    t['dirty'] = 1
-                children.append(t)
+        max_pop = min(len(movables), MAX_OBJ_PER_CONT)
+        min_pop = min(len(movables), 1)
+        rand_item = random.randint(min_pop, max_pop)
+        for i in range(rand_item):
+            t = movables.pop()
+            if item == 'dishwasher' and 'washable' not in t:
+                movables.append(t)
+                continue
+            if 'washable' in t and random.random() > 0.5:
+                t['dirty'] = 1
+            if 'cookable' in t and random.random() > 0.5:
+                t['cooked'] = 1
+            children.append(t)
         kc['children'] = children
         for child in kc['children']:
             child['position'] = {
@@ -384,18 +388,17 @@ def generate_restaurant(seed, kitchen_containers_list,
         children = list()
         if 'children' in kc:
             children = kc['children']
-        if len(movables) > 0:
-            if len(movables) == 1:
-                rand_item = 1
-            else:
-                rand_item = random.randint(0, 2)
-            if idx == len(serving_room_containers_list) - 1:
-                rand_item = len(movables)
-            for i in range(rand_item):
-                t = movables.pop()
-                if 'washable' in t and random.random() > 0.5:
-                    t['dirty'] = 1
-                children.append(t)
+        max_pop = min(len(movables), MAX_OBJ_PER_CONT)
+        rand_item = random.randint(0, max_pop)
+        if idx == len(serving_room_containers_list) - 1:
+            rand_item = len(movables)
+        for i in range(rand_item):
+            t = movables.pop()
+            if 'washable' in t and (random.random() > 0.5 or item == 'bussingcart'):
+                t['dirty'] = 1
+            if 'cookable' in t and random.random() > 0.5:
+                t['cooked'] = 1
+            children.append(t)
         kc['children'] = children
         for child in kc['children']:
             child['position'] = {

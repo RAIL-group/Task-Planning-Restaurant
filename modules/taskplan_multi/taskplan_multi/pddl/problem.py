@@ -1,28 +1,36 @@
 import taskplan
 from taskplan.pddl.helper import generate_pddl_problem
 
+COOK_BOT_REACHABLES = ['stove', 'fridge', 'countertop']
+SERVER_BOT_REACHABLES = ['servingtable1', 'servingtable2', 'cabinet', 'countertop', 'bussingcart']
+CLEANER_BOT_REACHABLES = ['dishwasher', 'bussingcart', 'countertop']
 
 def get_problem(restaurant, task):
     containers = restaurant.containers
-    objects = {
-         'init_tall': ['init_tall'],
-         'init_tiny': ['init_tiny'],
-         'agent_tall': ['agent_tall'],
-         'agent_tiny': ['agent_tiny'],
-    }
+    objects = {}
     init_states = [
         '(= (total-cost) 0)',
-        '(hand-is-free agent_tall)',
-        '(hand-is-free agent_tiny)',
-        '(can-reach agent_tall countertop)',
-        '(can-reach agent_tall cabinet)',
-        '(can-reach agent_tall servingtable1)',
-        '(can-reach agent_tiny countertop)',
-        '(can-reach agent_tiny dishwasher)',
-        '(can-reach agent_tiny servingtable1)',
     ]
-    init_states.append(f"(rob-at agent_tall {restaurant.tall_agent_at})")
-    init_states.append(f"(rob-at agent_tiny {restaurant.tiny_agent_at})")
+    for agent in restaurant.agent_list:
+        objects[agent] = [agent]
+        base = 'base_' + agent
+        if 'base' not in objects:
+            objects['base'] = [base]
+        else:
+            objects['base'].append(base)
+        init_states.append(f"(rob-at {agent} {restaurant.restaurant[agent]['rob_at']})")
+        init_states.append(f"(hand-is-free {agent})")
+        init_states.append(f"(restrict-place-to {base})")
+        init_states.append(f"(can-reach {agent} {base})")
+        if agent == 'cook_bot':
+            for item in COOK_BOT_REACHABLES:
+                init_states.append(f"(can-reach {agent} {item})")
+        if agent == 'server_bot':
+            for item in SERVER_BOT_REACHABLES:
+                init_states.append(f"(can-reach {agent} {item})")
+        if agent == 'cleaner_bot':
+            for item in CLEANER_BOT_REACHABLES:
+                init_states.append(f"(can-reach {agent} {item})")
     init_states.append(f"(robot-active {restaurant.active_robot})")
     for container in containers:
         cnt_name = container['assetId']
@@ -41,18 +49,19 @@ def get_problem(restaurant, task):
                 else:
                     objects[gen_name_child].append(chld_name)
                 init_states.append(f"(is-at {chld_name} {cnt_name})")
+                init_states.append(f"(type {chld_name} {gen_name_child})")
                 # if 'isLiquid' in child and child['isLiquid'] == 1:
                 #     init_states.append(f"(is-liquid {chld_name})")
                 # if 'pickable' in child and child['pickable'] == 1:
                 #     init_states.append(f"(is-pickable {chld_name})")
-                # if 'spreadable' in child and child['spreadable'] == 1:
-                #     init_states.append(f"(is-spreadable {chld_name})")
+                # if 'cookable' in child and child['cookable'] == 1:
+                #     init_states.append(f"(is-cookable {chld_name})")
                 # if 'washable' in child and child['washable'] == 1:
                 #     init_states.append(f"(is-washable {chld_name})")
-                # if 'dirty' in child and child['dirty'] == 1:
-                #     init_states.append(f"(is-dirty {chld_name})")
-                # if 'spread' in child and child['spread'] == 1:
-                #     init_states.append(f"(is-spread {chld_name})")
+                if 'dirty' in child and child['dirty'] == 1:
+                    init_states.append(f"(is-dirty {chld_name})")
+                if 'cooked' in child and child['cooked'] == 1:
+                    init_states.append(f"(is-cooked {chld_name})")
                 # if 'fillable' in child and child['fillable'] == 1:
                 #     init_states.append(f"(is-fillable {chld_name})")
                 # if 'filled' in child and child['filled'] == 1:
@@ -63,6 +72,8 @@ def get_problem(restaurant, task):
                 #     init_states.append(f"(is-slicable {chld_name})")
                 # if 'container' in child and child['container'] == 1:
                 #     init_states.append(f"(is-container {chld_name})")
+    # for state in init_states:
+    #     print(state)
     for c1 in restaurant.known_cost:
         for c2 in restaurant.known_cost[c1]:
             if c1 == c2:
@@ -85,7 +96,8 @@ def get_problem(restaurant, task):
     # task = taskplan.pddl.task.clear_surface('shelf5')
     # task = taskplan.pddl.task.clean_everything()
     # goal = [f'(and (hand-is-free) {task})']
-    goal = [task]
+    base_loc = restaurant.restaurant[restaurant.active_robot]['rob_at']
+    goal = [f'(and (hand-is-free {restaurant.active_robot}) (rob-at {restaurant.active_robot} {base_loc}) {task})']
     PROBLEM_PDDL = generate_pddl_problem(
         domain_name='restaurant',
         problem_name='restaurant-problem',

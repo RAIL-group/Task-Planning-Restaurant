@@ -27,7 +27,7 @@ class MyopicPlanner:
             plan, cost = self.get_cost_and_state_from_task(proc_data, task)
             # print(cost)
             if plan is None:
-                expected_costs.append(10000)
+                expected_costs.append(5000)
             else:
                 expected_costs.append(cost)
         # print(expected_costs)
@@ -37,10 +37,17 @@ class MyopicPlanner:
     def get_seq_cost(self, args, restaurant, task_seq, seq_num):
         file_name = 'myopic.txt'
         logfile = os.path.join(args.save_dir, file_name)
+        task_file_name = 'tasks.txt'
+        task_logfile = os.path.join(args.save_dir, task_file_name)
         costs = list()
         for idx, item in enumerate(task_seq):
             active_agent = item[0]
             task = item[1]
+            with open(task_logfile, "a+") as f:
+                f.write(
+                    f" | active: {active_agent}"
+                    f" | task: {task} \n"
+                )
             restaurant.active_robot = active_agent
             plan, cost = (
                 self.get_cost_and_state_from_task(

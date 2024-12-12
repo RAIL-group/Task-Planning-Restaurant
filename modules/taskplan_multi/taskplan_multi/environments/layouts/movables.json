@@ -1,80 +1,125 @@
 [
     {
         "description": "bowl",
-        "assetId": "bowl",
+        "assetId": "bowl1",
         "id": "bowl|1",
         "washable": 1,
-        "pickable": 1,
-        "container": 1
+        "pickable": 1
+    },
+    {
+        "description": "bowl",
+        "assetId": "bowl2",
+        "id": "bowl|2",
+        "washable": 1,
+        "pickable": 1
     },
     {
         "description": "pan",
-        "assetId": "pan",
+        "assetId": "pan1",
         "id": "pan|1",
         "washable": 1,
-        "pickable": 1,
-        "container": 1
+        "pickable": 1
     },
     {
-        "description": "choppingboard",
-        "assetId": "choppingboard",
-        "id": "choppingboard|1",
+        "description": "pan2",
+        "assetId": "pan2",
+        "id": "pan|2",
         "washable": 1,
         "pickable": 1
     },
     {
         "description": "mug",
-        "assetId": "mug",
+        "assetId": "mug1",
         "id": "mug|1",
         "washable": 1,
-        "pickable": 1,
-        "fillable": 1
+        "pickable": 1
     },
     {
-        "description": "cup",
-        "assetId": "cup",
-        "id": "cup|1",
+        "description": "mug",
+        "assetId": "mug2",
+        "id": "mug|2",
         "washable": 1,
-        "pickable": 1,
-        "fillable": 1
+        "pickable": 1
     },
     {
-        "description": "apple",
-        "assetId": "apple",
-        "id": "apple|1",
-        "pickable": 1,
-        "slicable": 1
+        "description": "saltshaker",
+        "assetId": "saltshaker1",
+        "id": "saltshaker|1",
+        "pickable": 1
     },
     {
-        "description": "tomato",
-        "assetId": "tomato",
-        "id": "tomato|1",
-        "pickable": 1,
-        "slicable": 1
+        "description": "saltshaker",
+        "assetId": "saltshaker2",
+        "id": "saltshaker|2",
+        "pickable": 1
     },
     {
-        "description": "orange",
-        "assetId": "orange",
-        "id": "orange|1",
+        "description": "sauce",
+        "assetId": "sauce1",
+        "id": "sauce|1",
+        "pickable": 1
+    },
+    {
+        "description": "sauce",
+        "assetId": "sauce2",
+        "id": "sauce|2",
+        "pickable": 1
+    },
+    {
+        "description": "pasta",
+        "assetId": "pasta1",
+        "id": "pasta|1",
         "pickable": 1,
-        "slicable": 1
+        "cookable": 1
+    },
+    {
+        "description": "pasta",
+        "assetId": "pasta2",
+        "id": "pasta|2",
+        "pickable": 1,
+        "cookable": 1
     },
     {
         "description": "milk bottle",
-        "assetId": "milk",
+        "assetId": "milk1",
         "id": "milk|1",
-        "pickable": 1
+        "pickable": 1,
+        "cookable": 1
+    },
+    {
+        "description": "milk bottle",
+        "assetId": "milk2",
+        "id": "milk|2",
+        "pickable": 1,
+        "cookable": 1
     },
     {
         "description": "egg",
-        "assetId": "egg",
+        "assetId": "egg1",
         "id": "egg|1",
-        "pickable": 1
+        "pickable": 1,
+        "cookable": 1
+    },
+    {
+        "description": "egg",
+        "assetId": "egg2",
+        "id": "egg|2",
+        "pickable": 1,
+        "cookable": 1
     },
     {
         "description": "oats",
-        "assetId": "oats",
+        "assetId": "oats1",
         "id": "oats|1",
-        "pickable": 1
+        "pickable": 1,
+        "cookable": 1
+    },
+    {
+        "description": "oats",
+        "assetId": "oats2",
+        "id": "oats|2",
+        "pickable": 1,
+        "cookable": 1
     }
+    
 ]

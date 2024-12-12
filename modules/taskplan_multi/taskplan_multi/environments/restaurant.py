@@ -26,10 +26,10 @@ def load_restaurant(seed, agents):
         if random.random() > 0.75:
             serving_room_containers_list.extend(['server_bot'])
             kitchen_containers_list.extend(['cleaner_bot'])
-        elif > 0.5:
+        elif random.random() > 0.5:
             serving_room_containers_list.extend(['cleaner_bot'])
             kitchen_containers_list.extend(['server_bot'])
-        elif > 0.25:
+        elif random.random() > 0.25:
             serving_room_containers_list.extend(['cleaner_bot', 'server_bot'])
         else:
             kitchen_containers_list.extend(['cleaner_bot', 'server_bot'])
@@ -159,8 +159,9 @@ def get_unoccupied_points_around_container(occupancy_grid, min_x, min_z,
 
 
 class RESTAURANT:
-    def __init__(self, seed, agents=['cook_bot'. 'server_bot', 'cleaner_bot'], active='cook_bot'):
+    def __init__(self, seed, agents=['cook_bot', 'server_bot', 'cleaner_bot'], active='cook_bot'):
         self.seed = seed
+        self.agent_list = agents
         self.restaurant = load_restaurant(self.seed, agents)
         self.rooms = self.restaurant['rooms']
         self.doors = self.restaurant['doors']
@@ -181,47 +182,27 @@ class RESTAURANT:
             else:
                 mother_poly = Polygon([(point['x'], point['z'])
                                             for point in self.rooms['servingroom']['polygon']])
-        point_cloud = get_unoccupied_points_around_container(
+            point_cloud = get_unoccupied_points_around_container(
+                                                self.grid,
+                                                self.grid_min_x, self.grid_min_z,
+                                                self.grid_res,
+                                                agent_poly,
+                                                inflation_distance,
+                                                mother_poly
+                                            )
+            while len(point_cloud) == 0:
+                inflation_distance += 0.05
+                point_cloud = get_unoccupied_points_around_container(
                                             self.grid,
                                             self.grid_min_x, self.grid_min_z,
                                             self.grid_res,
-                                            tall_poly,
+                                            agent_poly,
                                             inflation_distance,
                                             mother_poly
                                         )
-        while len(point_cloud) == 0:
-            inflation_distance += 0.05
-            point_cloud = get_unoccupied_points_around_container(
-                                        self.grid,
-                                        self.grid_min_x, self.grid_min_z,
-                                        self.grid_res,
-                                        tall_poly,
-                                        inflation_distance,
-                                        mother_poly
-                                    )
-        relative_loc['init_tall'] = point_cloud
-        inflation_distance = INFLATE_UB
-        tiny_poly = Polygon([(point['x'], point['z'])
-                                for point in self.agent_tiny['polygon']])
-        point_cloud = get_unoccupied_points_around_container(
-                                            self.grid,
-                                            self.grid_min_x, self.grid_min_z,
-                                            self.grid_res,
-                                            tiny_poly,
-                                            inflation_distance,
-                                            mother_poly
-                                        )
-        while len(point_cloud) == 0:
-            inflation_distance += 0.05
-            point_cloud = get_unoccupied_points_around_container(
-                                        self.grid,
-                                        self.grid_min_x, self.grid_min_z,
-                                        self.grid_res,
-                                        tiny_poly,
-                                        inflation_distance,
-                                        mother_poly
-                                    )
-        relative_loc['init_tiny'] = point_cloud
+            agent_base = 'base_' + agent
+            relative_loc[agent_base] = point_cloud
+            self.restaurant[agent]['rob_at'] = agent_base
         inflation_distance = INFLATE_UB
         self.known_cost = {}
         for container in self.containers:
@@ -339,15 +320,12 @@ class RESTAURANT:
                                  for point in container['polygon']])
             update_occupancy_grid_with_rectangles(occupancy_grid, rectangle,
                                                   min_x, min_z, resolution, 1)
-        rectangle_1 = Polygon([(point['x'], point['z'])
-                                for point in self.agent_tiny['polygon']])
-        update_occupancy_grid_with_rectangles(occupancy_grid, rectangle_1,
-                                                min_x, min_z, resolution, 1)
-        rectangle_2 = Polygon([(point['x'], point['z'])
-                                for point in self.agent_tall['polygon']])
-        update_occupancy_grid_with_rectangles(occupancy_grid, rectangle_2,
-                                                min_x, min_z, resolution, 1)
-
+        
+        for agent in self.agent_list:
+            agent_poly = Polygon([(point['x'], point['z'])
+                                    for point in self.restaurant[agent]['polygon']])
+            update_occupancy_grid_with_rectangles(occupancy_grid, agent_poly,
+                                                    min_x, min_z, resolution, 1)
 
         return occupancy_grid, min_x, min_z, max_x, max_z, resolution
 
@@ -363,12 +341,26 @@ class RESTAURANT:
 
     def roll_back_to_init(self):
         self.containers = copy.deepcopy(self.init_containers)
-        self.tall_agent_at = 'init_tall'
-        self.tiny_agent_at = 'init_tiny'
+    
+    def randomize_objects_state(self, randomness=[0, 0.5, 0.5]):
+        states = self.get_current_object_state()
+        poses = [val for (key, val) in self.get_container_pos_list()]
+        for state in states:
+            if randomness[0] == 1:
+                state['position'] = random.choice(poses)
+            if 'washable' in state:
+                if random.random() > randomness[1]:
+                    state['dirty'] = 1
+                else:
+                    state['dirty'] = 0
+            if 'cookable' in state:
+                if random.random() > randomness[2]:
+                    state['cooked'] = 1
+                else:
+                    state['cooked'] = 0
+        return states
 
     def get_objects_by_container_name(self, name):
-        if name == 'initial_robot_pose':
-            return []
         for container in self.containers:
             if container.get('assetId') == name:
                 temp = copy.deepcopy(container.get('children'))
@@ -401,6 +393,10 @@ class RESTAURANT:
     def get_final_state_from_plan(self, plan):
         objects = self.get_current_object_state()
         locations_dict = dict(self.get_container_pos_list())
+        dirty_objs = set()
+        cleaned_obsj = set()
+        cooked_foods = set()
+        raw_foods = set()
         conditions = []
         for p in plan:
             if "place" in p.name:
@@ -408,10 +404,37 @@ class RESTAURANT:
                 cnt = p.args[2]
                 placed = (obj, cnt)
                 conditions.append(placed)
+                if 'servingtable' in cnt and ('bowl' in obj or 'mug' in obj):
+                    dirty_objs.add(obj)
+                    if obj in cleaned_obsj:
+                        cleaned_obsj.remove(obj)
+            if "wash" in p.name:
+                cleaned_obsj.add(p.args[1])
+                if p.args[1] in dirty_objs:
+                    dirty_objs.remove(p.args[1])
+            if "cook" in p.name:
+                cooked_foods.add(p.args[1])
+                dirty_objs.add(p.args[2])
+                if p.args[1] in raw_foods:
+                    raw_foods.remove(p.args[1])
+                if p.args[2] in dirty_objs:
+                    dirty_objs.remove(p.args[2])
+            if "serve" in p.name:
+                raw_foods.add(p.args[1])
+                if p.args[1] in cooked_foods:
+                    cooked_foods.remove(p.args[1])
             # if "move" in p.name:
             #     rob_at = p.args[1]
 
         for obj_dict in objects:
+            if obj_dict['assetId'] in dirty_objs:
+                obj_dict['dirty'] = 1
+            if obj_dict['assetId'] in cleaned_obsj:
+                obj_dict['dirty'] = 0
+            if obj_dict['assetId'] in cooked_foods:
+                obj_dict['cooked'] = 1
+            if obj_dict['assetId'] in raw_foods:
+                obj_dict['cooked'] = 0
             for cond in conditions:  # Directly check if the condition's object key is in the dictionary
                 if cond[0] == obj_dict['assetId'] and cond[1] in locations_dict:
                     obj_dict['position'] = locations_dict[cond[1]]

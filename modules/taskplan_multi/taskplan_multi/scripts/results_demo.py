@@ -10,13 +10,15 @@ def plot_tasks_comparison_cost(args, combined_df):
     color_map = {
         'Myopic': 'cyan',
         'AP (Self)': 'orangered',
-        'AP (Other)': 'gold',
+        'AP (Min)': 'gold',
+        'AP (Max)': 'blue',
         'AP (Combine)': 'fuchsia'
     }
     marker_map = {
         'Myopic': 'o',
         'AP (Self)': 'd',
-        'AP (Other)': 's',
+        'AP (Min)': 's',
+        'AP (Max)': '.',
         'AP (Combine)': '*'
     }
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -36,11 +38,11 @@ def plot_tasks_comparison_cost(args, combined_df):
 
         # Plot the shaded standard error
         add_noise = 0
-        ax.fill_between(subset_df['num'],
-                        subset_df['avg_cost'] - subset_df['std_err'] - add_noise,
-                        subset_df['avg_cost'] + subset_df['std_err'] + add_noise,
-                        color=color_map.get(label, 'black'), 
-                        alpha=0.1)
+        # ax.fill_between(subset_df['num'],
+        #                 subset_df['avg_cost'] - subset_df['std_err'] - add_noise,
+        #                 subset_df['avg_cost'] + subset_df['std_err'] + add_noise,
+        #                 color=color_map.get(label, 'black'), 
+        #                 alpha=0.1)
         # if label == 'Prep Myopic':
         #     i = 0
         #     for x, y in zip(subset_df['num'], subset_df['avg_cost']):
@@ -86,13 +88,20 @@ def process_task_files(files):
         df['seq'] = df['seq'].str.strip().str.split(':').str[1].str.strip()
         df['num'] = df['num'].str.strip().str.split(':').str[1].str.strip()
         df['cost'] = df['cost'].str.strip().str.split(':').str[1].str.strip().astype(float)
+        df['fail'] = (df['cost'] >= 10000).astype(int)
 
         dfs.append(df)
 
     # Calculate the average cost group by 'task num' and total cost group by 'task seq'
 
     merged_df = pd.concat(dfs, ignore_index=True)
-    avg_cost_by_task = merged_df.groupby('num').agg({'cost': ['mean', 'sem']}).reset_index()
+    # avg_cost_by_task = merged_df.groupby('num').agg({'cost': ['mean', 'sem']}).reset_index()
+    # avg_cost_by_task.columns = ['num', 'avg_cost', 'std_err']
+    # avg_cost_by_task_df = avg_cost_by_task.sort_values(
+    #     by='num', key=lambda x: x.map(natural_sort_key))
+    # print(avg_cost_by_task)
+    # raise NotImplementedError
+    avg_cost_by_task = merged_df.groupby('num').agg({'fail': ['mean', 'sem']}).reset_index()
     avg_cost_by_task.columns = ['num', 'avg_cost', 'std_err']
     avg_cost_by_task_df = avg_cost_by_task.sort_values(
         by='num', key=lambda x: x.map(natural_sort_key))
@@ -251,7 +260,8 @@ def compare(args):
     root = args.save_dir
     task_files_mp = list()
     task_files_ap_self = list()
-    task_files_ap_other = list()
+    task_files_ap_min = list()
+    task_files_ap_max = list()
     task_files_ap_joint = list()
     for path, _, files in os.walk(root):
         for name in files:
@@ -259,14 +269,17 @@ def compare(args):
                 task_files_mp.append(os.path.join(path, name))
             elif 'ap_joint' in name:
                 task_files_ap_joint.append(os.path.join(path, name))
-            elif 'ap_other' in name:
-                task_files_ap_other.append(os.path.join(path, name))
+            elif 'ap_min' in name:
+                task_files_ap_min.append(os.path.join(path, name))
+            elif 'ap_max' in name:
+                task_files_ap_max.append(os.path.join(path, name))
             elif 'ap_self' in name:
                 task_files_ap_self.append(os.path.join(path, name))
 
     myopic_tasks = process_task_files(task_files_mp)
-    self_tasks = process_task_files(task_files_ap_self)
-    other_tasks = process_task_files(task_files_ap_other)
+    # self_tasks = process_task_files(task_files_ap_self)
+    # min_tasks = process_task_files(task_files_ap_min)
+    # max_tasks = process_task_files(task_files_ap_max)
     joint_tasks = process_task_files(task_files_ap_joint)
     # raise NotImplementedError
     # prep_myopic_tasks = process_task_files(task_files_p_mp)
@@ -279,13 +292,15 @@ def compare(args):
     # print(seq_df)
 
     myopic_tasks['label'] = 'Myopic'  # str(seq_df['np_myopic'].mean())
-    self_tasks['label'] = 'AP (Self)'  # str(seq_df['np_ap'].mean())
-    other_tasks['label'] = 'AP (Other)'
+    # self_tasks['label'] = 'AP (Self)'  # str(seq_df['np_ap'].mean())
+    # min_tasks['label'] = 'AP (Min)'
+    # max_tasks['label'] = 'AP (Max)'
     joint_tasks['label'] = 'AP (Combine)'
     # prep_ant_tasks['label'] = 'Prep Anticipatory: ' + str(seq_df['prep_ap'].mean())
     # prep_base_tasks['label'] = 'Baseline (Next task is revealed): ' + str(seq_df['baseline'].mean())
-    combined_df = pd.concat([myopic_tasks, self_tasks,
-                             other_tasks, joint_tasks])
+    combined_df = pd.concat([myopic_tasks, joint_tasks])
+    # combined_df = pd.concat([myopic_tasks, self_tasks,
+    #                          min_tasks, max_tasks, joint_tasks])
     # print(combined_df)
     plot_tasks_comparison_cost(args, combined_df)
     raise NotImplementedError
