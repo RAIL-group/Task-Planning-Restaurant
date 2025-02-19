@@ -10,6 +10,10 @@ from taskplan_multi.environments.sampling import generate_restaurant, load_movab
 INFLATE_UB = 0.25
 INFLATE_LB = 0.2
 
+COOK_BOT_REACHABLES = ['stove', 'fridge', 'countertop']
+SERVER_BOT_REACHABLES = ['servingtable1', 'servingtable2', 'cabinet', 'countertop', 'bussingcart']
+CLEANER_BOT_REACHABLES = ['dishwasher', 'bussingcart', 'countertop']
+
 
 def load_restaurant(seed, agents):
     """
@@ -173,6 +177,8 @@ class RESTAURANT:
         inflation_distance = INFLATE_UB
         relative_loc = {}
         self.initial_object_state = list()
+        self.active_all = False
+        self.asked_help = False
         for agent in agents:
             agent_poly = Polygon([(point['x'], point['z'])
                                     for point in self.restaurant[agent]['polygon']])
@@ -342,19 +348,28 @@ class RESTAURANT:
     def roll_back_to_init(self):
         self.containers = copy.deepcopy(self.init_containers)
     
-    def randomize_objects_state(self, randomness=[0, 0.5, 0.5]):
+    def randomize_objects_state(self, randomness=[0, 0.5, 0.5], bias=False):
         states = self.get_current_object_state()
-        poses = [val for (key, val) in self.get_container_pos_list()]
+        if bias:
+            if self.active_robot == 'cook_bot':
+                conts = COOK_BOT_REACHABLES
+            elif self.active_robot == 'server_bot':
+                conts = SERVER_BOT_REACHABLES
+            else:
+                conts = CLEANER_BOT_REACHABLES
+            poses = [val for (key, val) in self.get_container_pos_list() if key in conts]
+        else:
+            poses = [val for (key, val) in self.get_container_pos_list()]
         for state in states:
             if randomness[0] == 1:
                 state['position'] = random.choice(poses)
             if 'washable' in state:
-                if random.random() > randomness[1]:
-                    state['dirty'] = 1
-                else:
+                if random.random() > randomness[1] or bias:
                     state['dirty'] = 0
+                else:
+                    state['dirty'] = 1
             if 'cookable' in state:
-                if random.random() > randomness[2]:
+                if random.random() > randomness[2] or bias:
                     state['cooked'] = 1
                 else:
                     state['cooked'] = 0
@@ -404,10 +419,6 @@ class RESTAURANT:
                 cnt = p.args[2]
                 placed = (obj, cnt)
                 conditions.append(placed)
-                if 'servingtable' in cnt and ('bowl' in obj or 'mug' in obj):
-                    dirty_objs.add(obj)
-                    if obj in cleaned_obsj:
-                        cleaned_obsj.remove(obj)
             if "wash" in p.name:
                 cleaned_obsj.add(p.args[1])
                 if p.args[1] in dirty_objs:
@@ -417,12 +428,15 @@ class RESTAURANT:
                 dirty_objs.add(p.args[2])
                 if p.args[1] in raw_foods:
                     raw_foods.remove(p.args[1])
-                if p.args[2] in dirty_objs:
-                    dirty_objs.remove(p.args[2])
+                if p.args[2] in cleaned_obsj:
+                    cleaned_obsj.remove(p.args[2])
             if "serve" in p.name:
                 raw_foods.add(p.args[1])
                 if p.args[1] in cooked_foods:
                     cooked_foods.remove(p.args[1])
+                dirty_objs.add(p.args[2])
+                if p.args[2] in cleaned_obsj:
+                    cleaned_obsj.remove(p.args[2])
             # if "move" in p.name:
             #     rob_at = p.args[1]
 
@@ -447,3 +461,32 @@ class RESTAURANT:
                 if child.get('position') == container.get('position'):
                     children.append(child)
             container.update({'children': children})
+    
+    def place_object(self, obj, loc):
+        state = self.get_current_object_state()
+        new_objs = list()
+        for objct in state:
+            if objct['assetId'] == obj['assetId']:
+                objct.update({'position': loc})
+            new_objs.append(objct)
+        return new_objs
+
+    def place_washables(self, obj, loc, dirty=0):
+        state = self.get_current_object_state()
+        new_objs = list()
+        for objct in state:
+            if objct['assetId'] == obj['assetId']:
+                objct.update({'position': loc})
+                objct.update({'dirty': dirty})
+            new_objs.append(objct)
+        return new_objs
+    
+    def place_food_items(self, obj, loc, cooked=0):
+        state = self.get_current_object_state()
+        new_objs = list()
+        for objct in state:
+            if objct['assetId'] == obj['assetId']:
+                objct.update({'position': loc})
+                objct.update({'cooked': cooked})
+            new_objs.append(objct)
+        return new_objs

@@ -10,6 +10,7 @@ import os
 from skimage.morphology import erosion
 import gridmap
 from shapely import geometry
+import gc
 
 COLLISION_VAL = 1
 FREE_VAL = 0
@@ -72,9 +73,9 @@ def get_tasks(restaurant):
     if restaurant.active_robot == 'cook_bot':
         t1 = taskplan_multi.pddl.task_distribution.tasks_for_cook(food_items)
     elif restaurant.active_robot == 'server_bot':
-        t1 = taskplan_multi.pddl.task_distribution.tasks_for_server(utensils)
+        t1 = taskplan_multi.pddl.task_distribution.tasks_for_server()
     else:
-        t1 = taskplan_multi.pddl.task_distribution.tasks_for_cleaner(utensils, food_items)
+        t1 = taskplan_multi.pddl.task_distribution.tasks_for_cleaner(utensils)
     tasks = list()
     for task in t1:
         key = list(task.keys())[0]
@@ -90,6 +91,7 @@ def gen_data_main(args):
     myopic_planner = taskplan_multi.planners.myopic_planner.MyopicPlanner()
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=args.current_seed, agents=[active_agent], active=active_agent)
     tasks = get_tasks(restaurant)
+    bias = False
     while (map_counter < MAX_MAP):
         exp_cost = None
         whole_graph = taskplan_multi.utils.get_graph(restaurant)
@@ -98,14 +100,19 @@ def gen_data_main(args):
         whole_graph['label'] = exp_cost
         taskplan_multi.utils.write_datum_to_file(args, whole_graph, map_counter)
         map_counter+=1
-        random_state = restaurant.randomize_objects_state(randomness=[random.randint(0, 1), random.choice(random_choices), random.choice(random_choices)])
+        if map_counter >= 90:
+            bias = True
+        random_state = restaurant.randomize_objects_state(randomness=[random.randint(0, 1), random.choice(random_choices), random.choice(random_choices)], bias=bias)
         restaurant.update_container_props(random_state)
+        del whole_graph, random_state
+        gc.collect()
 
+    whole_graph = taskplan_multi.utils.get_graph(restaurant)
     image_graph = taskplan_multi.utils.get_image_for_data(whole_graph)
     plt.clf()
     plt.title(f'Seed: {args.current_seed}: Map : {map_counter} : ExC: {exp_cost}')
     plt.imshow(image_graph)
-    plt.savefig(f'{args.save_dir}data_completion_logs/{args.data_file_base_name}_{args.current_seed}.png', dpi=50)
+    plt.savefig(f'{args.save_dir}data_completion_logs/{args.data_file_base_name}_{args.current_seed}.png', dpi=300)
 
 def get_args():
     parser = argparse.ArgumentParser(

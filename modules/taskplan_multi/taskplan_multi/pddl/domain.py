@@ -61,7 +61,7 @@ def get_domain(types_dict=types_dict):
         (can-reach ?r - robot ?loc - location)
         (is-dirty ?obj - item)
         (is-cooked ?obj - item)
-        (meal-served ?obj - item ?loc - location)
+        (meal-served ?obj1 - item ?obj2 - item ?loc - location)
     )
 
     (:functions
@@ -143,15 +143,29 @@ def get_domain(types_dict=types_dict):
         )
     )
     (:action serve
-        :parameters (?r - robot ?i - item ?loc - location)
+        :parameters (?r - robot ?i - item ?b - item ?loc - location)
         :precondition (and
             (rob-at ?r ?loc)
             (is-cooked ?i)
             (is-at ?i ?loc)
+            (not (is-dirty ?b))
+            (is-at ?b ?loc)
         )
         :effect (and
-            (meal-served ?i ?loc)
+            (meal-served ?i ?b ?loc)
+            (not (is-cooked ?i))
+            (is-dirty ?b)
             (increase (total-cost) 100)
+        )
+    )
+    (:action ask-help
+        :parameters (?r1 - robot)
+        :precondition (and
+            (not (robot-active ?r1))
+        )
+        :effect (and
+            (robot-active ?r1)
+            (increase (total-cost) 1000) ; Cost of asking help
         )
     )
     )

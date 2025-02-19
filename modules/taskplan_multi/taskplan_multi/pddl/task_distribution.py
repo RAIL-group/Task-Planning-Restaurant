@@ -4,11 +4,11 @@ import random
 def tasks_for_cook(items):
     tasks = list()
     for item in items:
-        tasks.append(
-            {
-                f'cook_{item}': taskplan_multi.pddl.task.cook_something(item),
-            }
-        )
+        # tasks.append(
+        #     {
+        #         f'cook_{item}': taskplan_multi.pddl.task.cook_something(item),
+        #     }
+        # )
         tasks.append(
             {
                 f'preserve_{item}': taskplan_multi.pddl.task.place_something(item, 'fridge'),
@@ -29,17 +29,27 @@ def tasks_for_cook(items):
             f'make_oats': taskplan_multi.pddl.task.make_oats(),
         }
     )
+    tasks.append(
+        {
+            f'make_egg_pasta': taskplan_multi.pddl.task.make_egg_pasta(),
+        }
+    )
+    tasks.append(
+        {
+            f'make_milk': taskplan_multi.pddl.task.make_milk(),
+        }
+    )
     return tasks
 
 
-def tasks_for_server(items):
+def tasks_for_server():
     tasks = list()
-    for item in items:
-        tasks.append(
-            {
-                f'organize_{item}': taskplan_multi.pddl.task.organize_something(item),
-            }
-        )
+    # for item in items:
+    #     tasks.append(
+    #         {
+    #             f'organize_{item}': taskplan_multi.pddl.task.organize_something(item),
+    #         }
+    #     )
     tasks.append(
         {
             f'serve_milk': taskplan_multi.pddl.task.serve_milk('servingtable1'),
@@ -58,6 +68,16 @@ def tasks_for_server(items):
     tasks.append(
         {
             f'serve_omelette': taskplan_multi.pddl.task.serve_omelette('servingtable1'),
+        }
+    )
+    tasks.append(
+        {
+            f'serve_egg_pasta': taskplan_multi.pddl.task.serve_egg_pasta('servingtable1'),
+        }
+    )
+    tasks.append(
+        {
+            f'serve_egg_pasta': taskplan_multi.pddl.task.serve_egg_pasta('servingtable2'),
         }
     )
     tasks.append(
@@ -92,23 +112,12 @@ def tasks_for_server(items):
     # )
     return tasks
 
-def tasks_for_cleaner(items, food_items):
+def tasks_for_cleaner(items):
     tasks = list()
     for item in items:
         tasks.append(
             {
                 f'clean_{item}': taskplan_multi.pddl.task.clean_something(item),
-            }
-        )
-        tasks.append(
-            {
-                f'clear_bussingcart': taskplan_multi.pddl.task.clear_surface(item, 'bussingcart'),
-            }
-        )
-    for item in food_items:
-        tasks.append(
-            {
-                f'clear_bussingcart': taskplan_multi.pddl.task.clear_surface(item, 'bussingcart'),
             }
         )
     return tasks

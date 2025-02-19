@@ -13,6 +13,12 @@ from torch_geometric.data import Data
 import copy
 
 
+def get_status_of_asking_help(plan):
+    for p in plan:
+        if "ask-help" in p.name:
+            return 1
+    return 0
+
 def get_robot_pose(data):
     return data.accessible_poses['initial_robot_pose']
 
@@ -198,13 +204,12 @@ def graph_formatting(graph):
             [graph['nodes'][e1]['pos']]) - np.array(
                                             [graph['nodes'][e2]['pos']]))
         new_feature.append([e_cost])
-
-    graph['graph_edge_feature'] = 1 - np.array(new_feature)/600
+    graph['graph_edge_feature'] = 1 - np.array(new_feature)/100
     graph['graph_edge_index'] = [src, dst]
-    graph['graph_image'] = get_graph_image(
-        graph['edge_index'],
-        node_names, node_color_list
-    )
+    # graph['graph_image'] = get_graph_image(
+    #     graph['edge_index'],
+    #     node_names, node_color_list
+    # )
 
     return graph
 

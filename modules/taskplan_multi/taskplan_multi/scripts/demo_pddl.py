@@ -42,6 +42,71 @@ def make_plotting_grid(grid_map):
 
     return grid
 
+
+
+def plot_state_dotted(restaurant, args, image_name='init', title='None'):
+    grid = np.transpose(restaurant.grid)
+    img = make_plotting_grid(grid)
+    plt.clf()
+
+    # for container in restaurant.containers:
+    #     _x, _y = world_to_grid(
+    #         container['position']['x'], container['position']['z'],
+    #         restaurant.grid_min_x, restaurant.grid_min_z, restaurant.grid_res)
+        
+    #     assetId = container['assetId']
+        
+    #     # Plot the dot
+    #     plt.scatter(_x, _y, color='blue', s=10, label=assetId)
+        
+    #     # Label the dot slightly above
+    #     plt.text(_x + 0.2, _y + 0.2, assetId, fontsize=8, color='blue')
+
+    #     children = container.get('children', [])
+    #     for i, child in enumerate(children):
+    #         name = child['assetId']
+    #         cl = 'green'
+    #         if 'dirty' in child and child['dirty'] == 1:
+    #             name = 'dirty ' + name
+    #             cl = 'red'
+    #         if 'cooked' in child and child['cooked'] == 1:
+    #             name = 'cooked ' + name
+    #             cl = 'gold'
+            
+    #         # Plot child object as a dot with a label slightly offset
+    #         plt.scatter(_x, _y + (i + 1) * 1.2, color=cl, s=10)
+    #         plt.text(_x + 0.2, _y + (i + 1) * 1.2 + 0.2, name, fontsize=5, color=cl)
+
+    plt.imshow(img, cmap='gray_r', alpha=0.5)
+    plt.title(title)
+    plt.savefig(os.path.join(args.output_image_file), dpi=2000)
+
+def plot_state(restaurant, args, image_name='init', title='None'):
+    grid = np.transpose(restaurant.grid)
+    img = make_plotting_grid(grid)
+    plt.clf()
+    for container in restaurant.containers:
+        _x, _y = world_to_grid(
+            container['position']['x'], container['position']['z'],
+            restaurant.grid_min_x, restaurant.grid_min_z, restaurant.grid_res)
+        assetId = container['assetId']
+        plt.text(_x, _y, assetId, fontsize=8, color='blue')
+        children = container.get('children', [])
+        for i, child in enumerate(children):
+            name = child['assetId']
+            cl = 'green'
+            if 'dirty' in child and child['dirty'] == 1:
+                name = 'dirty ' + name
+                cl = 'red'
+            if 'cooked' in child and child['cooked'] == 1:
+                name = 'cooked ' + name
+                cl = 'gold'
+            plt.text(_x, _y + (i + 1) * 1.2, name, fontsize=5, color=cl)  # Slight offset
+        plt.imshow(img, cmap='gray_r', alpha=0.5)
+    # plt.axis('off')  # Hides the axis
+    plt.title(title)
+    plt.savefig(f'{args.save_dir}/{image_name}.png', dpi=600)
+
 def plot_plan(plan, cost):
     # Add a text block
     textstr = ''
@@ -63,45 +128,28 @@ def plot_plan(plan, cost):
 
 def run_pddl(args):
     # preparing pddl as input to the solver
-    seed = 0
+    seed = 5
     pddl = {}
     random.seed(seed)
-    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, agents=['cleaner_bot'], active='cleaner_bot')
+    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, agents=['cook_bot', 'cleaner_bot', 'server_bot'], active='cleaner_bot')
     ant_planner = taskplan_multi.planners.anticipatory_planner.AntcipatoryPlanner(args)
     object_state = restaurant.get_current_object_state()
-    print(object_state)
+    # print(object_state)
     # raise NotImplementedError
     random_state = restaurant.randomize_objects_state(randomness=[0, 2, 0])
     restaurant.update_container_props(random_state)
-    grid = np.transpose(restaurant.grid)
-    img = make_plotting_grid(grid)
-    plt.figure(figsize=(10, 5))
-    plt.subplot(121)
-    plt.imshow(img, cmap='gray_r', alpha=0.5)
-    for container_name, container_pos in restaurant.get_container_pos_list():
-        _x, _z = restaurant.accessible_poses[container_name]
-        plt.text(_x + 2, _z + 2, container_name, color='black', fontsize=6, rotation=45)
+    plot_state_dotted(restaurant, args, image_name='no-prep-init', title=f'Not Prepared State (INIT)')
 
-    # for obj_state in object_state:
-    #     _x, _z = world_to_grid(obj_state['position']['x'], obj_state['position']['z'],
-    #                                      restaurant.grid_min_x,
-    #                                      restaurant.grid_min_z, restaurant.grid_res)
-    #     plt.scatter(_x, _z, c='blue')
-    #     plt.text(_x, _z, obj_state['assetId'], color='black', fontsize=6, rotation=45)
-        
-    for agent in restaurant.agent_list:
-        tall_x, tall_z = restaurant.accessible_poses['base_' + agent]
-        plt.text(tall_x, tall_z, agent, color='red', fontsize=6, rotation=45)
-        plt.scatter(tall_x, tall_z, c='red')
+    raise NotImplementedError
     # print(restaurant.containers)
     pddl['domain'] = taskplan_multi.pddl.domain.get_domain()
-    pddl['planner'] = 'ff-astar'
+    pddl['planner'] = 'ff-wastar2'
     # task = taskplan_multi.pddl.task.move_robot('agent_tall', 'servingtable1')
     # task = taskplan_multi.pddl.task.place_something('cup', 'stove')
-    # task = taskplan_multi.pddl.task.clean_something('mug')
+    task = taskplan_multi.pddl.task.clean_something('mug2')
     # task = taskplan_multi.pddl.task.clear_surface('bussingcart', 'mug')
     # task = taskplan_multi.pddl.task.clear_surface('bussingcart', 'mug')
-    task = taskplan_multi.pddl.task.clear_surface('bussingcart', 'mug')
+    # task = taskplan_multi.pddl.task.clear_surface('bussingcart', 'mug')
     # t2 = taskplan_multi.pddl.task.clear_surface('bussingcart', 'bowl')
     # t3 = taskplan_multi.pddl.task.clear_surface('bussingcart', 'pan')
     # t3 = taskplan_multi.pddl.task.clear_surface('bussingcart', 'milk')
@@ -113,6 +161,7 @@ def run_pddl(args):
     # tot_cost = 0
     print(plan)
     print(plan_cost)
+    plt.savefig(os.path.join(args.output_image_file), dpi=2000)
     raise NotImplementedError
     if plan:
         for p in plan:
@@ -405,8 +454,10 @@ if __name__ == "__main__":
         description="TAMP Example Planner.."
     )
     parser.add_argument("--output_image_file", type=str, default="/results/")
-    parser.add_argument('--tall_network', type=str, required=False)
-    parser.add_argument('--tiny_network', type=str, required=False)
+    parser.add_argument('--cook_network', type=str, required=False)
+    parser.add_argument('--server_network', type=str, required=False)
+    parser.add_argument('--cleaner_network', type=str, required=False)
+    parser.add_argument('--save_dir', type=str, required=False)
     args = parser.parse_args()
     start_time = time.time()
     run_pddl(args)

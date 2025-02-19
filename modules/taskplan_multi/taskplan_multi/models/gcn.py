@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import (global_add_pool,
-                                global_mean_pool, GATv2Conv, TransformerConv)
+                                global_mean_pool, GATv2Conv, TransformerConv, GINConv)
 import learning
 from taskplan_multi.utils import preprocess_gcn_data
 import numpy as np
@@ -26,11 +26,31 @@ class AnticipateGCN(nn.Module):
         # self.fc2 = nn.Linear(512, 256)
         # self.fc3 = nn.Linear(256, 128)
         # self.fc4 = nn.Linear(128, 64)
-        self.conv1 = TransformerConv(775, 256, edge_dim=1)
-        self.conv2 = TransformerConv(256, 128, edge_dim=1)
-        self.conv3 = TransformerConv(128, 32, edge_dim=1)
-        self.conv4 = TransformerConv(32, 8, edge_dim=1)
-        self.fc = nn.Linear(8*2, 1)
+        # self.conv1 = TransformerConv(775, 256, edge_dim=1)
+        # self.conv2 = TransformerConv(256, 128, edge_dim=1)
+        # self.conv3 = TransformerConv(128, 32, edge_dim=1)
+        # self.conv4 = TransformerConv(32, 8, edge_dim=1)
+        self.conv1 = GINConv(nn.Sequential(
+            nn.Linear(775, 256),
+            nn.ReLU(),
+            nn.Linear(256, 256)
+        ))
+        self.conv2 = GINConv(nn.Sequential(
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128)
+        ))
+        self.conv3 = GINConv(nn.Sequential(
+            nn.Linear(128, 32),
+            nn.ReLU(),
+            nn.Linear(32, 32)
+        ))
+        self.conv4 = GINConv(nn.Sequential(
+            nn.Linear(32, 8),
+            nn.ReLU(),
+            nn.Linear(8, 8)
+        ))
+        self.fc = nn.Linear(8 * 2, 1)
 
         # self.fc1bn = nn.BatchNorm1d(512)
         # self.fc2bn = nn.BatchNorm1d(256)
@@ -54,14 +74,25 @@ class AnticipateGCN(nn.Module):
         # h = F.leaky_relu(self.fc4bn(self.fc4(h)), 0.1)
 
         # Convolution Layers
-        h = F.leaky_relu(self.conv1bn(self.conv1(h, edge_index, edge_features)
+        # h = F.leaky_relu(self.conv1bn(self.conv1(h, edge_index, edge_features)
+        #                               ), 0.1)
+        # h = F.leaky_relu(self.conv2bn(self.conv2(h, edge_index, edge_features)
+        #                               ), 0.1)
+        # h = F.leaky_relu(self.conv3bn(self.conv3(h, edge_index, edge_features)
+        #                               ), 0.1)
+        # h = F.leaky_relu(self.conv4bn(self.conv4(h, edge_index, edge_features)
+        #                               ), 0.1)
+        '''-----------------------------------------------------------------'''
+        h = F.leaky_relu(self.conv1bn(self.conv1(h, edge_index)
                                       ), 0.1)
-        h = F.leaky_relu(self.conv2bn(self.conv2(h, edge_index, edge_features)
+        h = F.leaky_relu(self.conv2bn(self.conv2(h, edge_index)
                                       ), 0.1)
-        h = F.leaky_relu(self.conv3bn(self.conv3(h, edge_index, edge_features)
+        h = F.leaky_relu(self.conv3bn(self.conv3(h, edge_index)
                                       ), 0.1)
-        h = F.leaky_relu(self.conv4bn(self.conv4(h, edge_index, edge_features)
+        h = F.leaky_relu(self.conv4bn(self.conv4(h, edge_index)
                                       ), 0.1)
+        
+        
 
         # Pooling
         h = torch.cat(

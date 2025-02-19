@@ -1,12 +1,12 @@
 help::
 	@echo "Multi agent anticipatory taskplanning in a restaurant setting (multi-ap):"
 
-MA_AP_BASENAME ?= 3robot
-MA_AP_NUM_TRAINING_SEEDS ?= 30
+MA_AP_BASENAME ?= 3bot-ask-help-50-tasks
+MA_AP_NUM_TRAINING_SEEDS ?= 50
 MA_AP_NUM_TESTING_SEEDS ?= 0
 MA_AP_NUM_EVAL_SEEDS ?= 0
 EXPERIMENT_NAME = beta-v0
-EXP_NUM = 1
+EXP_NUM = 4
 
 # Target for a demo
 .PHONY: multi-agent-demo
@@ -14,8 +14,10 @@ multi-agent-demo: build
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/ma_taskplan_demo/
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.demo_pddl \
 		--output_image_file /data/$(MA_AP_BASENAME)/ma_taskplan_demo/task_plan_myopic.png \
-		--tall_network /data/restaurant-multi-tall/logs/beta-v0/ap_tall.pt \
-		--tiny_network /data/restaurant-multi-tiny/logs/beta-v0/ap_tiny.pt
+		--save_dir /data/$(MA_AP_BASENAME)/results/$(EXP_NUM) \
+		--cook_network /data/cook-agent/logs/beta-v0/ap_cook.pt \
+		--cleaner_network /data/cleaner-agent/logs/beta-v0/ap_cleaner.pt \
+		--server_network /data/server-agent/logs/beta-v0/ap_server.pt
 
 
 ma-data-gen-seeds = \
@@ -34,7 +36,7 @@ $(ma-data-gen-seeds):
 	@$(call xhost_activate)
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.gen_data \
 		--current_seed $(seed) \
-		--agent cleaner_bot \
+		--agent cook_bot \
 	 	--data_file_base_name data_$(traintest) \
 		--save_dir /data/$(MA_AP_BASENAME)/ 
 
@@ -46,10 +48,10 @@ $(ma-train-file):
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/logs/$(EXPERIMENT_NAME)
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.train \
 		--num_steps 2000 \
-		--learning_rate 0.05 \
-		--learning_rate_decay_factor 0.5 \
-		--epoch_size 500 \
-		--agent server \
+		--learning_rate 0.09 \
+		--learning_rate_decay_factor 0.8 \
+		--epoch_size 200 \
+		--agent cook \
 		--save_dir /data/$(MA_AP_BASENAME)/logs/$(EXPERIMENT_NAME) \
 		--data_csv_dir /data/$(MA_AP_BASENAME)/ 
 
@@ -62,7 +64,7 @@ ma-eval-demo:
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results/$(EXP_NUM)
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo \
-		--current_seed 0 \
+		--current_seed $(EXP_NUM) \
 		--save_dir /data/$(MA_AP_BASENAME)/results/$(EXP_NUM) \
 		--cook_network /data/cook-agent/logs/beta-v0/ap_cook.pt \
 		--cleaner_network /data/cleaner-agent/logs/beta-v0/ap_cleaner.pt \

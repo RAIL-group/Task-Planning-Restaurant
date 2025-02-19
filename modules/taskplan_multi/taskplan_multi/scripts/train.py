@@ -67,8 +67,8 @@ def train(args, train_path, test_path):
 
     # raise NotImplementedError
 
-    train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=8, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=128, shuffle=True)
     train_iter = iter(train_loader)
     train_writer = SummaryWriter(
         log_dir=os.path.join(args.save_dir, train_writer_str))

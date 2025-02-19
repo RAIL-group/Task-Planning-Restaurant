@@ -138,6 +138,8 @@ def create_non_overlapping_containers(room_points, num_rectangles, min_width,
         while attempt < 100:  # Avoid infinite loop by limiting the number of attempts
             width = random.uniform(min_width, max_width)
             height = random.uniform(min_height, max_height)
+            # width = 0.25
+            # height = 0.25
 
             # Attempt to position rectangle near the boundary
             if random.choice([True, False]):  # Choose whether to align with x or z boundary randomly
@@ -220,9 +222,9 @@ def generate_restaurant(seed, kitchen_containers_list,
         s_cen = s_polygon.centroid
         door_coords = get_door(k_polygon, s_polygon)
         min_width = 0.25
-        max_width = 0.75
+        max_width = 1.0
         min_height = 0.25
-        max_height = 0.75
+        max_height = 1.0
         door_buffer = 1.0  # Buffer around the door
         restaurant = {
                 'rooms': {
@@ -352,6 +354,7 @@ def generate_restaurant(seed, kitchen_containers_list,
             }
         containers.append(kc)
 
+    serve_cont_count = 0
     for idx, item in enumerate(serving_room_containers_list):
         if len(service_corners) > 0:
             rectangle = service_corners.pop()
@@ -385,16 +388,17 @@ def generate_restaurant(seed, kitchen_containers_list,
         kc['loc'] = 'servingroom'
         if '_bot' in item:
             continue
+        serve_cont_count += 1
         children = list()
         if 'children' in kc:
             children = kc['children']
         max_pop = min(len(movables), MAX_OBJ_PER_CONT)
         rand_item = random.randint(0, max_pop)
-        if idx == len(serving_room_containers_list) - 1:
+        if serve_cont_count == 3:
             rand_item = len(movables)
         for i in range(rand_item):
             t = movables.pop()
-            if 'washable' in t and (random.random() > 0.5 or item == 'bussingcart'):
+            if 'washable' in t and (random.random() > 0.5):
                 t['dirty'] = 1
             if 'cookable' in t and random.random() > 0.5:
                 t['cooked'] = 1

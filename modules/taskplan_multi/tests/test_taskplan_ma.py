@@ -7,8 +7,37 @@ import os
 import learning
 
 
+def test_ma_inspect_text():
+    root = "/data/server-agent/"
+    json_files = list()
+    for path, _, files in os.walk(root):
+        for name in files:
+            if 'data_training_' in name and ".csv" in name:
+                json_files.append(os.path.join(path, name))
+    true_costs = list()
+    for file in json_files:
+        df = pd.read_csv(file, header=None)
+        for idx, pickle_path in enumerate(df[0]):
+            pickle_path = root+pickle_path
+            x = learning.data.load_compressed_pickle(pickle_path)
+            for count, node_key in enumerate(x['nodes']):
+                print(x['nodes'][node_key]['name'])
+    # plt.clf()
+    # plt.scatter(true_costs, true_costs, alpha=0.1)
+    # # Draw a line from the origin to the farthest point
+    # max_value = max(max(true_costs), max(true_costs))
+    # plt.plot([0, max_value], [0, max_value], 'grey')  # 'r' makes the line red
+
+    # # Labeling the axes
+    # plt.xlabel('True Costs')
+    # plt.ylabel('True Costs')
+    # plt.title('Costs Scatter Plot with Line from Origin (On Training)')
+    # save_file = '/data/figs/data-viz-cost-server.png'
+    # plt.savefig(save_file, dpi=600)
+
+
 def test_ma_inspect_data():
-    root = "/data/cook-agent/"
+    root = "/data/server-agent/"
     json_files = list()
     for path, _, files in os.walk(root):
         for name in files:
@@ -31,7 +60,7 @@ def test_ma_inspect_data():
     plt.xlabel('True Costs')
     plt.ylabel('True Costs')
     plt.title('Costs Scatter Plot with Line from Origin (On Training)')
-    save_file = '/data/figs/data-viz-cost-cook.png'
+    save_file = '/data/figs/data-viz-cost-server.png'
     plt.savefig(save_file, dpi=600)
 
 def test_ma_model_output():

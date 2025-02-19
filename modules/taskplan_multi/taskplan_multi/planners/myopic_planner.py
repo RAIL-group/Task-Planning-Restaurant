@@ -12,20 +12,31 @@ class MyopicPlanner:
 
     def get_cost_and_state_from_task(self, proc_data, task):
         pddl_problem = taskplan_multi.pddl.problem.get_problem(proc_data, task)
-        planner = 'ff-astar'
+        planner = 'ff-wastar2'
         plan, cost = solve_from_pddl(
             self.domain,
             pddl_problem,
             planner=planner,
             max_planner_time=120
         )
+        # if plan is None:
+        #     proc_data.active_all = True
+        #     pddl_problem = taskplan_multi.pddl.problem.get_problem(proc_data, task)
+        #     mod_plan, cost = solve_from_pddl(
+        #         self.domain,
+        #         pddl_problem,
+        #         planner=planner,
+        #         max_planner_time=120
+        #     )
+        #     proc_data.active_all = False
+        #     return mod_plan, cost + 2000
+        # else:
         return plan, cost
     
     def get_expected_cost(self, proc_data, task_distribution):
         expected_costs = list()
         for task in task_distribution:
             plan, cost = self.get_cost_and_state_from_task(proc_data, task)
-            # print(cost)
             if plan is None:
                 expected_costs.append(5000)
             else:
@@ -34,40 +45,85 @@ class MyopicPlanner:
         expected_cost = sum(expected_costs)/len(expected_costs)
         return expected_cost
     
-    def get_seq_cost(self, args, restaurant, task_seq, seq_num):
-        file_name = 'myopic.txt'
-        logfile = os.path.join(args.save_dir, file_name)
-        task_file_name = 'tasks.txt'
-        task_logfile = os.path.join(args.save_dir, task_file_name)
-        costs = list()
+    def get_oracle_failure_ratio(self, restaurant, task_seq):
+        failed = 0
         for idx, item in enumerate(task_seq):
-            active_agent = item[0]
-            task = item[1]
-            with open(task_logfile, "a+") as f:
-                f.write(
-                    f" | active: {active_agent}"
-                    f" | task: {task} \n"
+                active_agent = item[0]
+                task = item[1]
+                restaurant.active_robot = active_agent
+                plan, cost = (
+                    self.get_cost_and_state_from_task(
+                        restaurant, task)
                 )
-            restaurant.active_robot = active_agent
-            plan, cost = (
-                self.get_cost_and_state_from_task(
-                    restaurant, task)
-            )
-            if plan is None:
-                costs.append(10000)
+                if plan is None:
+                    failed+=1
+        return failed
+    
+    def get_seq_cost(self, args, restaurant, task_seq, seq_num, no_prep_state=None, prep_state=None):
+        if no_prep_state:
+            restaurant.update_container_props(no_prep_state)
+            file_name = 'np_myopic.txt'
+            logfile = os.path.join(args.save_dir, file_name)
+            for idx, item in enumerate(task_seq):
+                active_agent = item[0]
+                task = item[1]
+                restaurant.active_robot = active_agent
+                restaurant.asked_help = False
+                plan, cost = (
+                    self.get_cost_and_state_from_task(
+                        restaurant, task)
+                )
+                if plan is None:
+                    # costs.append(10000)
+                    with open(logfile, "a+") as f:
+                        f.write(
+                            f" | seq: S{seq_num}"
+                            f" | num: T{idx+1}"
+                            f" | help: 0"
+                            f" | cost: 10000 \n"
+                        )
+                    continue
+                help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
                 with open(logfile, "a+") as f:
                     f.write(
                         f" | seq: S{seq_num}"
                         f" | num: T{idx+1}"
-                        f" | cost: 10000 \n"
+                        f" | help: {help_stat}"
+                        f" | cost: {cost:0.4f} \n"
                     )
-                continue
-            with open(logfile, "a+") as f:
-                f.write(
-                    f" | seq: S{seq_num}"
-                    f" | num: T{idx+1}"
-                    f" | cost: {cost:0.4f} \n"
+                # costs.append(cost)
+                new_state = restaurant.get_final_state_from_plan(plan)
+                restaurant.update_container_props(new_state)
+        
+        if prep_state:
+            restaurant.update_container_props(prep_state)
+            file_name = 'prep_myopic.txt'
+            logfile = os.path.join(args.save_dir, file_name)
+            for idx, item in enumerate(task_seq):
+                active_agent = item[0]
+                task = item[1]
+                restaurant.active_robot = active_agent
+                plan, cost = (
+                    self.get_cost_and_state_from_task(
+                        restaurant, task)
                 )
-            costs.append(cost)
-            new_state = restaurant.get_final_state_from_plan(plan)
-            restaurant.update_container_props(new_state)
+                if plan is None:
+                    # costs.append(10000)
+                    with open(logfile, "a+") as f:
+                        f.write(
+                            f" | seq: S{seq_num}"
+                            f" | num: T{idx+1}"
+                            f" | help: 0"
+                            f" | cost: 10000 \n"
+                        )
+                    continue
+                help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
+                with open(logfile, "a+") as f:
+                    f.write(
+                        f" | seq: S{seq_num}"
+                        f" | num: T{idx+1}"
+                        f" | help: {help_stat}"
+                        f" | cost: {cost:0.4f} \n"
+                    )
+                new_state = restaurant.get_final_state_from_plan(plan)
+                restaurant.update_container_props(new_state)
