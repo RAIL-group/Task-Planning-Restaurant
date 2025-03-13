@@ -1,7 +1,7 @@
 help::
 	@echo "Multi agent anticipatory taskplanning in a restaurant setting (multi-ap):"
 
-MA_AP_BASENAME ?= 3bot-ask-help-50-tasks
+MA_AP_BASENAME ?= 3bot-ask-help-pddl
 MA_AP_NUM_TRAINING_SEEDS ?= 50
 MA_AP_NUM_TESTING_SEEDS ?= 0
 MA_AP_NUM_EVAL_SEEDS ?= 0
