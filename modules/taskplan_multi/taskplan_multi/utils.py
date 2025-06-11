@@ -11,6 +11,8 @@ from taskplan_multi.environments.restaurant import world_to_grid
 import torch
 from torch_geometric.data import Data
 import copy
+from taskplan_multi.utilities.primitives import (
+    ROOMS_KEY, DOORS_KEY, OBJECTS_KEY, POLYGON, ASSET_ID, ROOM_1, ROOM_2, BOT_1, BOT_2, MAIN_DOMAIN)
 
 
 def get_status_of_asking_help(plan):
@@ -30,33 +32,33 @@ def get_graph(data):
     assetId_idx_map = {}
     edges = []
     nodes[node_count] = {
-        'id': 'restaurant',
-        'name': 'restaurant',
-        'desc': 'Restaurant',
+        'id': MAIN_DOMAIN,
+        'name': MAIN_DOMAIN,
+        'desc': MAIN_DOMAIN,
         'pos': (0, 0),
         'type': [1, 0, 0, 0, 0],
     }
     node_count += 1
-    loc_rob_map = dict()
+    # loc_rob_map = dict()
 
-    agent = data.active_robot
-    agent_at = data.restaurant[agent]['rob_at']
-    _x, _y = data.accessible_poses[agent_at]
-    rob_name = data.restaurant[agent]['name'].split('_')[0]
-    rob_loc = data.restaurant[agent]['loc']
-    if rob_loc not in loc_rob_map:
-        loc_rob_map[rob_loc] = list()
-    loc_rob_map[rob_loc].append(node_count)
-    rob_name = rob_name + ' active'
-    nodes[node_count] = {
-        'id': 'robot',
-        'name': rob_name,
-        'desc': 'Robot',
-        'pos': (_x, _y),
-        'type': [0, 1, 0, 0, 0],
-    }
-    # edges.append(tuple([0, node_count]))
-    node_count += 1
+    # agent = data.active_robot
+    # agent_at = data.restaurant[agent]['rob_at']
+    # _x, _y = data.accessible_poses[agent_at]
+    # rob_name = data.restaurant[agent]['name'].split('_')[0]
+    # rob_loc = data.restaurant[agent]['loc']
+    # if rob_loc not in loc_rob_map:
+    #     loc_rob_map[rob_loc] = list()
+    # loc_rob_map[rob_loc].append(node_count)
+    # rob_name = rob_name + ' active'
+    # nodes[node_count] = {
+    #     'id': 'robot',
+    #     'name': rob_name,
+    #     'desc': 'Robot',
+    #     'pos': (_x, _y),
+    #     'type': [0, 1, 0, 0, 0],
+    # }
+    # # edges.append(tuple([0, node_count]))
+    # node_count += 1
     # for agent in data.agent_list:
     # # Create robot node and add the edge to the restaurant
     #     agent_at = data.restaurant[agent]['rob_at']
@@ -93,9 +95,9 @@ def get_graph(data):
             'type': [0, 0, 1, 0, 0],
         }
         edges.append(tuple([0, node_count]))
-        if room in loc_rob_map:
-            for item in loc_rob_map[room]:
-                edges.append(tuple([item, node_count]))
+        # if room in loc_rob_map:
+        #     for item in loc_rob_map[room]:
+        #         edges.append(tuple([item, node_count]))
         node_count += 1
 
     # add an edge between two rooms adjacent by a passable shared door
@@ -131,10 +133,10 @@ def get_graph(data):
             oid = connected_object['id']
             assetId = connected_object['assetId']
             name = get_generic_name(oid)
-            if 'dirty' in connected_object and connected_object['dirty'] == 1:
-                name = 'dirty ' + name
-            if 'cooked' in connected_object and connected_object['cooked'] == 1:
-                name = 'cooked ' + name
+            if 'bad' in connected_object and connected_object['bad'] == 1:
+                name = 'bad ' + name
+            # if 'cooked' in connected_object and connected_object['cooked'] == 1:
+            #     name = 'cooked ' + name
             _x, _y = world_to_grid(
                 container['position']['x'],
                 container['position']['z'],

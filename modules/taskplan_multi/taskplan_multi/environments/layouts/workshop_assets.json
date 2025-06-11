@@ -1,0 +1,139 @@
+{
+    "tirerack": {
+        "description": "rack for storing tires",
+        "id": "tirerack|1",
+        "assetId": "tirerack",
+        "children": [
+            {
+                "description": "car tire",
+                "assetId": "tire1",
+                "id": "tire|1",
+                "bad": 1
+            },
+            {
+                "description": "car tire",
+                "assetId": "tire2",
+                "id": "tire|2",
+                "bad": 1
+            },
+            {
+                "description": "car tire",
+                "assetId": "tire3",
+                "id": "tire|3",
+                "bad": 1
+            }
+        ],
+        "polygon": [
+            {   "x": 6.6209999999999996, 
+                "z": 7.790224305886052
+            }, 
+            {
+                "x": 6.6209999999999996, 
+                "z": 8.326
+            }, 
+            {
+                "x": 6.096901328319298, 
+                "z": 8.326
+            }, 
+            {
+                "x": 6.096901328319298, 
+                "z": 7.790224305886052
+            }, 
+            {
+                "x": 6.6209999999999996, 
+                "z": 7.790224305886052
+            }
+        ]
+    },
+    "tirefixingstation": {
+        "description": "workstation for fixing tires",
+        "id": "tirefixingstation|1",
+        "assetId": "tirefixingstation",
+        "children": [],
+        "polygon": [
+            {   "x": 6.6209999999999996, 
+                "z": 3.611
+            }, 
+            {
+                "x": 6.6209999999999996, 
+                "z": 4.12004649182
+            }, 
+            {
+                "x": 5.671160865182609, 
+                "z": 4.12004649182
+            }, 
+            {
+                "x": 5.671160865182609, 
+                "z": 3.611
+            }, 
+            {
+                "x": 6.6209999999999996, 
+                "z": 3.611
+            }
+        ]
+    },
+    "mirrorrack": {
+        "description": "rack for storing mirrors",
+        "id": "mirrorrack|1",
+        "assetId": "mirrorrack",
+        "children": [
+            {
+                "description": "car mirror",
+                "assetId": "mirror1",
+                "id": "mirror|1",
+                "bad": 1
+            },
+            {
+                "description": "car mirror",
+                "assetId": "mirror2",
+                "id": "mirror|2",
+                "bad": 1
+            },
+            {
+                "description": "car mirror",
+                "assetId": "mirror3",
+                "id": "mirror|3",
+                "bad": 1
+            }
+        ],
+        "polygon": [
+            {"x": 0.8073124698874043, "z": 7.44616884377764}, 
+            {"x": 0.8073124698874043, "z": 8.326}, 
+            {"x": 0.2, "z": 8.326}, 
+            {"x": 0.2, "z": 7.44616884377764}, 
+            {"x": 0.8073124698874043, "z": 7.44616884377764}
+        ]
+    },
+    "mirrorfixingstation": {
+        "description": "workstation for fixing mirrors",
+        "id": "mirrorfixingstation|1",
+        "assetId": "mirrorfixingstation",
+        "children": [],
+        "polygon": [
+            {"x": 0.8763080703939101, "z": 3.611}, 
+            {"x": 0.8763080703939101, "z": 4.273644348102572}, 
+            {"x": 0.2, "z": 4.273644348102572}, 
+            {"x": 0.2, "z": 3.611}, 
+            {"x": 0.8763080703939101, "z": 3.611}
+        ]
+    },
+    "toolrack": {
+        "description": "rack for storing toolbox",
+        "id": "toolrack|1",
+        "assetId": "toolrack",
+        "children": [
+            {
+                "description": "toolbox for fixing car prts",
+                "assetId": "toolbox",
+                "id": "toolbox|1"
+            }
+        ],
+        "polygon": [
+            {"x": 3.0766417635080103, "z": 4.509663372814014}, 
+            {"x": 3.0766417635080103, "z": 5.439249780814269}, 
+            {"x": 2.24743832308841252, "z": 5.439249780814269}, 
+            {"x": 2.24743832308841252, "z": 4.509663372814014},
+            {"x": 3.0766417635080103, "z": 4.509663372814014}
+        ]
+    }
+}

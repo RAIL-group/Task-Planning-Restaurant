@@ -7,12 +7,12 @@ from pddlstream.algorithms.search import solve_from_pddl
 
 
 class MyopicPlanner:
-    def __init__(self, domain=taskplan_multi.pddl.domain.get_domain(), args=None):
+    def __init__(self, domain=taskplan_multi.pddl.workshop_domain.get_domain(), args=None):
         self.domain = domain
 
     def get_cost_and_state_from_task(self, proc_data, task):
-        pddl_problem = taskplan_multi.pddl.problem.get_problem(proc_data, task)
-        planner = 'ff-wastar2'
+        pddl_problem = taskplan_multi.pddl.workshop_problem.get_problem(proc_data, task)
+        planner = 'max-astar'
         plan, cost = solve_from_pddl(
             self.domain,
             pddl_problem,

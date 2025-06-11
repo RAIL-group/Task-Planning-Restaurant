@@ -28,7 +28,7 @@ def load_assets():
     json_file = ''
     for path, _, files in os.walk(root):
         for name in files:
-            if 'assets.json' == name:
+            if 'workshop_assets.json' == name:
                 json_file = os.path.join(path, name)
                 datum = json.load(open(json_file))
                 return datum
@@ -42,7 +42,7 @@ def load_movables():
     json_file = ''
     for path, _, files in os.walk(root):
         for name in files:
-            if 'movables.json' == name:
+            if 'workshop_movables.json' == name:
                 json_file = os.path.join(path, name)
                 datum = json.load(open(json_file))
                 return datum
@@ -212,8 +212,8 @@ def generate_restaurant(seed, kitchen_containers_list,
     while True:
         datum = load_data()
         assets = load_assets()
-        movables = load_movables()
-        random.shuffle(movables)
+        # movables = load_movables()
+        # random.shuffle(movables)
         kitchen = datum[0]
         serving_room = datum[1]
         k_polygon = Polygon([(point['x'], point['z']) for point in kitchen])
@@ -221,30 +221,30 @@ def generate_restaurant(seed, kitchen_containers_list,
         k_cen = k_polygon.centroid
         s_cen = s_polygon.centroid
         door_coords = get_door(k_polygon, s_polygon)
-        min_width = 0.25
+        min_width = 0.5
         max_width = 1.0
-        min_height = 0.25
+        min_height = 0.5
         max_height = 1.0
         door_buffer = 1.0  # Buffer around the door
         restaurant = {
                 'rooms': {
-                    'kitchen': {
+                    'tirestation': {
                         'position': {
                             'x': k_cen.x,
                             'z': k_cen.y
                         },
                         'polygon': kitchen,
-                        'name': 'kitchen',
-                        "id": "kitchen"
+                        'name': 'tirestation',
+                        "id": "tirestation"
                     },
-                    'servingroom': {
+                    'mirrorstation': {
                         'position': {
                             'x': s_cen.x,
                             'z': s_cen.y
                         },
                         'polygon': serving_room,
-                        "name": "servingroom",
-                        "id": "servingroom"
+                        "name": "mirrorstation",
+                        "id": "mirrorstation"
                     }
                 },
                 'doors': {
@@ -262,154 +262,193 @@ def generate_restaurant(seed, kitchen_containers_list,
             raise ValueError('Servingroom can not be Empty')
 
         # Create non-overlapping rectangles inside the kitchen
-        kitchen_corners = create_corner_rectangles(kitchen, min_width, max_width,
-                                                   min_height, max_height,
-                                                   door_coords, door_buffer)
-        min_num_cont_needed = len(kitchen_containers_list) + 1
-        kitchen_random = create_non_overlapping_containers(kitchen,
-                                                           min_num_cont_needed,
-                                                           min_width, max_width,
-                                                           min_height, max_height,
-                                                           door_coords,
-                                                           door_buffer,
-                                                           kitchen_corners)
+        # kitchen_corners = create_corner_rectangles(kitchen, min_width, max_width,
+        #                                            min_height, max_height,
+        #                                            door_coords, door_buffer)
+        # min_num_cont_needed = len(kitchen_containers_list) + 1
+        # kitchen_random = create_non_overlapping_containers(kitchen,
+        #                                                    min_num_cont_needed,
+        #                                                    min_width, max_width,
+        #                                                    min_height, max_height,
+        #                                                    door_coords,
+        #                                                    door_buffer,
+        #                                                    kitchen_corners)
 
-        service_corners = create_corner_rectangles(serving_room, min_width,
-                                                   max_width, min_height,
-                                                   max_height, door_coords,
-                                                   door_buffer,
-                                                   kitchen_corners + kitchen_random
-                                                   )
-        service_random = create_non_overlapping_containers(serving_room,
-                                                           len(serving_room_containers_list) + 1,
-                                                           min_width, max_width,
-                                                           min_height, max_height,
-                                                           door_coords,
-                                                           door_buffer,
-                                                           kitchen_corners + kitchen_random + service_corners
-                                                           )
-        if (len(kitchen_containers_list) <= len(kitchen_corners) + len(
-            kitchen_random)) and (
-                len(serving_room_containers_list) <= len(
-                    service_corners) + len(service_random)):
-            break
-        num_attempt -= 1
+        # service_corners = create_corner_rectangles(serving_room, min_width,
+        #                                            max_width, min_height,
+        #                                            max_height, door_coords,
+        #                                            door_buffer,
+        #                                            kitchen_corners + kitchen_random
+        #                                            )
+        # service_random = create_non_overlapping_containers(serving_room,
+        #                                                    len(serving_room_containers_list) + 1,
+        #                                                    min_width, max_width,
+        #                                                    min_height, max_height,
+        #                                                    door_coords,
+        #                                                    door_buffer,
+        #                                                    kitchen_corners + kitchen_random + service_corners
+        #                                                    )
+        # if (len(kitchen_containers_list) <= len(kitchen_corners) + len(
+        #     kitchen_random)) and (
+        #         len(serving_room_containers_list) <= len(
+        #             service_corners) + len(service_random)):
+        #     break
+        # num_attempt -= 1
 
-        if num_attempt == 0:
-            raise ValueError('Try increaing number of attempts.')
+        # if num_attempt == 0:
+        #     raise ValueError('Try increaing number of attempts.')
+        break
 
     containers = list()
+    # print(kitchen_containers_list)
+    # raise NotImplementedError
     for item in kitchen_containers_list:
-        if len(kitchen_corners) > 0:
-            rectangle = kitchen_corners.pop()
-        elif len(kitchen_random) > 0:
-            rectangle = kitchen_random.pop()
-        else:
-            continue
-        centroid = rectangle.centroid
-        cords = list(rectangle.exterior.coords)
-        temp = list()
-        for cx, cz in cords:
-            t_cords = {
-                'x': cx,
-                'z': cz
-            }
-            temp.append(t_cords)
+        # if len(kitchen_corners) > 0:
+        #     rectangle = kitchen_corners.pop()
+        # elif len(kitchen_random) > 0:
+        #     rectangle = kitchen_random.pop()
+        # else:
+        #     continue
+        # centroid = rectangle.centroid
+        # cords = list(rectangle.exterior.coords)
+        # temp = list()
+        # for cx, cz in cords:
+        #     t_cords = {
+        #         'x': cx,
+        #         'z': cz
+        #     }
+        #     temp.append(t_cords)
         if '_bot' in item:
             restaurant[item] = {
-                'name': item
+                'name': item,
+                "polygon": [
+                    {   "x": 6.6209999999999996, 
+                        "z": 1.5
+                    }, 
+                    {
+                        "x": 6.6209999999999996, 
+                        "z": 2.0
+                    }, 
+                    {
+                        "x": 5.671160865182609, 
+                        "z": 2.0
+                    }, 
+                    {
+                        "x": 5.671160865182609, 
+                        "z": 1.5
+                    }, 
+                    {
+                        "x": 6.6209999999999996, 
+                        "z": 1.5
+                    }
+                ]
             }
             kc = restaurant[item]
         else:
             kc = assets[item]
+        # print(kc)
+        temp = Polygon([(point['x'], point['z']) for point in kc['polygon']])
+        centroid = temp.centroid
+        # print(centroid)
+        # raise NotImplementedError
         kc['position'] = {
                 'x': centroid.x,
                 'z': centroid.y
         }
-        kc['polygon'] = temp
-        kc['loc'] = 'kitchen'
+        # kc['polygon'] = temp
+        kc['loc'] = 'tirestation'
         if '_bot' in item:
             continue
-        children = list()
-        if 'children' in kc:
-            children = kc['children']
-        max_pop = min(len(movables), MAX_OBJ_PER_CONT)
-        min_pop = min(len(movables), 1)
-        rand_item = random.randint(min_pop, max_pop)
-        for i in range(rand_item):
-            t = movables.pop()
-            if item == 'dishwasher' and 'washable' not in t:
-                movables.append(t)
-                continue
-            if 'washable' in t and random.random() > 0.5:
-                t['dirty'] = 1
-            if 'cookable' in t and random.random() > 0.5:
-                t['cooked'] = 1
-            children.append(t)
-        kc['children'] = children
+        # children = list()
+        # if 'children' in kc:
+        #     children = kc['children']
+        # max_pop = min(len(movables), MAX_OBJ_PER_CONT)
+        # min_pop = min(len(movables), 1)
+        # rand_item = random.randint(min_pop, max_pop)
+        # for i in range(rand_item):
+        #     t = movables.pop()
+        #     if item == 'dishwasher' and 'washable' not in t:
+        #         movables.append(t)
+        #         continue
+        #     if 'washable' in t and random.random() > 0.5:
+        #         t['dirty'] = 1
+        #     if 'cookable' in t and random.random() > 0.5:
+        #         t['cooked'] = 1
+        #     children.append(t)
+        # kc['children'] = children
         for child in kc['children']:
             child['position'] = {
                 'x': centroid.x,
                 'z': centroid.y
             }
+        # print(kc)
         containers.append(kc)
 
     serve_cont_count = 0
     for idx, item in enumerate(serving_room_containers_list):
-        if len(service_corners) > 0:
-            rectangle = service_corners.pop()
-        elif len(service_random) > 0:
-            rectangle = service_random.pop()
-        else:
-            continue
-        centroid = rectangle.centroid
-        cords = list(rectangle.exterior.coords)
-        temp = list()
-        for cx, cz in cords:
-            t_cords = {
-                'x': cx,
-                'z': cz
-            }
-            temp.append(t_cords)
+        # if len(service_corners) > 0:
+        #     rectangle = service_corners.pop()
+        # elif len(service_random) > 0:
+        #     rectangle = service_random.pop()
+        # else:
+        #     continue
+        # centroid = rectangle.centroid
+        # cords = list(rectangle.exterior.coords)
+        # temp = list()
+        # for cx, cz in cords:
+        #     t_cords = {
+        #         "x": cx,
+        #         "z": cz
+        #     }
+        #     temp.append(t_cords)
         
         if '_bot' in item:
             restaurant[item] = {
-                'name': item
+                'name': item,
+                "polygon": [
+                    {"x": 1.0766417635080103, "z": 4.509663372814014}, 
+                    {"x": 1.0766417635080103, "z": 5.439249780814269}, 
+                    {"x": 0.24743832308841252, "z": 5.439249780814269}, 
+                    {"x": 0.24743832308841252, "z": 4.509663372814014}, 
+                    {"x": 1.0766417635080103, "z": 4.509663372814014}
+                ]
             }
             kc = restaurant[item]
         else:
             kc = assets[item]
-        
+        temp = Polygon([(point['x'], point['z']) for point in kc['polygon']])
+        centroid = temp.centroid
         kc['position'] = {
                     'x': centroid.x,
                     'z': centroid.y
         }
-        kc['polygon'] = temp
-        kc['loc'] = 'servingroom'
+        # kc['polygon'] = temp
+        kc['loc'] = 'mirrorstation'
         if '_bot' in item:
             continue
-        serve_cont_count += 1
-        children = list()
-        if 'children' in kc:
-            children = kc['children']
-        max_pop = min(len(movables), MAX_OBJ_PER_CONT)
-        rand_item = random.randint(0, max_pop)
-        if serve_cont_count == 3:
-            rand_item = len(movables)
-        for i in range(rand_item):
-            t = movables.pop()
-            if 'washable' in t and (random.random() > 0.5):
-                t['dirty'] = 1
-            if 'cookable' in t and random.random() > 0.5:
-                t['cooked'] = 1
-            children.append(t)
-        kc['children'] = children
+        # serve_cont_count += 1
+        # children = list()
+        # if 'children' in kc:
+        #     children = kc['children']
+        # max_pop = min(len(movables), MAX_OBJ_PER_CONT)
+        # rand_item = random.randint(0, max_pop)
+        # if serve_cont_count == 3:
+        #     rand_item = len(movables)
+        # for i in range(rand_item):
+        #     t = movables.pop()
+        #     if 'washable' in t and (random.random() > 0.5):
+        #         t['dirty'] = 1
+        #     if 'cookable' in t and random.random() > 0.5:
+        #         t['cooked'] = 1
+        #     children.append(t)
+        # kc['children'] = children
         for child in kc['children']:
             child['position'] = {
                 'x': centroid.x,
                 'z': centroid.y
             }
+        # print(kc)
         containers.append(kc)
-    assert len(movables) == 0
+    # assert len(movables) == 0
     restaurant['objects'] = containers
     return restaurant

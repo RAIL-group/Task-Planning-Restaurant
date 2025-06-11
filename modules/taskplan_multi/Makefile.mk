@@ -1,7 +1,7 @@
 help::
 	@echo "Multi agent anticipatory taskplanning in a restaurant setting (multi-ap):"
 
-MA_AP_BASENAME ?= 3bot-ask-help-pddl
+MA_AP_BASENAME ?= workshop-demo
 MA_AP_NUM_TRAINING_SEEDS ?= 50
 MA_AP_NUM_TESTING_SEEDS ?= 0
 MA_AP_NUM_EVAL_SEEDS ?= 0
@@ -12,7 +12,7 @@ EXP_NUM = 4
 .PHONY: multi-agent-demo
 multi-agent-demo: build
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/ma_taskplan_demo/
-	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.demo_pddl \
+	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.demo_workshop_pddl \
 		--output_image_file /data/$(MA_AP_BASENAME)/ma_taskplan_demo/task_plan_myopic.png \
 		--save_dir /data/$(MA_AP_BASENAME)/results/$(EXP_NUM) \
 		--cook_network /data/cook-agent/logs/beta-v0/ap_cook.pt \
@@ -63,8 +63,8 @@ ma-eval-demo:
 	@echo "Evaluation Data"
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results/$(EXP_NUM)
-	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo \
-		--current_seed $(EXP_NUM) \
+	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo_workshop \
+		--current_seed 1 \
 		--save_dir /data/$(MA_AP_BASENAME)/results/$(EXP_NUM) \
 		--cook_network /data/cook-agent/logs/beta-v0/ap_cook.pt \
 		--cleaner_network /data/cleaner-agent/logs/beta-v0/ap_cleaner.pt \

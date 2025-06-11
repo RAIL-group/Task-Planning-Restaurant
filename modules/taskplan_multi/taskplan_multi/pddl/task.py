@@ -142,3 +142,8 @@ def clean_and_place_something(item, cont):
 def cook_and_place_something(item, cont):
     str = f'(and (is-cooked {item}) (is-at {item} {cont}))'
     return str
+
+
+def fix_and_place_something(item, cont):
+    str = f'(and (not (is-bad {item})) (is-at {item} {cont}))'
+    return str
