@@ -1,9 +1,6 @@
 import taskplan
 from taskplan.pddl.helper import generate_pddl_problem
-
-COOK_BOT_REACHABLES = ['stove', 'fridge', 'countertop']
-SERVER_BOT_REACHABLES = ['servingtable1', 'servingtable2', 'cabinet', 'countertop', 'bussingcart']
-CLEANER_BOT_REACHABLES = ['dishwasher', 'bussingcart', 'countertop']
+from taskplan_multi.utilities.restaurant_primitives import COOK_BOT_RESTRICT, SERVER_BOT_RESTRICT, CLEANER_BOT_RESTRICT
 
 def get_problem(restaurant, task):
     containers = restaurant.containers
@@ -21,18 +18,18 @@ def get_problem(restaurant, task):
         init_states.append(f"(rob-at {agent} {restaurant.restaurant[agent]['rob_at']})")
         init_states.append(f"(hand-is-free {agent})")
         init_states.append(f"(restrict-place-to {base})")
-        init_states.append(f"(can-reach {agent} {base})")
-        if restaurant.active_all:
-            init_states.append(f"(robot-active {agent})")
+        # if restaurant.active_all:
+        #     init_states.append(f"(robot-active {agent})")
+        init_states.append(f"(type {agent} {agent})")
         if agent == 'cook_bot':
-            for item in COOK_BOT_REACHABLES:
-                init_states.append(f"(can-reach {agent} {item})")
+            for item in COOK_BOT_RESTRICT:
+                init_states.append(f"(restrict-reach {agent} {item})")
         if agent == 'server_bot':
-            for item in SERVER_BOT_REACHABLES:
-                init_states.append(f"(can-reach {agent} {item})")
+            for item in SERVER_BOT_RESTRICT:
+                init_states.append(f"(restrict-reach {agent} {item})")
         if agent == 'cleaner_bot':
-            for item in CLEANER_BOT_REACHABLES:
-                init_states.append(f"(can-reach {agent} {item})")
+            for item in CLEANER_BOT_RESTRICT:
+                init_states.append(f"(restrict-reach {agent} {item})")
     if not restaurant.active_all:
         init_states.append(f"(robot-active {restaurant.active_robot})")
     for container in containers:
@@ -63,8 +60,8 @@ def get_problem(restaurant, task):
                 #     init_states.append(f"(is-washable {chld_name})")
                 if 'dirty' in child and child['dirty'] == 1:
                     init_states.append(f"(is-dirty {chld_name})")
-                if 'cooked' in child and child['cooked'] == 1:
-                    init_states.append(f"(is-cooked {chld_name})")
+                if 'empty' in child and child['empty'] == 1:
+                    init_states.append(f"(is-empty {chld_name})")
                 # if 'fillable' in child and child['fillable'] == 1:
                 #     init_states.append(f"(is-fillable {chld_name})")
                 # if 'filled' in child and child['filled'] == 1:

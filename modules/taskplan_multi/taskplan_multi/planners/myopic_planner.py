@@ -4,6 +4,9 @@ import pddlstream
 import pddlstream.algorithms.meta
 import pddlstream.language.constants
 from pddlstream.algorithms.search import solve_from_pddl
+import time
+
+FAILED_COST = 2000
 
 
 class MyopicPlanner:
@@ -12,7 +15,7 @@ class MyopicPlanner:
 
     def get_cost_and_state_from_task(self, proc_data, task):
         pddl_problem = taskplan_multi.pddl.problem.get_problem(proc_data, task)
-        planner = 'ff-wastar2'
+        planner = 'ff-astar2'
         plan, cost = solve_from_pddl(
             self.domain,
             pddl_problem,
@@ -38,7 +41,7 @@ class MyopicPlanner:
         for task in task_distribution:
             plan, cost = self.get_cost_and_state_from_task(proc_data, task)
             if plan is None:
-                expected_costs.append(5000)
+                expected_costs.append(FAILED_COST)
             else:
                 expected_costs.append(cost)
         # print(expected_costs)
@@ -65,6 +68,7 @@ class MyopicPlanner:
             file_name = 'np_myopic.txt'
             logfile = os.path.join(args.save_dir, file_name)
             for idx, item in enumerate(task_seq):
+                start = time.time()
                 active_agent = item[0]
                 task = item[1]
                 restaurant.active_robot = active_agent
@@ -73,14 +77,18 @@ class MyopicPlanner:
                     self.get_cost_and_state_from_task(
                         restaurant, task)
                 )
+                end = time.time()
+                elapsed = end - start
                 if plan is None:
                     # costs.append(10000)
                     with open(logfile, "a+") as f:
                         f.write(
                             f" | seq: S{seq_num}"
                             f" | num: T{idx+1}"
-                            f" | help: 0"
-                            f" | cost: 10000 \n"
+                            f" | active: {active_agent}"
+                            f" | time: {elapsed:0.2f}"
+                            f" | help: 3"
+                            f" | cost: 2000 \n"
                         )
                     continue
                 help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
@@ -88,12 +96,15 @@ class MyopicPlanner:
                     f.write(
                         f" | seq: S{seq_num}"
                         f" | num: T{idx+1}"
+                        f" | active: {active_agent}"
+                        f" | time: {elapsed:0.2f}"
                         f" | help: {help_stat}"
-                        f" | cost: {cost:0.4f} \n"
+                        f" | cost: {cost:0.2f} \n"
                     )
                 # costs.append(cost)
                 new_state = restaurant.get_final_state_from_plan(plan)
                 restaurant.update_container_props(new_state)
+                # taskplan_multi.utils.plot_state(restaurant, args, image_name=f'np-mp-{seq_num}-T{idx+1}', title=f'State after Task {idx+1}')
         
         if prep_state:
             restaurant.update_container_props(prep_state)
@@ -113,8 +124,10 @@ class MyopicPlanner:
                         f.write(
                             f" | seq: S{seq_num}"
                             f" | num: T{idx+1}"
-                            f" | help: 0"
-                            f" | cost: 10000 \n"
+                            f" | active: {active_agent}"
+                            f" | time: {elapsed:0.2f}"
+                            f" | help: 3"
+                            f" | cost: 2000 \n"
                         )
                     continue
                 help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
@@ -122,8 +135,11 @@ class MyopicPlanner:
                     f.write(
                         f" | seq: S{seq_num}"
                         f" | num: T{idx+1}"
+                        f" | active: {active_agent}"
+                        f" | time: {elapsed:0.2f}"
                         f" | help: {help_stat}"
-                        f" | cost: {cost:0.4f} \n"
+                        f" | cost: {cost:0.2f} \n"
                     )
                 new_state = restaurant.get_final_state_from_plan(plan)
                 restaurant.update_container_props(new_state)
+                # taskplan_multi.utils.plot_state(restaurant, args, image_name=f'prep-mp-{seq_num}-T{idx+1}', title=f'State after Task {idx+1}')

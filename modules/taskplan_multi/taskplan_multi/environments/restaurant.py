@@ -6,13 +6,10 @@ import copy
 
 import gridmap
 from taskplan_multi.environments.sampling import generate_restaurant, load_movables
+from taskplan_multi.utilities.restaurant_primitives import KITCHEN_CONTAINERS, SERVING_ROOM_CONTAINERS, COOK_BOT_RESTRICT, SERVER_BOT_RESTRICT, CLEANER_BOT_RESTRICT
 
 INFLATE_UB = 0.25
 INFLATE_LB = 0.2
-
-COOK_BOT_REACHABLES = ['stove', 'fridge', 'countertop']
-SERVER_BOT_REACHABLES = ['servingtable1', 'servingtable2', 'cabinet', 'countertop', 'bussingcart']
-CLEANER_BOT_REACHABLES = ['dishwasher', 'bussingcart', 'countertop']
 
 
 def load_restaurant(seed, agents):
@@ -21,11 +18,11 @@ def load_restaurant(seed, agents):
     that you want to place in the corners
     Also keep 'agent' in kitchen container list
     """
-    kitchen_containers_list = ['countertop','dishwasher', 'cabinet', 'stove', 'fridge']
+    kitchen_containers_list = list(KITCHEN_CONTAINERS)
     random.shuffle(kitchen_containers_list)
     if 'cook_bot' in agents:
         kitchen_containers_list.extend(['cook_bot'])
-    serving_room_containers_list = ['servingtable1', 'servingtable2', 'bussingcart']
+    serving_room_containers_list = list(SERVING_ROOM_CONTAINERS)
     if 'server_bot' in agents and 'cleaner_bot' in agents:
         if random.random() > 0.75:
             serving_room_containers_list.extend(['server_bot'])
@@ -352,12 +349,12 @@ class RESTAURANT:
         states = self.get_current_object_state()
         if bias:
             if self.active_robot == 'cook_bot':
-                conts = COOK_BOT_REACHABLES
+                conts = COOK_BOT_RESTRICT
             elif self.active_robot == 'server_bot':
-                conts = SERVER_BOT_REACHABLES
+                conts = SERVER_BOT_RESTRICT
             else:
-                conts = CLEANER_BOT_REACHABLES
-            poses = [val for (key, val) in self.get_container_pos_list() if key in conts]
+                conts = CLEANER_BOT_RESTRICT
+            poses = [val for (key, val) in self.get_container_pos_list() if key not in conts]
         else:
             poses = [val for (key, val) in self.get_container_pos_list()]
         for state in states:
@@ -368,11 +365,11 @@ class RESTAURANT:
                     state['dirty'] = 0
                 else:
                     state['dirty'] = 1
-            if 'cookable' in state:
+            if 'food' in state:
                 if random.random() > randomness[2] or bias:
-                    state['cooked'] = 1
+                    state['empty'] = 0
                 else:
-                    state['cooked'] = 0
+                    state['empty'] = 1
         return states
 
     def get_objects_by_container_name(self, name):
@@ -399,7 +396,7 @@ class RESTAURANT:
 
     def get_object_props_by_name(self, name):
         state = self.get_current_object_state()
-        for objct in state[0]:
+        for objct in state:
             if objct['assetId'] == name:
                 return copy.deepcopy(objct)
         return None
@@ -410,8 +407,8 @@ class RESTAURANT:
         locations_dict = dict(self.get_container_pos_list())
         dirty_objs = set()
         cleaned_obsj = set()
-        cooked_foods = set()
-        raw_foods = set()
+        empty_foods = set()
+        full_foods = set()
         conditions = []
         for p in plan:
             if "place" in p.name:
@@ -424,19 +421,30 @@ class RESTAURANT:
                 if p.args[1] in dirty_objs:
                     dirty_objs.remove(p.args[1])
             if "cook" in p.name:
-                cooked_foods.add(p.args[1])
+                empty_foods.add(p.args[1])
                 dirty_objs.add(p.args[2])
-                if p.args[1] in raw_foods:
-                    raw_foods.remove(p.args[1])
+                if p.args[1] in full_foods:
+                    full_foods.remove(p.args[1])
                 if p.args[2] in cleaned_obsj:
                     cleaned_obsj.remove(p.args[2])
             if "serve" in p.name:
-                raw_foods.add(p.args[1])
-                if p.args[1] in cooked_foods:
-                    cooked_foods.remove(p.args[1])
+                empty_foods.add(p.args[1])
+                if p.args[1] in full_foods:
+                    full_foods.remove(p.args[1])
                 dirty_objs.add(p.args[2])
                 if p.args[2] in cleaned_obsj:
                     cleaned_obsj.remove(p.args[2])
+            if "mix" in p.name:
+                empty_foods.add(p.args[1])
+                if p.args[1] in full_foods:
+                    full_foods.remove(p.args[1])
+                dirty_objs.add(p.args[2])
+                if p.args[2] in cleaned_obsj:
+                    cleaned_obsj.remove(p.args[2])
+            if "restock" in p.name:
+                full_foods.add(p.args[1])
+                if p.args[1] in empty_foods:
+                    empty_foods.remove(p.args[1])
             # if "move" in p.name:
             #     rob_at = p.args[1]
 
@@ -445,10 +453,10 @@ class RESTAURANT:
                 obj_dict['dirty'] = 1
             if obj_dict['assetId'] in cleaned_obsj:
                 obj_dict['dirty'] = 0
-            if obj_dict['assetId'] in cooked_foods:
-                obj_dict['cooked'] = 1
-            if obj_dict['assetId'] in raw_foods:
-                obj_dict['cooked'] = 0
+            if obj_dict['assetId'] in full_foods:
+                obj_dict['empty'] = 0
+            if obj_dict['assetId'] in empty_foods:
+                obj_dict['empty'] = 1
             for cond in conditions:  # Directly check if the condition's object key is in the dictionary
                 if cond[0] == obj_dict['assetId'] and cond[1] in locations_dict:
                     obj_dict['position'] = locations_dict[cond[1]]
@@ -481,12 +489,12 @@ class RESTAURANT:
             new_objs.append(objct)
         return new_objs
     
-    def place_food_items(self, obj, loc, cooked=0):
+    def place_food_items(self, obj, loc, empty=0):
         state = self.get_current_object_state()
         new_objs = list()
         for objct in state:
             if objct['assetId'] == obj['assetId']:
                 objct.update({'position': loc})
-                objct.update({'cooked': cooked})
+                objct.update({'empty': empty})
             new_objs.append(objct)
         return new_objs

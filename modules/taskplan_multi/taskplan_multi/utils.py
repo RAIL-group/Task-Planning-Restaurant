@@ -11,13 +11,79 @@ from taskplan_multi.environments.restaurant import world_to_grid
 import torch
 from torch_geometric.data import Data
 import copy
+from skimage.morphology import erosion
+
+COLLISION_VAL = 1
+FREE_VAL = 0
+UNOBSERVED_VAL = -1
+assert (COLLISION_VAL > FREE_VAL)
+assert (FREE_VAL > UNOBSERVED_VAL)
+OBSTACLE_THRESHOLD = 0.5 * (FREE_VAL + COLLISION_VAL)
+
+
+FOOT_PRINT = np.array([
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+])
+
+EVAL_NO = 1
+MAX_TASK_COOK = 10
+MAX_TASK_SERVER = 10
+MAX_TASK_CLEANER = 10
+TASK_PER_SEQ = 30
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+def make_plotting_grid(grid_map):
+    grid = np.ones([grid_map.shape[0], grid_map.shape[1], 3]) * 0.75
+    collision = grid_map >= OBSTACLE_THRESHOLD
+    # Take one pixel boundary of the region collision
+    thinned = erosion(collision, footprint=FOOT_PRINT)
+    boundary = np.logical_xor(collision, thinned)
+    free = np.logical_and(grid_map < OBSTACLE_THRESHOLD, grid_map >= FREE_VAL)
+    grid[:, :, 0][free] = 1
+    grid[:, :, 1][free] = 1
+    grid[:, :, 2][free] = 1
+    grid[:, :, 0][boundary] = 0
+    grid[:, :, 1][boundary] = 0
+    grid[:, :, 2][boundary] = 0
+
+    return grid
+
+def plot_state(restaurant, args, image_name='init', title='None'):
+    grid = np.transpose(restaurant.grid)
+    img = make_plotting_grid(grid)
+    plt.clf()
+    for container in restaurant.containers:
+        _x, _y = world_to_grid(
+            container['position']['x'], container['position']['z'],
+            restaurant.grid_min_x, restaurant.grid_min_z, restaurant.grid_res)
+        assetId = container['assetId']
+        plt.text(_x, _y, assetId, fontsize=8, color='blue')
+        children = container.get('children', [])
+        for i, child in enumerate(children):
+            name = child['assetId']
+            cl = 'green'
+            if 'dirty' in child and child['dirty'] == 1:
+                name = 'dirty ' + name
+                cl = 'red'
+            if 'cooked' in child and child['cooked'] == 1:
+                name = 'cooked ' + name
+                cl = 'gold'
+            plt.text(_x, _y + (i + 1) * 1.2, name, fontsize=5, color=cl)  # Slight offset
+        plt.imshow(img, cmap='gray_r', alpha=0.5)
+    # plt.axis('off')  # Hides the axis
+    plt.title(title)
+    plt.savefig(f'{args.save_dir}/{image_name}_{args.current_seed}.png', dpi=100)
 
 
 def get_status_of_asking_help(plan):
+    count = 0
     for p in plan:
         if "ask-help" in p.name:
-            return 1
-    return 0
+            count+=1
+    return count
 
 def get_robot_pose(data):
     return data.accessible_poses['initial_robot_pose']
@@ -47,7 +113,7 @@ def get_graph(data):
     if rob_loc not in loc_rob_map:
         loc_rob_map[rob_loc] = list()
     loc_rob_map[rob_loc].append(node_count)
-    rob_name = rob_name + ' active'
+    # rob_name = rob_name + ' active'
     nodes[node_count] = {
         'id': 'robot',
         'name': rob_name,
@@ -133,8 +199,8 @@ def get_graph(data):
             name = get_generic_name(oid)
             if 'dirty' in connected_object and connected_object['dirty'] == 1:
                 name = 'dirty ' + name
-            if 'cooked' in connected_object and connected_object['cooked'] == 1:
-                name = 'cooked ' + name
+            if 'empty' in connected_object and connected_object['empty'] == 1:
+                name = 'empty ' + name
             _x, _y = world_to_grid(
                 container['position']['x'],
                 container['position']['z'],

@@ -3,11 +3,11 @@ types_dict = {
     "robot": ["cook_bot", "server_bot", "cleaner_bot"],
     "location": [
         "base", "servingtable", "bussingcart", "stove", "cabinet",
-        "dishwasher", "countertop", "fridge"
+        "sink", "countertop", "fridge", "pantry", "shelf"
     ],
     "item": [
         "pan", "mug", "bowl", "saltshaker", "sauce",
-        "pasta", "oats", "milk", "egg"
+        "pasta", "oats", "milk", "cereal"
     ]
 }
 
@@ -58,10 +58,11 @@ def get_domain(types_dict=types_dict):
         (hand-is-free ?r - robot)
         (restrict-place-to ?loc - location)
         (is-holding ?r - robot ?obj - item)
-        (can-reach ?r - robot ?loc - location)
+        (restrict-reach ?r - robot ?loc - location)
         (is-dirty ?obj - item)
-        (is-cooked ?obj - item)
+        (is-empty ?obj - item)
         (meal-served ?obj1 - item ?obj2 - item ?loc - location)
+        (item-in-item ?obj1 - item ?obj2 - item ?loc - location)
     )
 
     (:functions
@@ -88,14 +89,14 @@ def get_domain(types_dict=types_dict):
             (is-at ?obj ?loc)
             (rob-at ?r ?loc)
             (hand-is-free ?r)
-            (can-reach ?r ?loc)
+            (not (restrict-reach ?r ?loc))
             (robot-active ?r)
         )
         :effect (and
             (not (is-at ?obj ?loc))
             (is-holding ?r ?obj)
             (not (hand-is-free ?r))
-            (increase (total-cost) 100)
+            (increase (total-cost) 10)
         )
     )
     (:action place
@@ -105,57 +106,74 @@ def get_domain(types_dict=types_dict):
             (rob-at ?r ?loc)
             (not (restrict-place-to ?loc))
             (is-holding ?r ?obj)
-            (can-reach ?r ?loc)
+            (not (restrict-reach ?r ?loc))
             (robot-active ?r)
         )
         :effect (and
             (is-at ?obj ?loc)
             (not (is-holding ?r ?obj))
             (hand-is-free ?r)
-            (increase (total-cost) 100)
+            (increase (total-cost) 10)
         )
     )
     (:action wash
         :parameters (?r - robot ?i - item)
         :precondition (and
-            (rob-at ?r dishwasher)
-            (is-at ?i dishwasher)
+            (type ?r cleaner_bot)
+            (rob-at ?r sink)
+            (is-holding ?r ?i)
             (is-dirty ?i)
         )
         :effect (and
             (not (is-dirty ?i))
-            (increase (total-cost) 100)
+            (increase (total-cost) 30)
         )
     )
-    (:action cook
-        :parameters (?r - robot ?i - item ?p - item)
+    (:action mix
+        :parameters (?r - robot ?i - item ?b - item ?loc - location)
         :precondition (and
-            (rob-at ?r stove)
-            (is-at ?p stove)
-            (is-at ?i stove)
-            (type ?p pan)
-            (not (is-dirty ?p))
+            (type ?r cook_bot)
+            (rob-at ?r ?loc)
+            (is-at ?b ?loc)
+            (not (is-dirty ?b))
+            (not (is-empty ?i))
+            (is-holding ?r ?i)
         )
         :effect (and
-            (is-dirty ?p)
-            (is-cooked ?i)
-            (increase (total-cost) 100)
+            (item-in-item ?i ?b ?loc)
+            (is-dirty ?b)
+            (is-empty ?i)
+            (increase (total-cost) 10)
         )
     )
     (:action serve
         :parameters (?r - robot ?i - item ?b - item ?loc - location)
         :precondition (and
+            (type ?r server_bot)
             (rob-at ?r ?loc)
-            (is-cooked ?i)
-            (is-at ?i ?loc)
+            (not (is-empty ?i))
+            (is-holding ?r ?i)
             (not (is-dirty ?b))
             (is-at ?b ?loc)
         )
         :effect (and
             (meal-served ?i ?b ?loc)
-            (not (is-cooked ?i))
+            (is-empty ?i)
             (is-dirty ?b)
-            (increase (total-cost) 100)
+            (increase (total-cost) 10)
+        )
+    )
+    (:action restock
+        :parameters (?r - robot ?i - item)
+        :precondition (and
+            (type ?r server_bot)
+            (rob-at ?r pantry)
+            (is-holding ?r ?i)
+            (is-empty ?i)
+        )
+        :effect (and
+            (not (is-empty ?i))
+            (increase (total-cost) 30)
         )
     )
     (:action ask-help
@@ -165,7 +183,7 @@ def get_domain(types_dict=types_dict):
         )
         :effect (and
             (robot-active ?r1)
-            (increase (total-cost) 1000) ; Cost of asking help
+            (increase (total-cost) 500) ; Cost of asking help
         )
     )
     )

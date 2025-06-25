@@ -11,6 +11,7 @@ import numpy as np
 import taskplan_multi
 from learning.data import CSVPickleDataset
 from taskplan_multi.models.gcn import AnticipateGCN
+from tqdm import tqdm
 
 
 def get_model_prep_fn_and_training_strs(args):
@@ -34,6 +35,26 @@ def get_model_prep_fn_and_training_strs(args):
         'best_model': best_model
     }
 
+
+def get_next_batch(iterator, loader):
+    try:
+        return next(iterator)
+    except StopIteration:
+        iterator = iter(loader)
+        return next(iterator)
+
+
+def evaluate(model, test_iter, device, writer, index, test_loader):
+    test_batch = get_next_batch(test_iter, test_loader)
+    with torch.no_grad():
+        out = model.forward({
+            'batch_index': test_batch.batch,
+            'edge_data': test_batch.edge_index,
+            'edge_features': test_batch.edge_features,
+            'latent_features': test_batch.x
+        }, device)
+        test_loss = model.loss(out, data=test_batch, device=device, writer=writer, index=index)
+    return test_loss
 
 def train(args, train_path, test_path):
     use_cuda = torch.cuda.is_available()
@@ -67,8 +88,8 @@ def train(args, train_path, test_path):
 
     # raise NotImplementedError
 
-    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=128, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
     train_iter = iter(train_loader)
     train_writer = SummaryWriter(
         log_dir=os.path.join(args.save_dir, train_writer_str))
@@ -81,97 +102,66 @@ def train(args, train_path, test_path):
     # optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     optimizer = torch.optim.Adagrad(model.parameters(), lr=args.learning_rate)
     scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=args.epoch_size,
+        optimizer, step_size=5,
         gamma=args.learning_rate_decay_factor)
-    index = 0
     autograd.set_detect_anomaly(False)
     best_test_loss = float('inf')
     best_train_loss = float('inf')
+    min_delta = 1e-2
+    early_stopping_limit = 200
     early_stopping_counter = 0
-    early_stopping_limit = 5000
+    best_model_at = None
+    global_step = 0
     # warmup_steps = 1000
     # warmup_start_lr = 1e-10
     # warmup_end_lr = args.learning_rate
     # lr_increment = (warmup_end_lr - warmup_start_lr) / warmup_steps
-    while index < args.num_steps:
-        try:
-            train_batch = next(train_iter)
-        except StopIteration:
-            train_iter = iter(train_loader)
-            train_batch = next(train_iter)
-        # if index < warmup_steps:
-        #     lr = warmup_start_lr + index * lr_increment
-        #     for param_group in optimizer.param_groups:
-        #         param_group['lr'] = lr
-        # elif index == warmup_steps:
-        #     # Set to the initial learning rate after warmup
-        #     for param_group in optimizer.param_groups:
-        #         param_group['lr'] = args.learning_rate
-        out = model.forward({
-            'batch_index': train_batch.batch,
-            'edge_data': train_batch.edge_index,
-            'edge_features': train_batch.edge_features,
-            'latent_features': train_batch.x
-        }, device)
-        # print(torch.isnan(out).any())
-        train_loss = model.loss(out,
-                                data=train_batch,
-                                device=device,
-                                writer=train_writer,
-                                index=index)
+    for epoch in range(args.epoch_size):
+        print(f"\n=== Epoch {epoch + 1}/{args.epoch_size} ===")
+        for step in tqdm(range(args.num_steps), desc=f"Training Epoch {epoch+1}"):
+            train_batch = get_next_batch(train_iter, train_loader)
 
-        if index % args.test_log_frequency == 0:
-            print(f"[{index}/{args.num_steps}] "
-                  f"Train Loss: {train_loss}")
+            out = model.forward({
+                'batch_index': train_batch.batch,
+                'edge_data': train_batch.edge_index,
+                'edge_features': train_batch.edge_features,
+                'latent_features': train_batch.x
+            }, device)
 
-        # Train the system
-        optimizer.zero_grad()
-        train_loss.backward()
-        optimizer.step()
+            train_loss = model.loss(out, data=train_batch, device=device, writer=train_writer, index=global_step)
 
-        if index % args.test_log_frequency == 0:
-            try:
-                test_batch = next(test_iter)
-            except StopIteration:
-                test_iter = iter(test_loader)
-                test_batch = next(test_iter)
+            optimizer.zero_grad()
+            train_loss.backward()
+            optimizer.step()
 
-            with torch.no_grad():
-                out = model.forward({
-                    'batch_index': test_batch.batch,
-                    'edge_data': test_batch.edge_index,
-                    'edge_features': test_batch.edge_features,
-                    'latent_features': test_batch.x
-                }, device)
-                test_loss = model.loss(out,
-                                       data=test_batch,
-                                       device=device,
-                                       writer=test_writer,
-                                       index=index)
-                print(f"[{index}/{args.num_steps}] "
-                      f"Test Loss: {test_loss.cpu().numpy()}")
-        if test_loss < best_test_loss and train_loss < best_train_loss:
-            best_test_loss = test_loss
-            best_train_loss = train_loss
-            early_stopping_counter = 0
-            best_model_at = index
-            # Save the best model
-            torch.save(model.state_dict(), os.path.join(args.save_dir,
-                                                        best_model_str))
-        else:
-            early_stopping_counter += 1
-            if early_stopping_counter > early_stopping_limit:
-                print("Early stopping triggered.")
+            # Logging
+            if global_step % args.test_log_frequency == 0:
+                print(f"[Epoch {epoch+1} | Step {step+1}/{args.num_steps}] Train Loss: {train_loss.item():.4f}")
+                train_writer.add_scalar("Loss/train", train_loss.item(), global_step)
 
-        # Log the learning rate
-        test_writer.add_scalar(lr_writer_str,
-                               scheduler.get_last_lr()[-1],
-                               index)
-        index += 1
+                # Evaluate
+                test_loss = evaluate(model, test_iter, device, test_writer, global_step, test_loader)
+                print(f"[Epoch {epoch+1} | Step {step+1}/{args.num_steps}] Test Loss: {test_loss.item():.4f}")
+                test_writer.add_scalar("Loss/test", test_loss.item(), global_step)
+
+                # Save best model
+                if best_test_loss - test_loss.item() > min_delta:
+                    best_test_loss = test_loss.item()
+                    early_stopping_counter = 0
+                    best_model_at = global_step
+                    torch.save(model.state_dict(), os.path.join(args.save_dir, best_model_str))
+                else:
+                    early_stopping_counter += 1
+                    if early_stopping_counter >= early_stopping_limit:
+                        print(f"Early stopping triggered at step {global_step}. Best model was at step {best_model_at}")
+                        break
+
+            global_step += 1
+        # Log learning rate
         scheduler.step()
+        test_writer.add_scalar("LearningRate", scheduler.get_last_lr()[-1], global_step)
     # Saving the model after training
-    torch.save(model.state_dict(),
-               os.path.join(args.save_dir, model_name_str))
+    torch.save(model.state_dict(), os.path.join(args.save_dir, model_name_str))
     print(best_model_at)
 
 

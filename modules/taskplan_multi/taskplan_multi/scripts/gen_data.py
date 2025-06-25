@@ -58,28 +58,27 @@ def get_tasks(restaurant):
     #         else:
     #             clean_items.append(child['assetId'])
 
-    food_items = list()
-    utensils = list()
-    item_to_remove = list()
-    for container in restaurant.containers:
-        children = container.get('children')
-        if children is None:
-            continue
-        for child in children:
-            if 'cookable' in child:
-                food_items.append(child['assetId'])
-            if 'washable' in child:
-                utensils.append(child['assetId'])
+    # food_items = list()
+    # utensils = list()
+    # item_to_remove = list()
+    # for container in restaurant.containers:
+    #     children = container.get('children')
+    #     if children is None:
+    #         continue
+    #     for child in children:
+    #         if 'cookable' in child:
+    #             food_items.append(child['assetId'])
+    #         if 'washable' in child:
+    #             utensils.append(child['assetId'])
     if restaurant.active_robot == 'cook_bot':
-        t1 = taskplan_multi.pddl.task_distribution.tasks_for_cook(food_items)
+        t1 = taskplan_multi.pddl.task_distribution.tasks_for_cook()
     elif restaurant.active_robot == 'server_bot':
         t1 = taskplan_multi.pddl.task_distribution.tasks_for_server()
     else:
-        t1 = taskplan_multi.pddl.task_distribution.tasks_for_cleaner(utensils)
+        t1 = taskplan_multi.pddl.task_distribution.tasks_for_cleaner()
     tasks = list()
     for task in t1:
-        key = list(task.keys())[0]
-        val = task[key]
+        val = task[1]
         tasks.append(val)
     return tasks
 
@@ -100,7 +99,7 @@ def gen_data_main(args):
         whole_graph['label'] = exp_cost
         taskplan_multi.utils.write_datum_to_file(args, whole_graph, map_counter)
         map_counter+=1
-        if map_counter >= 90:
+        if map_counter >= 80:
             bias = True
         random_state = restaurant.randomize_objects_state(randomness=[random.randint(0, 1), random.choice(random_choices), random.choice(random_choices)], bias=bias)
         restaurant.update_container_props(random_state)
@@ -112,7 +111,7 @@ def gen_data_main(args):
     plt.clf()
     plt.title(f'Seed: {args.current_seed}: Map : {map_counter} : ExC: {exp_cost}')
     plt.imshow(image_graph)
-    plt.savefig(f'{args.save_dir}data_completion_logs/{args.data_file_base_name}_{args.current_seed}.png', dpi=300)
+    plt.savefig(f'{args.save_dir}data_completion_logs/{args.data_file_base_name}_{args.current_seed}.png', dpi=100)
 
 def get_args():
     parser = argparse.ArgumentParser(

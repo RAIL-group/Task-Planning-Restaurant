@@ -1,2 +1,6 @@
-KITCHEN_CONTAINERS = ['countertop','shelf', 'cabinet', 'stove', 'fridge', 'pantry', 'sink']
-SERVING_ROOM_CONTAINERS = ['servingtable1', 'servingtable2', 'bussingcart', 'sanitizerstation']
+KITCHEN_CONTAINERS = ['countertop', 'cabinet', 'stove', 'fridge', 'pantry', 'sink']
+SERVING_ROOM_CONTAINERS = ['servingtable1', 'servingtable2', 'bussingcart', 'shelf']
+COOK_BOT_RESTRICT = ['servingtable1', 'servingtable2']
+SERVER_BOT_RESTRICT = ['stove']
+CLEANER_BOT_RESTRICT = ['stove']
+ASSETS = ['mug1', 'mug2', 'pan1', 'pan2', 'bowl1', 'bowl2', 'pasta', 'cereal', 'milk', 'oats', 'sauce', 'saltshaker']

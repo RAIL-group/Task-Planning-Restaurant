@@ -3,7 +3,7 @@ from shapely.geometry import box, Polygon, LineString, MultiLineString
 import json
 import os
 
-MAX_OBJ_PER_CONT = 5
+MAX_OBJ_PER_CONT = 2
 
 def load_data():
     """
@@ -338,13 +338,13 @@ def generate_restaurant(seed, kitchen_containers_list,
         rand_item = random.randint(min_pop, max_pop)
         for i in range(rand_item):
             t = movables.pop()
-            if item == 'dishwasher' and 'washable' not in t:
+            if item == 'sink' and 'washable' not in t:
                 movables.append(t)
                 continue
             if 'washable' in t and random.random() > 0.5:
                 t['dirty'] = 1
-            if 'cookable' in t and random.random() > 0.5:
-                t['cooked'] = 1
+            if 'food' in t and random.random() > 0.5:
+                t['empty'] = 1
             children.append(t)
         kc['children'] = children
         for child in kc['children']:
@@ -400,8 +400,8 @@ def generate_restaurant(seed, kitchen_containers_list,
             t = movables.pop()
             if 'washable' in t and (random.random() > 0.5):
                 t['dirty'] = 1
-            if 'cookable' in t and random.random() > 0.5:
-                t['cooked'] = 1
+            if 'food' in t and random.random() > 0.5:
+                t['empty'] = 1
             children.append(t)
         kc['children'] = children
         for child in kc['children']:

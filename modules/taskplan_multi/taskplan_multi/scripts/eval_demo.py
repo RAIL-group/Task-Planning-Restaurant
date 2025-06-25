@@ -28,11 +28,11 @@ FOOT_PRINT = np.array([
     [1, 1, 1],
 ])
 
-EVAL_NO = 10
-MAX_TASK_COOK = 20
-MAX_TASK_SERVER = 20
-MAX_TASK_CLEANER = 20
-TASK_PER_SEQ = 50
+EVAL_NO = 3
+MAX_TASK_COOK = 15
+MAX_TASK_SERVER = 15
+MAX_TASK_CLEANER = 15
+TASK_PER_SEQ = 30
 
 def make_plotting_grid(grid_map):
     grid = np.ones([grid_map.shape[0], grid_map.shape[1], 3]) * 0.75
@@ -51,58 +51,31 @@ def make_plotting_grid(grid_map):
     return grid
 
 
-def load_prepared_state(args):
-    file_name = ''
-    root = args.save_dir
-    for path, _, files in os.walk(root):
-        for name in files:
-            if 'prep_state_learned' in name:
-                file_name = os.path.join(path, name)
-                break
-    # print(file_name)
-    # Open and read the content of the file
-    with open(file_name, 'r') as file:
-        file_content = file.read()
+# def load_prepared_state(args):
+#     file_name = ''
+#     root = args.save_dir
+#     for path, _, files in os.walk(root):
+#         for name in files:
+#             if 'prep_state_learned' in name:
+#                 file_name = os.path.join(path, name)
+#                 break
+#     # print(file_name)
+#     # Open and read the content of the file
+#     with open(file_name, 'r') as file:
+#         file_content = file.read()
 
-    # Convert the string content to a Python list
-    data_list = ast.literal_eval(file_content)
+#     # Convert the string content to a Python list
+#     data_list = ast.literal_eval(file_content)
 
-    # Now data_list is a Python list containing your data
-    # print(data_list)
-    # print(type(data_list))
-    return data_list
+#     # Now data_list is a Python list containing your data
+#     # print(data_list)
+#     # print(type(data_list))
+#     return data_list
 
-def get_tasks(restaurant):
-    food_items = list()
-    utensils = list()
-    cooked_items = list()
-    uncooked_items =  list()
-    clean_items = list()
-    dirty_items = list()
-    items_on_bus = list()
-    for container in restaurant.containers:
-        children = container.get('children')
-        if children is None:
-            continue
-        for child in children:
-            if container.get('assetId') == 'bussingcart':
-                items_on_bus.append(child['assetId'])
-            if 'washable' in child:
-                utensils.append(child['assetId'])
-                if 'dirty' in child and child['dirty'] == 1:
-                    dirty_items.append(child['assetId'])
-                else:
-                    clean_items.append(child['assetId'])
-            if 'cookable' in child:
-                food_items.append(child['assetId'])
-                if 'cooked' in child and child['cooked'] == 1:
-                    cooked_items.append(child['assetId'])
-                else:
-                    uncooked_items.append(child['assetId'])
-    
-    tasks_cook = taskplan_multi.pddl.task_distribution.tasks_for_cook(food_items)
+def get_tasks():
+    tasks_cook = taskplan_multi.pddl.task_distribution.tasks_for_cook()
     tasks_server = taskplan_multi.pddl.task_distribution.tasks_for_server()
-    tasks_cleaner = taskplan_multi.pddl.task_distribution.tasks_for_cleaner(utensils)
+    tasks_cleaner = taskplan_multi.pddl.task_distribution.tasks_for_cleaner()
 
     if len(tasks_cook) >= MAX_TASK_COOK:
         tasks_cook = random.sample(tasks_cook, MAX_TASK_COOK)
@@ -127,19 +100,18 @@ def get_tasks(restaurant):
     
     tasks = list()
     for task in tasks_cook:
-        key = list(task.keys())[0]
-        val = task[key]
+        val = task[1]
         tasks.append(('cook_bot', val))
     for task in tasks_server:
-        key = list(task.keys())[0]
-        val = task[key]
+        val = task[1]
         tasks.append(('server_bot', val))
     for task in tasks_cleaner:
-        key = list(task.keys())[0]
-        val = task[key]
+        val = task[1]
         tasks.append(('cleaner_bot', val))
-    random.shuffle(tasks)
-    return tasks
+    
+    selected_tasks = random.sample(tasks, TASK_PER_SEQ)
+    # random.shuffle(tasks)
+    return selected_tasks
 
 def plot_state(restaurant, args, image_name='init', title='None'):
     grid = np.transpose(restaurant.grid)
@@ -173,10 +145,21 @@ def manual_tasks():
     tasks.append(
         ('server_bot', taskplan_multi.pddl.task.serve_pasta('servingtable2'))
     )
-    # tasks.append(
-    #     ('cook_bot', taskplan_multi.pddl.task.make_pasta())
-    # )
+    tasks.append(
+        ('cook_bot', taskplan_multi.pddl.task.cook_something('pasta'))
+    )
     return tasks
+
+def load_prepared_state(args):
+    file_name = ''
+    root = args.save_dir
+    for path, _, files in os.walk(root):
+        for name in files:
+            if 'prep_state_' + str(args.current_seed) in name:
+                file_name = os.path.join(path, name)
+                datum = json.load(open(file_name))
+                return datum
+    return None
 
 def eval_main(args):
     # Get restaurant data for a send and extract initial object states
@@ -186,78 +169,35 @@ def eval_main(args):
     random_choices = [0, 0.25, 0.5, 0.75, 1]
     active_agent = random.choice(agents)
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=args.current_seed, agents=agents, active=active_agent)
+    # task_sequence = get_tasks()
+    
+    no_prep_state = copy.deepcopy(restaurant.get_current_object_state())
     init_exp_cost = ant_planner.get_anticipated_cost(restaurant)
     plot_state(restaurant, args, image_name='no-prep-init', title=f'Not Prepared State (INIT) \n Exp Cost: {init_exp_cost}')
     
-    no_prep_state = restaurant.randomize_objects_state(randomness=[random.randint(0, 1), random.choice(random_choices), random.choice(random_choices)])
-    restaurant.update_container_props(no_prep_state)
-    init_exp_cost = ant_planner.get_anticipated_cost(restaurant)
-    plot_state(restaurant, args, image_name='no-prep-random', title=f'Not Prepared State \n Exp Cost: {init_exp_cost}')
-    
-    # # whole_graph = taskplan_multi.utils.get_graph(restaurant)
-    # # image_graph = taskplan_multi.utils.get_image_for_data(whole_graph)
-    
-    # # raise NotImplementedError
-    task_sequence = get_tasks(restaurant)
     prep_state = None
-    prep_state = ant_planner.get_prepared_state(restaurant, task_sequence, n_iterations=1000)
-    # # # # prep_state = load_prepared_state(args)
+    prep_state = load_prepared_state(args)
+    if prep_state is None:
+        prep_state = ant_planner.get_prepared_state(restaurant, n_iterations=2000)
     restaurant.update_container_props(prep_state)
     prep_exp_cost = ant_planner.get_anticipated_cost(restaurant)
     plot_state(restaurant, args, image_name='prep', title=f'Prepared State \n Exp Cost: {prep_exp_cost}')
-    # logfile_prep_learned = os.path.join(args.save_dir, 'prep_state_learned_0.txt')
-    # with open(logfile_prep_learned, "w+") as f:
-    #     f.write(json.dumps(prep_state))
+    logfile_prep_learned = os.path.join(args.save_dir, f'prep_state_{args.current_seed}.txt')
+    with open(logfile_prep_learned, "w+") as f:
+        f.write(json.dumps(prep_state))
     # failed_tasks = list()
     # success_tasks = list()
-
-    # for idx, item in enumerate(task_sequence):
-    #     active_agent = item[0]
-    #     task = item[1]
-    #     restaurant.active_robot = active_agent
-    #     plan, cost = (
-    #         myopic_planner.get_cost_and_state_from_task(restaurant, task)
-    #     )
-    #     if plan is None:
-    #         failed_tasks.append(item)
-    #     else:
-    #         success_tasks.append(item)
-    
-    # if len(task_sequence) > TASK_PER_SEQ:
-    #     sampled_task = random.sample(task_sequence, TASK_PER_SEQ)
-    # else:
-    #     need = TASK_PER_SEQ - len(task_sequence)
-    #     sampled_task = random.choices(task_sequence, k=need)
-    #     sampled_task.extend(task_sequence)
-    # assert len(sampled_task) == TASK_PER_SEQ
-    # file_name = 'no_prep_oracle.txt'
-    # logfile_np = os.path.join(args.save_dir, file_name)
-    # file_name = 'prep_oracle.txt'
-    # logfile_prep = os.path.join(args.save_dir, file_name)
     for i in range(EVAL_NO):
         restaurant.active_all = False
-        # restaurant.update_container_props(no_prep_state)
-        # fail_perc = myopic_planner.get_oracle_failure_ratio(restaurant, sampled_task)
-        # with open(logfile_np, "a+") as f:
-        #     f.write(
-        #         f" | seq: S{i}"
-        #         f" | failed: {fail_perc}\n"
-        #     )
-        # restaurant.update_container_props(prep_state)
-        # fail_perc = myopic_planner.get_oracle_failure_ratio(restaurant, sampled_task)
-        # with open(logfile_prep, "a+") as f:
-        #     f.write(
-        #         f" | seq: S{i}"
-        #         f" | failed: {fail_perc}\n"
-        #     )
-        sampled_task = random.sample(task_sequence, TASK_PER_SEQ)
-        # s_tasks = random.sample(failed_tasks, 10)
-        # sampled_task.extend(s_tasks)
-        myopic_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=prep_state)
-        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=prep_state, ap_concern='joint')
-        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=prep_state, ap_concern='self')
-        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=prep_state, ap_concern='other')
+        sampled_task = get_tasks()
+        myopic_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=no_prep_state, prep_state=prep_state)
+        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=no_prep_state, prep_state=prep_state, ap_concern='self')
+        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=no_prep_state, prep_state=prep_state, ap_concern='joint')
+        # ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=prep_state, ap_concern='other')
         # random.shuffle(sampled_task)
+    plt.clf()
+    plt.title(f'Seed: {args.current_seed}: Eval Done')
+    plt.savefig(f'/data/exp-v0/figure/eval_{args.current_seed}.png', dpi=100)
 
 def get_args():
     parser = argparse.ArgumentParser(

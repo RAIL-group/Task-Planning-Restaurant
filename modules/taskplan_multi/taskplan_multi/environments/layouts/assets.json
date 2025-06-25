@@ -17,6 +17,12 @@
         "assetId": "bussingcart",
         "children": []
     },
+    "shelf": {
+        "description": "shelf",
+        "id": "shelf|0",
+        "assetId": "shelf",
+        "children": []
+    },
     "cabinet": {
         "description": "cabinet",
         "id": "cabinet|0",
@@ -29,16 +35,22 @@
         "assetId": "countertop",
         "children": []
     },
-    "dishwasher": {
-        "description": "dishwasher",
-        "id": "dishwasher|0",
-        "assetId": "dishwasher",
+    "sink": {
+        "description": "sink",
+        "id": "sink|0",
+        "assetId": "sink",
         "children": []
     },
     "stove": {
         "description": "stove",
         "id": "stove|0",
         "assetId": "stove",
+        "children": []
+    },
+    "pantry": {
+        "description": "pantry",
+        "id": "pantry|0",
+        "assetId": "pantry",
         "children": []
     },
     "fridge": {
