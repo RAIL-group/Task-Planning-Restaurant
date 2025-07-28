@@ -80,7 +80,7 @@ def get_domain(types_dict=types_dict):
         :effect (and
             (not (rob-at ?r ?start))
             (rob-at ?r ?end)
-            (increase (total-cost) (known-cost ?start ?end))
+            ;(increase (total-cost) (known-cost ?start ?end))
         )
     )
     (:action pick

@@ -15,9 +15,9 @@ multi-agent-demo: build
 	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.demo_pddl \
 		--output_image_file /data/$(MA_AP_BASENAME)/ma_taskplan_demo/task_plan_myopic.png \
 		--save_dir /data/$(MA_AP_BASENAME)/results/$(EXP_NUM) \
-		--cook_network /data/cook-agent/logs/beta-v0/ap_cook.pt \
-		--cleaner_network /data/cleaner-agent/logs/beta-v0/ap_cleaner.pt \
-		--server_network /data/server-agent/logs/beta-v0/ap_server.pt
+		--cook_network /data/models/ap_cook.pt \
+		--cleaner_network /data/models/ap_cleaner.pt \
+		--server_network /data/models/ap_server.pt
 
 
 ma-data-gen-seeds = \

@@ -84,6 +84,69 @@ def test_ma_plot_grid():
     plot_state(restaurant, save_path = save_file, title='Grid Map')
 
 
+def test_ma_plan_both():
+    seed = 5
+    plt.clf()
+    random.seed(seed)
+    pddl = {}
+    pddl['domain'] = taskplan_multi.pddl.domain.get_domain()
+    pddl['planner'] = 'ff-astar2'
+    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, agents=['cook_bot', 'cleaner_bot', 'server_bot'], active='cook_bot')
+    grid = np.transpose(restaurant.grid)
+    img = make_plotting_grid(grid)
+    for container in restaurant.containers:
+        _x, _y = world_to_grid(
+            container['position']['x'], container['position']['z'],
+            restaurant.grid_min_x, restaurant.grid_min_z, restaurant.grid_res)
+        assetId = container['assetId']
+        plt.text(_x, _y, assetId, fontsize=8, color='blue')
+    plt.imshow(img, cmap='gray_r', alpha=0.5)
+    # Plan 
+    task = tau[1]
+    pddl['problem'] = taskplan_multi.pddl.problem.get_problem(restaurant, task)
+    plan, plan_cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
+                                max_planner_time=120)
+    move_plans = [p for p in plan if p.name == "move"]
+    move_poses = list()
+    offset = 0.2
+    for move in move_plans:
+        if move.args[1] == 'base':
+            pos1 = proc_data.agent['position']
+        else:
+            pos1 = proc_data.get_container_pos_by_name(move.args[1])
+        if move.args[2] == 'base':
+            pos2 = proc_data.agent['position']
+        else:
+            pos2 = proc_data.get_container_pos_by_name(move.args[2])
+        move_poses.append((pos1, pos2))
+    
+    paths = list()
+    for pos in move_poses:
+        src, targate = (pos)
+        cost, path = proc_data.get_cost_from_occupancy_grid(
+            src[0], src[1], targate[0], targate[1], return_path=True)
+        path_points = [(path[0][idx], path[1][idx])
+                       for idx in range(len(path[0]))]
+        path = geometry.LineString(path_points)
+        x, y = path.xy
+        plt.plot(x, y, color='blue')
+        path = path.buffer(15)
+        paths.append(path)
+    
+    merged_polygon = None
+    for poly in paths:
+        if merged_polygon is None:
+            merged_polygon = poly
+        else:
+            merged_polygon = unary_union([merged_polygon, poly])
+
+    x, y = merged_polygon.exterior.xy
+    # plt.plot(x, y, color='blue')
+    plt.fill(x, y, color='lightblue', alpha=0.5)
+
+    plt.title(title)
+    plt.savefig(save_path, dpi=300)
+
 def test_ma_cook_tasks():
     seed = 5
     random_choices = [0, 0.25, 0.5, 0.75, 1]

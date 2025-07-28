@@ -221,10 +221,10 @@ def generate_restaurant(seed, kitchen_containers_list,
         k_cen = k_polygon.centroid
         s_cen = s_polygon.centroid
         door_coords = get_door(k_polygon, s_polygon)
-        min_width = 0.25
-        max_width = 1.0
-        min_height = 0.25
-        max_height = 1.0
+        min_width = 0.5
+        max_width = 0.75
+        min_height = 0.5
+        max_height = 0.75
         door_buffer = 1.0  # Buffer around the door
         restaurant = {
                 'rooms': {
@@ -262,7 +262,7 @@ def generate_restaurant(seed, kitchen_containers_list,
             raise ValueError('Servingroom can not be Empty')
 
         # Create non-overlapping rectangles inside the kitchen
-        kitchen_corners = create_corner_rectangles(kitchen, min_width, max_width,
+        kitchen_corners = create_corner_rectangles(kitchen, 0.5, 0.5,
                                                    min_height, max_height,
                                                    door_coords, door_buffer)
         min_num_cont_needed = len(kitchen_containers_list) + 1
@@ -274,8 +274,8 @@ def generate_restaurant(seed, kitchen_containers_list,
                                                            door_buffer,
                                                            kitchen_corners)
 
-        service_corners = create_corner_rectangles(serving_room, min_width,
-                                                   max_width, min_height,
+        service_corners = create_corner_rectangles(serving_room, 0.5,
+                                                   0.5, min_height,
                                                    max_height, door_coords,
                                                    door_buffer,
                                                    kitchen_corners + kitchen_random

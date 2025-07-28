@@ -15,13 +15,20 @@ class MyopicPlanner:
 
     def get_cost_and_state_from_task(self, proc_data, task):
         pddl_problem = taskplan_multi.pddl.problem.get_problem(proc_data, task)
-        planner = 'ff-astar2'
+        planner = 'ff-astar'
         plan, cost = solve_from_pddl(
             self.domain,
             pddl_problem,
             planner=planner,
-            max_planner_time=120
+            max_planner_time=300
         )
+        move_plans = [p for p in plan if p.name == "move"]
+        move_cost = 0
+        for move in move_plans:
+            src = move.args[1]
+            target = move.args[2]
+            move_cost += proc_data.known_cost[src][target]
+        # print(move_cost)
         # if plan is None:
         #     proc_data.active_all = True
         #     pddl_problem = taskplan_multi.pddl.problem.get_problem(proc_data, task)
@@ -34,6 +41,9 @@ class MyopicPlanner:
         #     proc_data.active_all = False
         #     return mod_plan, cost + 2000
         # else:
+        # print(cost)
+        # print(move_cost)
+        cost += move_cost
         return plan, cost
     
     def get_expected_cost(self, proc_data, task_distribution):

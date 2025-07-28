@@ -403,13 +403,15 @@ class AntcipatoryPlanner:
                 aug_predicates.append(tt)
         return aug_predicates
 
-    def get_anticipatory_plan(self, restaurant, task, last_task=False):
+    def get_anticipatory_plan(self, restaurant, task, last_task=False, plan_only=False):
         # save_file = '/data/figs/ap_time_analysis' + str(restaurant.seed) + '.txt'
         init_state = copy.deepcopy(restaurant.get_current_object_state())
         plan, ant_cost = (
             self.myopic_planner.get_cost_and_state_from_task(restaurant, task)
         )
         if plan is None:
+            if plan_only:
+                return plan, ant_cost
             return init_state, 2000, task, 3
         
         myopic_help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
@@ -417,6 +419,8 @@ class AntcipatoryPlanner:
         restaurant.update_container_props(ant_state)
         
         if last_task:
+            if plan_only:
+                return plan, ant_cost
             return ant_state, ant_cost, task, myopic_help_stat
         
         ant_task = task
@@ -467,7 +471,7 @@ class AntcipatoryPlanner:
             start_time = time.time()
             restaurant.update_container_props(init_state)
             ant_task_pred = f'(and {aug_pred} {task})'
-            plan, c_cost = (
+            c_plan, c_cost = (
                 self.myopic_planner.get_cost_and_state_from_task(
                     restaurant, ant_task_pred))
             end_time = time.time()
@@ -476,12 +480,12 @@ class AntcipatoryPlanner:
                 exhausted+=1
             # with open(save_file, "a+") as f:
             #     f.write(f"Process took {elapsed_time:.2f} seconds to finish.\n")
-            if plan is None:
+            if c_plan is None:
                 continue
-            can_help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
+            can_help_stat = taskplan_multi.utils.get_status_of_asking_help(c_plan)
             if can_help_stat > myopic_help_stat:
                 continue
-            can_state = restaurant.get_final_state_from_plan(plan)
+            can_state = restaurant.get_final_state_from_plan(c_plan)
             restaurant.update_container_props(can_state)
             can_ex_cost = self.get_anticipated_cost(restaurant)
             can_ant_cost = can_ex_cost + c_cost
@@ -489,9 +493,13 @@ class AntcipatoryPlanner:
                 # found = 1
                 ant_state = copy.deepcopy(can_state)
                 ant_cost = c_cost
+                plan = c_plan
                 myopic_ant_cost = can_ant_cost
                 ant_task = ant_task_pred
                 myopic_help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
+        
+        if plan_only:
+            return plan, ant_cost
         
         return ant_state, ant_cost, ant_task, myopic_help_stat
 

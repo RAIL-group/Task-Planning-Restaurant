@@ -8,8 +8,8 @@ import gridmap
 from taskplan_multi.environments.sampling import generate_restaurant, load_movables
 from taskplan_multi.utilities.restaurant_primitives import KITCHEN_CONTAINERS, SERVING_ROOM_CONTAINERS, COOK_BOT_RESTRICT, SERVER_BOT_RESTRICT, CLEANER_BOT_RESTRICT
 
-INFLATE_UB = 0.25
-INFLATE_LB = 0.2
+INFLATE_UB = 0.15
+INFLATE_LB = 0.1
 
 
 def load_restaurant(seed, agents):
@@ -21,29 +21,31 @@ def load_restaurant(seed, agents):
     kitchen_containers_list = list(KITCHEN_CONTAINERS)
     random.shuffle(kitchen_containers_list)
     if 'cook_bot' in agents:
-        kitchen_containers_list.extend(['cook_bot'])
+        kitchen_containers_list.insert(0, 'cook_bot')
     serving_room_containers_list = list(SERVING_ROOM_CONTAINERS)
     if 'server_bot' in agents and 'cleaner_bot' in agents:
         if random.random() > 0.75:
-            serving_room_containers_list.extend(['server_bot'])
-            kitchen_containers_list.extend(['cleaner_bot'])
+            serving_room_containers_list.insert(0, 'server_bot')
+            kitchen_containers_list.insert(0, 'cleaner_bot')
         elif random.random() > 0.5:
-            serving_room_containers_list.extend(['cleaner_bot'])
-            kitchen_containers_list.extend(['server_bot'])
+            serving_room_containers_list.insert(0, 'cleaner_bot')
+            kitchen_containers_list.insert(0, 'server_bot')
         elif random.random() > 0.25:
-            serving_room_containers_list.extend(['cleaner_bot', 'server_bot'])
+            serving_room_containers_list.insert(0, 'server_bot')
+            serving_room_containers_list.insert(0, 'cleaner_bot')
         else:
-            kitchen_containers_list.extend(['cleaner_bot', 'server_bot'])
+            kitchen_containers_list.insert(0, 'server_bot')
+            kitchen_containers_list.insert(0, 'cleaner_bot')
     elif 'server_bot' in agents:
         if random.random() > 0.5:
-            serving_room_containers_list.extend(['server_bot'])
+            serving_room_containers_list.insert(0, 'server_bot')
         else:
-            kitchen_containers_list.extend(['server_bot'])
+            kitchen_containers_list.insert(0, 'server_bot')
     elif 'cleaner_bot' in agents:
         if random.random() > 0.5:
-            serving_room_containers_list.extend(['cleaner_bot'])
+            serving_room_containers_list.insert(0, 'cleaner_bot')
         else:
-            kitchen_containers_list.extend(['cleaner_bot'])
+            kitchen_containers_list.insert(0, 'cleaner_bot')
 
     datum = generate_restaurant(seed, kitchen_containers_list,
                                 serving_room_containers_list)

@@ -30,8 +30,8 @@ def get_problem(restaurant, task):
         if agent == 'cleaner_bot':
             for item in CLEANER_BOT_RESTRICT:
                 init_states.append(f"(restrict-reach {agent} {item})")
-    if not restaurant.active_all:
-        init_states.append(f"(robot-active {restaurant.active_robot})")
+    # if not restaurant.active_all:
+    #     init_states.append(f"(robot-active {restaurant.active_robot})")
     for container in containers:
         cnt_name = container['assetId']
         gen_name = ''.join([i for i in cnt_name if not i.isdigit()])
@@ -97,14 +97,15 @@ def get_problem(restaurant, task):
     # task = taskplan.pddl.task.clean_everything()
     # goal = [f'(and (hand-is-free) {task})']
     base_loc = ''
-    if restaurant.active_all:
-        for agent in restaurant.agent_list:
-            base = 'base_' + agent
-            base_loc += f'''(hand-is-free {agent})'''
-        goal = [f'(and {base_loc} {task})']
-    else:
-        # base_loc = restaurant.restaurant[restaurant.active_robot]['rob_at']
-        goal = [f'(and (hand-is-free {restaurant.active_robot}) {task})']
+    # if restaurant.active_all:
+    for agent in restaurant.agent_list:
+        base = 'base_' + agent
+        base_loc += f'''(hand-is-free {agent}) (rob-at {agent} {base})'''
+    goal = [f'(and {base_loc} {task})']
+    # print(goal)
+    # else:
+    #     # base_loc = restaurant.restaurant[restaurant.active_robot]['rob_at']
+    #     goal = [f'(and (hand-is-free {restaurant.active_robot}) {task})']
         # goal = [f'{task}']
         # print(goal)
     PROBLEM_PDDL = generate_pddl_problem(

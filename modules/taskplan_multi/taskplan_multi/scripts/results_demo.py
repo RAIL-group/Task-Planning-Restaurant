@@ -20,9 +20,9 @@ def plot_tasks_comparison_cost(combined_df):
         'No-Prep Myopic': 'cyan',
         'No-Prep Selfish A.P.': 'orangered',
         'No-Prep Proactive A.P': 'gold',
-        'Prep Myopic': 'cyan',
-        'Prep Selfish A.P.': 'orangered',
-        'Prep Proactive A.P': 'gold',
+        'Prep Myopic': 'royalblue',
+        'Prep Selfish A.P.': 'violet',
+        'Prep Proactive A.P': 'pink',
     }
     marker_map = {
         'No-Prep Myopic': 'o',
@@ -44,13 +44,13 @@ def plot_tasks_comparison_cost(combined_df):
             natural_sort_key))
 
         # Plot the mean line
-        ax.plot(subset_df['num'], subset_df['avg_cost'], label=label,
+        ax.plot(subset_df['num'], subset_df['avg_pt'], label=label,
         marker=marker_map.get(label, '.'), color=color_map.get(label, 'black'))
 
         # Plot the shaded standard error
         ax.fill_between(subset_df['num'],
-                        subset_df['avg_cost'] - subset_df['err_cost'],
-                        subset_df['avg_cost'] + subset_df['err_cost'],
+                        subset_df['avg_pt'] - subset_df['err_pt'],
+                        subset_df['avg_pt'] + subset_df['err_pt'],
                         color=color_map.get(label, 'black'), 
                         alpha=0.1)
         # if label == 'Prep Myopic':
@@ -60,17 +60,17 @@ def plot_tasks_comparison_cost(combined_df):
         #         i += 1
 
     # Customize the plot
-    ax.set_title('Average Cost Per Task', fontsize=10)
+    ax.set_title('Average Planning Time Per Task', fontsize=10)
     ax.set_xlabel('Task Number', fontsize=10)
-    ax.set_ylabel('Average Expected Cost', fontsize=10)
+    # ax.set_ylabel('Average Expected Cost', fontsize=10)
     ax.legend(title='Planners', fontsize=10)
-    ax.set_ylabel('Average Cost of Task Number')
+    ax.set_ylabel('Average Time of Task Number')
     ax.legend(title='Planners')
     ax.margins(x=0)
-    ax.set_xticklabels([])
+    # ax.set_xticklabels([])
     plt.tight_layout()
     # Show the plot
-    save_file = '/data/figs/compare-average-cost-any-state.png'
+    save_file = '/data/figs/compare-average-time.png'
     plt.savefig(save_file, dpi=1200, bbox_inches='tight')
 
 def get_df_group_by_seq(files):
@@ -92,11 +92,10 @@ def get_df_group_by_seq(files):
     # Calculate the average cost group by 'task seq'
 
     merged_df = pd.concat(dfs, ignore_index=True)
-    result = merged_df.groupby("seq").agg(
-        total_cost=("cost", "sum"),
-        total_help=("fail", "sum")
-        ).reset_index()
-    return result
+    total_per_seq = df.groupby("num")["cost"].mean()
+    average_cost = total_per_seq.mean()
+    print("Average cost across sequences:", average_cost)
+    return total_per_seq
 
 
 def get_df_group_by_task(files):
@@ -112,6 +111,7 @@ def get_df_group_by_task(files):
         df['num'] = df['num'].str.strip().str.split(':').str[1].str.strip()
         df['cost'] = df['cost'].str.strip().str.split(':').str[1].str.strip().astype(float)
         df['help'] = df['help'].str.strip().str.split(':').str[1].str.strip().astype(int)
+        df['time'] = df['time'].str.strip().str.split(':').str[1].str.strip().astype(float)
 
         dfs.append(df)
 
@@ -123,6 +123,8 @@ def get_df_group_by_task(files):
         err_cost=("cost", "sem"),
         avg_help=("help", "mean"),
         err_help=("help", "sem"),
+        avg_pt=("time", "mean"),
+        err_pt=("time", "sem"),
         ).reset_index()
     result = result.sort_values(by='num', key=lambda x: x.map(natural_sort_key))
     return result
@@ -168,50 +170,64 @@ def compare(args):
     #             files_ap_prep_comb.append(os.path.join(path, name))
     for path, _, files in os.walk(root):
         for name in files:
-            if 'myopic' in name:
+            if 'np_myopic' in name:
                 files_mp_np.append(os.path.join(path, name))
-            elif 'ap_self' in name:
+            elif 'np_ap_self' in name:
                 files_ap_np_self.append(os.path.join(path, name))
-            elif 'ap_other' in name:
+            elif 'np_ap_other' in name:
                 files_ap_np_other.append(os.path.join(path, name))
-            elif 'ap_joint' in name:
+            elif 'np_ap_joint' in name:
                 files_ap_np_comb.append(os.path.join(path, name))
-            # if 'prep_myopic' in name:
-            #     files_mp_prep.append(os.path.join(path, name))
-            # elif 'prep_ap_self' in name:
-            #     files_ap_prep_self.append(os.path.join(path, name))
-            # elif 'prep_ap_other' in name:
-            #     files_ap_prep_other.append(os.path.join(path, name))
-            # elif 'prep_ap_joint' in name:
-            #     files_ap_prep_comb.append(os.path.join(path, name))
+            if 'prep_myopic' in name:
+                files_mp_prep.append(os.path.join(path, name))
+            elif 'prep_ap_self' in name:
+                files_ap_prep_self.append(os.path.join(path, name))
+            elif 'prep_ap_other' in name:
+                files_ap_prep_other.append(os.path.join(path, name))
+            elif 'prep_ap_joint' in name:
+                files_ap_prep_comb.append(os.path.join(path, name))
+
 
     # No-Prep Myopic
     np_myopic = get_df_group_by_task(files_mp_np)
     np_myopic['label'] = 'No-Prep Myopic'
 
+    print(f"No-Prep Myopic Task Cost (Avg): {np_myopic['avg_cost'].mean()}")
+
     # No-Prep Selfish Anticipatory Planning
     np_selfish = get_df_group_by_task(files_ap_np_self)
     np_selfish['label'] = 'No-Prep Selfish A.P.'
+
+    print(f"No-Prep Selfish A.P. Task Cost (Avg): {np_selfish['avg_cost'].mean()}")
 
     # No-Prep Anticipatory Planning with joint expected cost
     np_proactive = get_df_group_by_task(files_ap_np_comb)
     np_proactive['label'] = 'No-Prep Proactive A.P'
 
+    print(f"No-Prep Proactive A.P Task Cost (Avg): {np_proactive['avg_cost'].mean()}")
+
     # Prep Myopic
-    # prep_myopic = get_df_group_by_task(files_mp_prep)
-    # prep_myopic['label'] = 'Prep Myopic'
+    prep_myopic = get_df_group_by_task(files_mp_prep)
+    prep_myopic['label'] = 'Prep Myopic'
+
+    print(f"Prep Myopic Task Cost (Avg): {prep_myopic['avg_cost'].mean()}")
 
     # # Prep Selfish Anticipatory Planning
-    # prep_selfish = get_df_group_by_task(files_ap_prep_self)
-    # prep_selfish['label'] = 'Prep Selfish A.P.'
+    prep_selfish = get_df_group_by_task(files_ap_prep_self)
+    prep_selfish['label'] = 'Prep Selfish A.P.'
+
+    print(f"Prep Selfish A.P. Task Cost (Avg): {prep_selfish['avg_cost'].mean()}")
 
     # # Prep Anticipatory Planning with joint expected cost
-    # prep_proactive = get_df_group_by_task(files_ap_prep_comb)
-    # prep_proactive['label'] = 'Prep Proactive A.P'
+    prep_proactive = get_df_group_by_task(files_ap_prep_comb)
+    prep_proactive['label'] = 'Prep Proactive A.P'
 
+    print(f"Prep Proactive A.P. Task Cost (Avg): {prep_proactive['avg_cost'].mean()}")
+
+    raise NotImplementedError
     #Combine and Plot
     # combined_df = pd.concat([np_myopic, np_selfish, np_proactive, prep_myopic, prep_selfish, prep_proactive])
-    combined_df = pd.concat([np_myopic, np_selfish, np_proactive])
+    combined_df = pd.concat([np_myopic, np_proactive, np_selfish])
     plot_tasks_comparison_cost(combined_df)
     # df = pd.DataFrame(columns=["Method", "Value", "Error"])
     # # # No Preparation
