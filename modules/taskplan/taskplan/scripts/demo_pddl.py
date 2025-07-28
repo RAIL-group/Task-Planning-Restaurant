@@ -202,14 +202,6 @@ def run_pddl():
     # Generates a restaurent class
     restaurant = taskplan.environments.restaurant.RESTAURANT(seed=seed)
     
-    # Plotting Code
-    grid = np.transpose(restaurant.grid)
-    img = make_plotting_grid(grid)
-    plt.imshow(img, cmap='gray_r', alpha=0.5)
-    plt.axis('off')  # Hides the axis
-    save_file = '/data/figs/grid' + str(seed) + '.png'
-    plt.savefig(save_file, dpi=1200)
-    
     # Simple Myopic Planner
     pddl = {}
     pddl['domain'] = taskplan.pddl.domain.get_domain()

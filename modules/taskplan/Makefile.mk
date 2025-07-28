@@ -70,7 +70,7 @@ ap-res-prepare: $(ap-res-prep-seeds)
 
 ap-res-ant-seeds = \
 	$(shell for ii in $$(seq 0 $$((0 + $(AP_RES_NUM_EVAL_SEEDS) - 1))); \
-		do echo "$(DATA_BASE_DIR)/$(AP_RES_BASENAME)/results/$(EXPERIMENT_NAME)/evaluation_no_$${ii}.png"; done)
+		do echo "$(DATA_BASE_DIR)/$(AP_RES_BASENAME)/results/$(EXPERIMENT_NAME)/evaluation_ee_no_$${ii}.png"; done)
 $(ap-res-ant-seeds): seed = $(shell echo $@ | grep -Eo '[0-9]+' | tail -1)
 $(ap-res-ant-seeds):
 	@echo "Anticipatory Data [$(AP_RES_BASENAME) | seed: $(seed) | Debug"]
