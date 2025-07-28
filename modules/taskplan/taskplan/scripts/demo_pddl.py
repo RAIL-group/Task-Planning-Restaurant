@@ -191,59 +191,36 @@ def make_plotting_grid(grid_map):
 
 def run_pddl():
     # preparing pddl as input to the solver
+
+    '''
+        seed: random number to generate a restaurant
+    '''
     seed = 19
     random.seed(seed)
     plt.figure(figsize=(10, 10))
-    save_file = '/data/figs/grid' + str(seed) + '.png'
-    pddl = {}
+    
+    # Generates a restaurent class
     restaurant = taskplan.environments.restaurant.RESTAURANT(seed=seed)
+    
+    # Plotting Code
     grid = np.transpose(restaurant.grid)
     img = make_plotting_grid(grid)
     plt.imshow(img, cmap='gray_r', alpha=0.5)
     plt.axis('off')  # Hides the axis
+    save_file = '/data/figs/grid' + str(seed) + '.png'
     plt.savefig(save_file, dpi=1200)
+    
+    # Simple Myopic Planner
+    pddl = {}
     pddl['domain'] = taskplan.pddl.domain.get_domain()
     pddl['planner'] = 'ff-astar'
     task = taskplan.pddl.task.serve_water('servingtable1', 'cup1')
     pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
     plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
                                  max_planner_time=60)
-    tot_cost = 0
-    if plan:
-        for p in plan:
-            print(p)
-        print(cost)
-    raise NotImplementedError
-    final_state = restaurant.get_random_state()
-    restaurant.update_container_props(final_state[0],
-                                      final_state[1],
-                                      final_state[2])
-    pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
-    plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
-                                 max_planner_time=300)
-    # print(plan)
-    if plan:
-        for p in plan:
-            print(p)
-        print(cost)
-    task = taskplan.pddl.task.serve_water('servingtable2', 'mug2')
-    pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
-    plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
-                                 max_planner_time=300)
-    # print(plan)
-    if plan:
-        for p in plan:
-            print(p)
-        print(cost)
-        final_state = restaurant.get_final_state_from_plan(plan)
-        restaurant.update_container_props(final_state[0],
-                                          final_state[1],
-                                          final_state[2])
-    print(restaurant.get_objects_by_container_name('servingtable2'))
+    
 
 
 if __name__ == "__main__":
     # test_antplan_model_output()
     run_pddl()
-    # test_states(10)
-    # test_pddl()
