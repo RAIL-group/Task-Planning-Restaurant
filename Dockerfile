@@ -24,12 +24,13 @@ RUN curl -sSL https://downloads.sourceforge.net/project/virtualgl/"${VIRTUALGL_V
 
 
 # Install python dependencies
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3 get-pip.py && rm get-pip.py
+RUN curl https://bootstrap.pypa.io/pip/3.8/get-pip.py -o get-pip.py && python3 get-pip.py && rm get-pip.py
 COPY modules/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install torch==2.0.0+cu118 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 RUN pip install torch_geometric -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
 RUN pip3 install captum
+
 
 # Needed for using matplotlib without a screen
 RUN echo "backend: TkAgg" > matplotlibrc
@@ -47,6 +48,13 @@ RUN git clone https://github.com/caelan/pddlstream.git \
 RUN cd pddlstream\
 	&& ./downward/build.py
 ENV PYTHONPATH="/pddlstream:${PYTHONPATH}"
+
+RUN apt-get update && apt-get install -y pybind11-dev
+
+RUN rm -rf downward
+RUN git clone https://github.com/roshandhakal/downward.git \
+	&& cd downward && ./build.py
+ENV PYTHONPATH="/downward:${PYTHONPATH}"
 
 # Copy and install the remaining code
 COPY modules/conftest.py modules/conftest.py

@@ -111,4 +111,6 @@ download-sbert:
 # Target for a demo
 .PHONY: taskplan-demo
 taskplan-demo:
-	@$(DOCKER_PYTHON) -m taskplan.scripts.demo_pddl
+	@mkdir -p $(DATA_BASE_DIR)/$(AP_RES_BASENAME)/example/
+	@$(DOCKER_PYTHON) -m taskplan.scripts.demo_pddl \
+		--log_file /data/$(AP_RES_BASENAME)/example/logfile.txt
