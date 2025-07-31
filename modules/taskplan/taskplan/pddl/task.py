@@ -139,3 +139,9 @@ def serve_fruit(bowl, table):
     return f'''
             (and (is-in apple {bowl}) (is-at {bowl} {table}))
             '''
+
+
+def not_at_loc(bowl, table):
+    return f'''
+            (not (is-at {bowl} {table}))
+            '''

@@ -10,6 +10,8 @@ import gridmap
 from taskplan.environments.restaurant import world_to_grid
 import torch
 from torch_geometric.data import Data
+import re
+from collections import defaultdict
 
 
 def get_robot_pose(data):
@@ -18,104 +20,175 @@ def get_robot_pose(data):
 # 'attribs:': [isLiquid, pickable, spreadable, spread, fillable, dirty, container, jar, slicable, filled]
 
 
-def get_graph(data):
-    ''' This method creates graph data from the restaurant data'''
-    # Create dummy restaurant node
+def parse_symbolic_state(atom_lines):
+    '''
+    This function parses raw text lines of symbolic atoms into a structured dictionary.
+    This state represents the "current" state of the environment, which can be
+    different from the initial state described in the main data object.
+    '''
+    # Predicates that are not relevant for the graph structure are ignored.
+    ignored = {"is-holding", "is-located", "hand-is-free", "restrict-move-to"}
+    state = defaultdict(dict)
+
+    for line in atom_lines:
+        line = line.strip()
+        if not line.startswith("Atom "):
+            continue
+        # Use regex to capture the predicate and its arguments
+        match = re.match(r"Atom ([^(]+)\(([^)]*)\)", line)
+        if not match:
+            continue
+        
+        pred, args_str = match.groups()
+        if pred in ignored:
+            continue
+        
+        args = tuple(arg.strip() for arg in args_str.split(","))
+        
+        # Store the predicate as true for the given arguments
+        state[pred][args] = True
+            
+    return dict(state)
+
+
+def get_graph(data, state={}):
+    '''
+    This method creates graph data from the restaurant data.
+    If a 'state' dictionary is provided, it updates the graph to reflect the
+    current state of object locations and attributes.
+    '''
     node_count = 0
     nodes = {}
-    assetId_idx_map = {}
     edges = []
+    # This map is crucial for finding node indices from object/container IDs
+    id_to_idx_map = {}
+    assetId_idx_map = {}
+    
+    # 1. Create dummy restaurant node
+    restaurant_id = 'restaurant'
     nodes[node_count] = {
-        'id': 'restaurant',
+        'id': restaurant_id,
         'name': 'restaurant',
         'desc': 'Restaurant',
         'pos': (0, 0),
         'type': [1, 0, 0, 0, 0],
         'attribs': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     }
+    id_to_idx_map[restaurant_id] = node_count
     node_count += 1
 
-    # Create robot node and add the edge to the restaurant
+    # 2. Create robot node and add its edge to the restaurant
     _x, _y = data.accessible_poses[data.rob_at]
+    robot_id = 'robot'
     nodes[node_count] = {
-        'id': 'robot',
+        'id': robot_id,
         'name': 'robot',
         'desc': 'Robot',
         'pos': (_x, _y),
         'type': [0, 1, 0, 0, 0],
         'attribs': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     }
-    # edges.append(tuple([0, node_count]))
+    id_to_idx_map[robot_id] = node_count
     node_count += 1
-    rob_loc = 'kitchen'
+    
+    rob_loc_room_name = 'kitchen'
     if 'servingtable' in data.rob_at:
-        rob_loc = 'servingroom'
-    # Iterate over rooms but skip position coordinate scaling since not
-    # required in distance calculations
+        rob_loc_room_name = 'servingroom'
+
+    # 3. Create room nodes
     for room in data.rooms:
         _x, _y = world_to_grid(
             data.rooms[room]['position']['x'], data.rooms[room]['position']['z'],
             data.grid_min_x, data.grid_min_z, data.grid_res)
+        
+        room_id = room + '|' + str(node_count)
+        room_name = data.rooms[room]['name'].lower()
         nodes[node_count] = {
-            'id': room+'|'+str(node_count),
-            'name': data.rooms[room]['name'].lower(),
-            'desc': data.rooms[room]['name'].lower(),
+            'id': room_id,
+            'name': room_name,
+            'desc': room_name,
             'pos': (_x, _y),
             'type': [0, 0, 1, 0, 0],
             'attribs': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         }
-        edges.append(tuple([0, node_count]))
-        if room == rob_loc:
-            edges.append(tuple([1, node_count]))
+        id_to_idx_map[room_id] = node_count
+        id_to_idx_map[room_name] = node_count # Also map by simple name for convenience
+        
+        # Connect room to the main restaurant node
+        edges.append(tuple([id_to_idx_map['restaurant'], node_count]))
+        
+        # Connect robot to the room it's in
+        if room_name == rob_loc_room_name:
+            edges.append(tuple([id_to_idx_map['robot'], node_count]))
+            
         node_count += 1
 
-    # add an edge between two rooms adjacent by a passable shared door
-    room_edges = set([(2, 3)])
-    edges.extend(room_edges)
+    # Add an edge between two rooms adjacent by a passable shared door
+    # This assumes kitchen is node 2 and servingroom is node 3
+    edges.append(tuple([2, 3]))
 
-    room_names = [nodes[n]['name'] for n in nodes]
+    # 4. Create container nodes
     cnt_node_idx = []
-
     for container in data.containers:
-        id = container['id']
+        container_id = container['id']
         assetId = container['assetId']
         name = get_generic_name(container['id'])
         _x, _y = data.accessible_poses[assetId]
-        src = room_names.index(container['loc'])
-        assetId_idx_map[assetId] = node_count
-        if 'fillable' in container and container['fillable'] == 1:
-            if 'filled' in container and container['filled'] == 1:
-                attribs = [0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
-            else:
-                attribs = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
-        else:
-            attribs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        
+        # Determine container attributes from `data` as default
+        is_fillable = 1 if 'fillable' in container and container['fillable'] else 0
+        is_filled = 1 if 'filled' in container and container['filled'] else 0
+        
+        # If state is provided, override attributes
+        if state:
+            if state.get('is-filled', {}).get((container_id,)):
+                is_filled = 1
+            elif state.get('is-empty', {}).get((container_id,)):
+                is_filled = 0
+        
+        attribs = [0, 0, 0, 0, is_fillable, 0, 0, 0, 0, is_filled]
+        
         nodes[node_count] = {
-            'id': id,
+            'id': container_id,
             'name': name,
             'desc': container['description'],
             'pos': (_x, _y),
             'type': [0, 0, 0, 1, 0],
             'attribs': attribs
         }
-        edges.append(tuple([src, node_count]))
+        # The container is located in a room
+        src_room_idx = id_to_idx_map[container['loc']]
+        edges.append(tuple([src_room_idx, node_count]))
+
+        id_to_idx_map[container_id] = node_count
+        assetId_idx_map[assetId] = node_count
         cnt_node_idx.append(node_count)
         node_count += 1
 
-    container_ids = [nodes[n]['id'] for n in nodes]
+    # 5. Create object (children) nodes
     obj_node_idx = []
-
     for container in data.containers:
         for connected_object in container['children']:
-            id = connected_object['id']
+            obj_id = connected_object['id']
             assetId = connected_object['assetId']
             name = get_generic_name(connected_object['id'])
-            _x, _y = world_to_grid(
-                container['position']['x'],
-                container['position']['z'],
-                data.grid_min_x, data.grid_min_z, data.grid_res)
-            src = container_ids.index(container['id'])
-            assetId_idx_map[assetId] = node_count
+            
+            # --- Determine Object Location ---
+            # Default location is the parent container from initial data
+            src_id = container['id']
+            # If state is provided, check for an `is-on` predicate to find new location
+            if state:
+                is_on_state = state.get('is-on', {})
+                for (arg1, arg2), _ in is_on_state.items():
+                    if arg1 == obj_id:
+                        src_id = arg2 # Update source to the new parent's ID
+                        break
+            
+            src_node_idx = id_to_idx_map[src_id]
+
+            # --- Determine Object Attributes ---
+            # **FIXED CODE BLOCK:** Initialize attributes and set them one by one.
+            # This avoids the error-causing '.get()' method on `connected_object`.
             attribs = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             if 'isLiquid' in connected_object and connected_object['isLiquid'] == 1:
                 attribs[0] = 1
@@ -137,33 +210,54 @@ def get_graph(data):
                 attribs[8] = 1
             if 'filled' in connected_object and connected_object['filled'] == 1:
                 attribs[9] = 1
+            
+            # If state is provided, override attributes with current values
+            if state:
+                # is-dirty / is-clean
+                if state.get('is-dirty', {}).get((obj_id,)):
+                    attribs[5] = 1
+                elif state.get('is-clean', {}).get((obj_id,)):
+                    attribs[5] = 0
+                # is-filled / is-empty
+                if state.get('is-filled', {}).get((obj_id,)):
+                    attribs[9] = 1
+                elif state.get('is-empty', {}).get((obj_id,)):
+                    attribs[9] = 0
+                # is-spread
+                if state.get('is-spread', {}).get((obj_id,)):
+                    attribs[3] = 1
+            
+            # Object position is its parent container's initial position
+            _x, _y = world_to_grid(
+                container['position']['x'], container['position']['z'],
+                data.grid_min_x, data.grid_min_z, data.grid_res)
+            
             nodes[node_count] = {
-                    'id': id,
-                    'name': name,
-                    'desc': connected_object['description'],
-                    'pos': (_x, _y),
-                    'type': [0, 0, 0, 0, 1],
-                    'attribs': attribs
-                }
-            edges.append(tuple([src, node_count]))
+                'id': obj_id,
+                'name': name,
+                'desc': connected_object['description'],
+                'pos': (_x, _y),
+                'type': [0, 0, 0, 0, 1],
+                'attribs': attribs
+            }
+            edges.append(tuple([src_node_idx, node_count]))
+            
+            id_to_idx_map[obj_id] = node_count
+            assetId_idx_map[assetId] = node_count
             obj_node_idx.append(node_count)
             node_count += 1
-
+            
     graph = {
-        'nodes': nodes,  # dictionary {id, name, pos, type}
-        'edge_index': edges,  # pairwise edge list
-        'cnt_node_idx': cnt_node_idx,  # indices of contianers
-        'obj_node_idx': obj_node_idx,  # indices of objects
-        'idx_map': assetId_idx_map,  # mapping from assedId to graph index position
-        'distances': data.known_cost  # mapped using assedId-assetId
+        'nodes': nodes,
+        'edge_index': edges,
+        'cnt_node_idx': cnt_node_idx,
+        'obj_node_idx': obj_node_idx,
+        'idx_map': assetId_idx_map,
+        'id_to_idx_map': id_to_idx_map, # Useful for debugging
+        'distances': data.known_cost
     }
 
-    # # Add edges to get a connected graph if not already connected
-    # req_edges = get_edges_for_connected_graph(proc_data.occupancy_grid, graph)
-    # graph['edge_index'] = graph['edge_index'] + req_edges
-    # print(graph)
     return graph
-
 
 def graph_formatting(graph):
     ''' This method formats the graph data from procthor-10k data

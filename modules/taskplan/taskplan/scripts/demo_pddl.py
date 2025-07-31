@@ -7,7 +7,9 @@ import pandas as pd
 import learning
 import os
 import random
+import argparse
 from skimage.morphology import erosion
+import re
 
 COLLISION_VAL = 1
 FREE_VAL = 0
@@ -189,30 +191,73 @@ def make_plotting_grid(grid_map):
 
     return grid
 
-def run_pddl():
+
+def get_parser():
+    parser = argparse.ArgumentParser(description="Get task planning example")
+    parser.add_argument("--log_file", type=str, default="logfile.txt")
+    return parser
+
+args = get_parser().parse_args()
+seed = 19
+random.seed(seed)
+# Generates a restaurant class
+restaurant = taskplan.environments.restaurant.RESTAURANT(seed=seed)
+log_path = "/data/logfile.txt"
+def anticipatory_cost_fn(state):
+    """
+    Args:
+        state (dict): {var_name: predicate_str} from C++ symbolic state
+
+    Returns:
+        int: Total placement cost
+    """
+    total_cost = 0
+    raw_state = [pred for pred in state.values() if pred.startswith("Atom")]
+
+    # Build graph using symbolic state
+    whole_graph = taskplan.utils.get_graph(restaurant, state=raw_state)
+    # print(state)
+    # print(whole_graph)
+    # exit()
+
+    # Log state and graph
+    with open(log_path, "a") as logf:
+        logf.write("[AntPlan] Current State Heuristic:\n")
+        logf.write("  Symbolic State:\n")
+        for pred in raw_state:
+            logf.write(f"    {pred}\n")
+        logf.write("  Nodes:\n")
+        for idx, node in whole_graph['nodes'].items():
+            logf.write(f"    [{idx}] {node['id']} @ {node['pos']} type={node['type']} attribs={node['attribs']}\n")
+        logf.write("  Edges:\n")
+        for e in whole_graph['edge_index']:
+            logf.write(f"    {e}\n")
+        logf.write("\n")
+
+    return total_cost
+
+def run_pddl(args):
     # preparing pddl as input to the solver
 
     '''
         seed: random number to generate a restaurant
     '''
-    seed = 19
-    random.seed(seed)
     plt.figure(figsize=(10, 10))
-    
-    # Generates a restaurent class
-    restaurant = taskplan.environments.restaurant.RESTAURANT(seed=seed)
-    
+
     # Simple Myopic Planner
     pddl = {}
-    pddl['domain'] = taskplan.pddl.domain.get_domain()
-    pddl['planner'] = 'ff-astar'
     task = taskplan.pddl.task.serve_water('servingtable1', 'cup1')
+    # task = taskplan.pddl.task.serve_coffee('servingtable1', 'cup1')
+    pddl['domain'] = taskplan.pddl.domain.get_domain()
+    # pddl['planner'] = 'ff-astar'
     pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
-    plan, cost = solve_from_pddl(pddl['domain'], pddl['problem'], planner=pddl['planner'],
-                                 max_planner_time=60)
-    
+    # plan, cost = taskplan.pddl.solver.solve_from_pddl(args, pddl['domain'], pddl['problem'], heuristic="hmax()")
+    plan, cost = taskplan.pddl.solver.solve_from_pddl(args, pddl['domain'], pddl['problem'], heuristic="sum([weight(ff(),1), weight(antplan(function=anticipatory_cost_fn),1)])")
+    print("PLAN ", plan)
+
+    # plan, cost = solve_from_pddl(pddl)
 
 
 if __name__ == "__main__":
     # test_antplan_model_output()
-    run_pddl()
+    run_pddl(args)
