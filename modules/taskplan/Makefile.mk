@@ -108,9 +108,18 @@ download-sbert:
 	@mkdir -p $(DATA_BASE_DIR)/sentence_transformers/
 	@$(DOCKER_PYTHON) -m taskplan.scripts.sentence_bert
 
+
+
+.PHONY: move-network-file
+move-network-file:
+	@mkdir -p $(DATA_BASE_DIR)/$(AP_RES_BASENAME)/training_logs/models
+	mv ap_beta-v2.pt $(DATA_BASE_DIR)/$(AP_RES_BASENAME)/training_logs/models/
+
+
 # Target for a demo
 .PHONY: taskplan-demo
 taskplan-demo:
 	@mkdir -p $(DATA_BASE_DIR)/$(AP_RES_BASENAME)/example/
 	@$(DOCKER_PYTHON) -m taskplan.scripts.demo_pddl \
-		--log_file /data/$(AP_RES_BASENAME)/example/logfile.txt
+		--log_file /data/$(AP_RES_BASENAME)/example/logfile.txt \
+		--network_file /data/restaurant/training_logs/models/ap_beta-v2.pt

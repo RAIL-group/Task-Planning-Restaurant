@@ -10,6 +10,7 @@ import random
 import argparse
 from skimage.morphology import erosion
 import re
+from collections import defaultdict
 
 COLLISION_VAL = 1
 FREE_VAL = 0
@@ -195,6 +196,7 @@ def make_plotting_grid(grid_map):
 def get_parser():
     parser = argparse.ArgumentParser(description="Get task planning example")
     parser.add_argument("--log_file", type=str, default="logfile.txt")
+    parser.add_argument("--network_file", type=str)
     return parser
 
 args = get_parser().parse_args()
@@ -203,7 +205,40 @@ random.seed(seed)
 # Generates a restaurant class
 restaurant = taskplan.environments.restaurant.RESTAURANT(seed=seed)
 log_path = "/data/logfile.txt"
-def anticipatory_cost_fn(state):
+network_file = "/data/restaurant/training_logs/models/ap_beta-v2.pt"
+use_cuda = torch.cuda.is_available()
+device = torch.device("cuda" if use_cuda else "cpu")
+eval_net = taskplan.models.gcn.AnticipateGCN.get_net_eval_fn(
+            network_file=network_file, device=device)
+    
+def parse_symbolic_state(state):
+    '''
+    This function parses raw text lines of symbolic atoms into a structured dictionary.
+    This state represents the "current" state of the environment, which can be
+    different from the initial state described in the main data object.
+    '''
+    ignored = {"is-holding", "is-located", "hand-is-free", "restrict-move-to", "new-axiom@0"}
+    sym_state = defaultdict(list)
+
+    for line in state.values():
+        line = line.strip()
+        if not line.startswith("Atom "):
+            continue
+
+        match = re.match(r"Atom ([^(]+)\(([^)]*)\)", line)
+        if not match:
+            continue
+
+        pred, args_str = match.groups()
+        if pred in ignored:
+            continue
+
+        args = tuple(arg.strip() for arg in args_str.split(",") if arg.strip())
+        sym_state[pred].append(args)
+
+    return dict(sym_state)
+
+def anticipatory_cost_fn(sym_state):
     """
     Args:
         state (dict): {var_name: predicate_str} from C++ symbolic state
@@ -212,29 +247,52 @@ def anticipatory_cost_fn(state):
         int: Total placement cost
     """
     total_cost = 0
-    raw_state = [pred for pred in state.values() if pred.startswith("Atom")]
+    raw_state = [pred for pred in sym_state.values() if pred.startswith("Atom")]
+     # Get a flat list of all objects and the current robot location
+    # all_objects, water_at_cm, rob_at = restaurant.get_current_object_state()
+    # for obj in all_objects:
 
-    # Build graph using symbolic state
-    whole_graph = taskplan.utils.get_graph(restaurant, state=raw_state)
-    # print(state)
-    # print(whole_graph)
-    # exit()
+    # all_objects, water_at_cm, rob_at = restaurant.get_current_object_state()
+    new_state = taskplan.utils.parse_symbolic_state(sym_state)
+    # # filled = new_state.get('filled-with', [])
+    # filled = {}
+    # # ids = []
+    # for obj in all_objects:
+    #     # Create a symbolic ID (e.g., 'cup-1' -> 'cup1') to match the state's naming
+    #     symbolic_id = obj['id'].replace('|', '')
+    #     if any(len(t) == 2 and t[1] == symbolic_id for t in new_state.get('filled-with', [])):
+    #         filled = new_state
 
+
+    restaurant_with_new_state = taskplan.utils.update_data_from_state(restaurant, new_state)
+    # obj_state = restaurant_with_new_state.get_current_object_state()
+
+    whole_graph = taskplan.utils.get_graph(restaurant_with_new_state)
+    anticipatory_cost = eval_net(whole_graph)
+    # anticipatory_cost =  taskplan.planners.anticipatory_planner.AntcipatoryPlanner.get_anticipated_cost(restaurant_with_new_state)
+        # def get_anticipated_cost(self, proc_data):
+        # whole_graph = taskplan.utils.get_graph(proc_data)
+        # anticipated_cost = self.eval_net(whole_graph)
+        # return anticipated_cost
     # Log state and graph
     with open(log_path, "a") as logf:
-        logf.write("[AntPlan] Current State Heuristic:\n")
-        logf.write("  Symbolic State:\n")
-        for pred in raw_state:
-            logf.write(f"    {pred}\n")
-        logf.write("  Nodes:\n")
-        for idx, node in whole_graph['nodes'].items():
-            logf.write(f"    [{idx}] {node['id']} @ {node['pos']} type={node['type']} attribs={node['attribs']}\n")
-        logf.write("  Edges:\n")
-        for e in whole_graph['edge_index']:
-            logf.write(f"    {e}\n")
+        # logf.write("[AntPlan] Current State Heuristic:\n")
+        logf.write("  Obj State:\n")
+        # logf.write(f" {filled}\n")
+        for preds in raw_state:
+            logf.write(f" {preds}\n")
+        logf.write(" Anticipatory Cost:\n")
+        # logf.write(f" {filled}\n")
+        logf.write(f" {anticipatory_cost}\n")
+        # logf.write("  Graph:\n")
+        # for idx, node in whole_graph['nodes'].items():
+        #     logf.write(f"    [{idx}] {node['id']} @ {node['pos']} type={node['type']} attribs={node['attribs']}\n")
+        # logf.write("  Edges:\n")
+        # for e in whole_graph['edge_index']:
+        #     logf.write(f"    {e}\n")
         logf.write("\n")
 
-    return total_cost
+    return anticipatory_cost
 
 def run_pddl(args):
     # preparing pddl as input to the solver
@@ -251,8 +309,8 @@ def run_pddl(args):
     pddl['domain'] = taskplan.pddl.domain.get_domain()
     # pddl['planner'] = 'ff-astar'
     pddl['problem'] = taskplan.pddl.problem.get_problem(restaurant, task)
-    # plan, cost = taskplan.pddl.solver.solve_from_pddl(args, pddl['domain'], pddl['problem'], heuristic="hmax()")
-    plan, cost = taskplan.pddl.solver.solve_from_pddl(args, pddl['domain'], pddl['problem'], heuristic="sum([weight(ff(),1), weight(antplan(function=anticipatory_cost_fn),1)])")
+    # plan, cost = taskplan.pddl.solver.solve_from_pddl(args, pddl['domain'], pddl['problem'], heuristic="weight(antplan(function=anticipatory_cost_fn),1)")
+    plan, cost = taskplan.pddl.solver.solve_from_pddl(args, pddl['domain'], pddl['problem'], heuristic="sum([g(), weight(ff(),3), weight(antplan(function=anticipatory_cost_fn),0)])")
     print("PLAN ", plan)
 
     # plan, cost = solve_from_pddl(pddl)

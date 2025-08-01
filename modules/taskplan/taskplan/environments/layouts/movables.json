@@ -7,13 +7,15 @@
         "pickable": 1,
         "container": 1
     },
+
     {
         "description": "mug",
         "assetId": "mug2",
         "id": "mug|2",
         "washable": 1,
         "pickable": 1,
-        "fillable": 1
+        "fillable": 1,
+        "filled": 0
     },
     {
         "description": "jar of water",
@@ -21,7 +23,8 @@
         "id": "jar|0",
         "pickable": 1,
         "fillable": 1,
-        "jar": 1
+        "jar": 1,
+        "filled": 0
     },
     {
         "description": "jar of water",
@@ -29,7 +32,8 @@
         "id": "jar|1",
         "pickable": 1,
         "fillable": 1,
-        "jar": 1
+        "jar": 1,
+        "filled": 0
     },
     {
         "description": "spread of orange",
@@ -51,7 +55,8 @@
         "id": "cup|1",
         "washable": 1,
         "pickable": 1,
-        "fillable": 1
+        "fillable": 1,
+        "filled": 0
     },
     {
         "description": "jar of coffeegrinds",
@@ -79,7 +84,8 @@
         "id": "cup|2",
         "pickable": 1,
         "washable": 1,
-        "fillable": 1
+        "fillable": 1,
+        "filled": 0
     },
     {
         "description": "mug",
@@ -87,6 +93,7 @@
         "id": "mug|1",
         "washable": 1,
         "pickable": 1,
-        "fillable": 1
+        "fillable": 1,
+        "filled": 0
     }
 ]
