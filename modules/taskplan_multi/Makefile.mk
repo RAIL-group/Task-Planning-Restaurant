@@ -4,7 +4,7 @@ help::
 MA_AP_BASENAME ?= exp-v0
 MA_AP_NUM_TRAINING_SEEDS ?= 0
 MA_AP_NUM_TESTING_SEEDS ?= 0
-MA_AP_NUM_EVAL_SEEDS ?= 3
+MA_AP_NUM_EVAL_SEEDS ?= 12
 EXPERIMENT_NAME = beta-v0
 EXP_NUM = 1
 
@@ -57,7 +57,7 @@ $(ma-train-file):
 ma-train: $(ma-train-file)
 
 ma-eval-seeds := \
-	$(shell for ii in $$(seq 10 $$((10 + $(MA_AP_NUM_EVAL_SEEDS) - 1))); \
+	$(shell for ii in $$(seq 20 $$((20 + $(MA_AP_NUM_EVAL_SEEDS) - 1))); \
 		do echo "$(DATA_BASE_DIR)/$(MA_AP_BASENAME)/figure/eval_$${ii}.png"; done)
 
 $(ma-eval-seeds): eval_seed = $(shell echo $@ | grep -Eo '[0-9]+' | tail -1)

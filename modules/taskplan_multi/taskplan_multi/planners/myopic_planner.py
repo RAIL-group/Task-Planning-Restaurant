@@ -22,12 +22,18 @@ class MyopicPlanner:
             planner=planner,
             max_planner_time=300
         )
-        move_plans = [p for p in plan if p.name == "move"]
-        move_cost = 0
-        for move in move_plans:
-            src = move.args[1]
-            target = move.args[2]
-            move_cost += proc_data.known_cost[src][target]
+        
+        if plan:
+            move_cost = 0
+            move_plans = [p for p in plan if p.name == "move"]
+            for move in move_plans:
+                src = move.args[1]
+                target = move.args[2]
+                move_cost += proc_data.known_cost[src][target]
+            cost += move_cost
+
+        return plan, cost
+
         # print(move_cost)
         # if plan is None:
         #     proc_data.active_all = True
@@ -43,8 +49,8 @@ class MyopicPlanner:
         # else:
         # print(cost)
         # print(move_cost)
-        cost += move_cost
-        return plan, cost
+        # cost += move_cost
+        # return plan, cost
     
     def get_expected_cost(self, proc_data, task_distribution):
         expected_costs = list()
