@@ -315,10 +315,10 @@ class AntcipatoryPlanner:
         # item_to_use = set()
         one_list_combo = list()
 
-        # for itm in used_items:
-        #     # if itm in used_items:
-        #     #     used_items.remove(itm)
-        #     item_to_use.add(itm)
+        for itm in used_items:
+            # if itm in used_items:
+            #     used_items.remove(itm)
+            item_to_use.add(itm)
 
         for item1 in used_containers:
             for item2 in conts:
@@ -326,8 +326,8 @@ class AntcipatoryPlanner:
                     selected_conts.add(item2)
                     ant_objects = restaurant.get_objects_by_container_name(item2)
                     for obj in ant_objects:
-                        if obj['assetId'] not in used_items:
-                            item_to_use.add(obj['assetId'])
+                        # if obj['assetId'] not in item_to_use:
+                        item_to_use.add(obj['assetId'])
 
         # if len(item_to_use) >= 3:
         #     sampled_conts = random.sample(list(selected_conts), 4)
@@ -404,10 +404,10 @@ class AntcipatoryPlanner:
         # item_to_use = set()
         one_list_combo = list()
 
-        # for itm in used_items:
-        #     # if itm in used_items:
-        #     #     used_items.remove(itm)
-        #     item_to_use.add(itm)
+        for itm in used_items:
+            # if itm in used_items:
+            #     used_items.remove(itm)
+            item_to_use.add(itm)
 
         for item1 in used_containers:
             for item2 in conts:
@@ -415,8 +415,8 @@ class AntcipatoryPlanner:
                     selected_conts.add(item2)
                     ant_objects = restaurant.get_objects_by_container_name(item2)
                     for obj in ant_objects:
-                        if obj['assetId'] not in used_items:
-                            item_to_use.add(obj['assetId'])
+                        # if obj['assetId'] not in item_to_use:
+                        item_to_use.add(obj['assetId'])
 
         # if len(item_to_use) >= 3:
         #     sampled_conts = random.sample(list(selected_conts), 4)
