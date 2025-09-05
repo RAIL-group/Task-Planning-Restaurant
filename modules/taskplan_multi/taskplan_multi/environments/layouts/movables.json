@@ -1,71 +1,83 @@
 [
     {
         "description": "bowl",
-        "assetId": "bowl1",
+        "assetId": "Bowl_1",
+        "plid": "bowl1",
         "id": "bowl|1",
         "washable": 1
     },
     {
         "description": "bowl",
-        "assetId": "bowl2",
+        "plid": "bowl2",
+        "assetId": "Bowl_1",
         "id": "bowl|2",
         "washable": 1
     },
     {
         "description": "pan",
-        "assetId": "pan1",
+        "plid": "pan1",
+        "assetId": "Pan_1",
         "id": "pan|1",
         "washable": 1
     },
     {
         "description": "pan2",
-        "assetId": "pan2",
+        "plid": "pan2",
+        "assetId": "Pan_1",
         "id": "pan|2",
         "washable": 1
     },
     {
         "description": "mug",
-        "assetId": "mug1",
+        "plid": "mug1",
+        "assetId": "Mug_1",
         "id": "mug|1",
         "washable": 1
     },
     {
         "description": "mug",
-        "assetId": "mug2",
+        "plid": "mug2",
+        "assetId": "Mug_1",
         "id": "mug|2",
         "washable": 1
     },
     {
         "description": "saltshaker",
-        "assetId": "saltshaker",
+        "plid": "saltshaker",
+        "assetId": "Salt_Shaker_1",
         "id": "saltshaker|1"
     },
     {
         "description": "sauce",
-        "assetId": "sauce",
+        "plid": "sauce",
+        "assetId": "Salt_Shaker_2",
         "id": "sauce|1"
     },
     {
         "description": "pasta",
-        "assetId": "pasta",
+        "plid": "pasta",
+        "assetId": "Bottle_1",
         "id": "pasta|1",
         "food": 1
     },
     {
         "description": "oats",
-        "assetId": "oats",
+        "plid": "oats",
+        "assetId": "Bottle_1",
         "id": "oats|1",
         "food": 1
     },
     {
         "description": "cereal",
-        "assetId": "cereal",
+        "plid": "cereal",
+        "assetId": "Tissue_Box_1",
         "id": "cereal|1",
         "food": 1
     },
     {
         "description": "milk",
-        "assetId": "milk",
+        "plid": "milk",
+        "assetId": "Wine_Bottle_1",
         "id": "milk|1",
         "food": 1
     }

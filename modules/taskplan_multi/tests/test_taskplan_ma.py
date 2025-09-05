@@ -78,10 +78,17 @@ def plot_state(restaurant, save_path='/data/figs/data-grid.png', title='None'):
 
 def test_ma_plot_grid():
     seed = 5
+    fig = plt.figure(figsize=(10, 10), dpi=1000)
+    save_file = '/data/figs/data-grid.png'
     random.seed(seed)
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, agents=['cook_bot', 'cleaner_bot', 'server_bot'], active='cook_bot')
-    save_file = '/data/figs/data-grid.png'
-    plot_state(restaurant, save_path = save_file, title='Grid Map')
+    grid = np.transpose(restaurant.occupancy_grid)
+    img = make_plotting_grid(grid)
+    plt.subplot(221)
+    plt.imshow(img, cmap='gray_r', alpha=0.5)
+    plt.subplot(222)
+    plt.imshow(restaurant.get_top_down_image())
+    plt.savefig(save_file, dpi=1000)
 
 
 def test_ma_plan_both():

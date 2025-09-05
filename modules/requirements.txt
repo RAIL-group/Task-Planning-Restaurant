@@ -10,8 +10,8 @@ setuptools
 tensorboard
 pyscreenshot
 # pybullet
-# prior
-# ai2thor
+prior
+ai2thor
 # procthor
 sentence_transformers
 

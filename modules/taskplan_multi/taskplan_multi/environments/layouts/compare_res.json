@@ -1,0 +1,3 @@
+[
+    {'description': 'cabinet', 'id': 'cabinet|0', 'assetId': 'cabinet', 'children': [{'description': 'pasta', 'assetId': 'pasta', 'id': 'pasta|1', 'food': 1, 'empty': 1, 'position': {'x': 5.655, 'z': 0.5484060059993677}}, {'description': 'pan', 'assetId': 'pan1', 'id': 'pan|1', 'washable': 1, 'dirty': 1, 'position': {'x': 5.655, 'z': 0.5484060059993677}}], 'position': {'x': 5.655, 'z': 0.5484060059993677}, 'polygon': [{'x': 5.905, 'z': 0.2}, {'x': 5.905, 'z': 0.8968120119987355}, {'x': 5.405, 'z': 0.8968120119987355}, {'x': 5.405, 'z': 0.2}, {'x': 5.905, 'z': 0.2}], 'loc': 'kitchen'}
+]
