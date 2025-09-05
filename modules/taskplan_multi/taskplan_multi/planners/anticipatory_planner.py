@@ -24,6 +24,8 @@ SCALE = {
 
 }
 
+SCL = 1
+
 def get_combo(item1, item2):
     combinations = [list(zip(item1, p)) for p in product(item2, repeat=len(item1))]
     return combinations
@@ -104,6 +106,8 @@ class AntcipatoryPlanner:
         current_active = restaurant.active_robot
         expc_costs = list()
         for key in self.eval_nets:
+            if key not in restaurant.agent_list:
+                continue
             restaurant.active_robot = key
             whole_graph = taskplan_multi.utils.get_graph(restaurant)
             c = self.eval_nets[key](whole_graph)
@@ -117,7 +121,7 @@ class AntcipatoryPlanner:
         if self.concern == 'joint':
             return sum(expc_costs)
         if self.concern == 'self':
-            return selfish_cost
+            return selfish_cost*SCL
         if self.concern == 'other':
             return (sum(expc_costs) - selfish_cost)
     
@@ -156,6 +160,8 @@ class AntcipatoryPlanner:
             file_name = 'np_ap_' + ap_concern + '.txt'
             self.concern = ap_concern
             logfile = os.path.join(args.save_dir, file_name)
+            # task_file_name = 'ap_myopic_tasks.txt'
+            # logfile_task = os.path.join(args.save_dir, task_file_name)
             for idx, item in enumerate(task_seq):
                 start = time.time()
                 active_agent = item[0]
@@ -173,6 +179,12 @@ class AntcipatoryPlanner:
                         f" | help: {help_stat}"
                         f" | cost: {cost:0.2f} \n"
                     )
+                # with open(logfile_task, "a+") as f:
+                #     f.write(
+                #         f" | num: T{idx+1}"
+                #         f" | task: {new_task}"
+                #         f" | help_stat: {help_stat}\n"
+                #     )
                 restaurant.update_container_props(new_state)
                 # taskplan_multi.utils.plot_state(restaurant, args, image_name=f'np-ap-{seq_num}-T{idx+1}', title=f'State after Task {idx+1} : {self.concern}')
     
@@ -232,6 +244,9 @@ class AntcipatoryPlanner:
                 if 'washable' in obj and 'dirty' in obj and obj['dirty'] == 1:
                     candidate_state = restaurant.place_washables(obj, val, dirty=0)
                     t1 = taskplan_multi.pddl.task.clean_and_place_something(obj['assetId'], cnt_name)
+                elif 'server_bot' in other_bots and 'food' in obj and 'empty' in obj and obj['empty'] == 1:
+                    candidate_state = restaurant.place_food_items(obj, val, empty=0)
+                    t1 = taskplan_multi.pddl.task.stock_and_place_something(obj['assetId'], cnt_name)
                 else:
                     candidate_state = restaurant.place_object(obj, val)
                     t1 = taskplan_multi.pddl.task.place_something(obj['assetId'], cnt_name)
@@ -249,23 +264,61 @@ class AntcipatoryPlanner:
         aug_predicates = list()
         current_state = copy.deepcopy(restaurant.get_current_object_state())
         conts = [c for c in KITCHEN_CONTAINERS + SERVING_ROOM_CONTAINERS if c not in COOK_BOT_RESTRICT]
-        item_to_remove = ['pasta', 'cereal', 'oats', 'milk']
+        item_to_use = set(['pasta', 'cereal', 'oats', 'milk'])
 
         if len(other_bots) > 0:
             conts.append('servingtable1')
             conts.append('servingtable2')
 
         
-        prior_combos = list()
+        # prior_combos = list()
+        # selected_conts = set()
+        # selected_assets = set()
+        # item_to_use = set()
+        # one_list_combo = list()
+
+        # for itm in item_to_remove:
+        #     if itm in used_items:
+        #         used_items.remove(itm)
+        #         item_to_use.add(itm)
+
+        # for item1 in used_containers:
+        #     for item2 in conts:
+        #         if restaurant.known_cost[item1][item2] < 30:
+        #             selected_conts.add(item2)
+        #             ant_objects = restaurant.get_objects_by_container_name(item2)
+        #             for obj in ant_objects:
+        #                 if obj['assetId'] not in item_to_use:
+        #                     selected_assets.add(obj['assetId'])
+
+        # if len(item_to_use) >= 3:
+        #     sampled_conts = random.sample(list(selected_conts), 4)
+        #     prior_combos = get_combo(list(item_to_use), sampled_conts)
+        # else:
+        #     for idx, take_one in enumerate(selected_assets):
+        #         temp = [take_one]
+        #         temp.extend(list(item_to_use))
+        #         max_size = min(len(selected_conts), 4)
+        #         sampled_conts = random.sample(list(selected_conts), max_size)
+        #         temp_combos = get_combo(temp, sampled_conts)
+        #         prior_combos.extend(temp_combos)
+
+        # if len(item_to_use) == 1:
+        #     one_list_combo = get_combo(list(item_to_use), conts)
+        
+        # max_size = min(len(prior_combos), 200)
+        # prior_combos = random.sample(prior_combos, max_size)
+        # one_list_combo.extend(prior_combos)
+
         selected_conts = set()
-        selected_assets = set()
-        item_to_use = set()
+        # selected_assets = set()
+        # item_to_use = set()
         one_list_combo = list()
 
-        for itm in item_to_remove:
-            if itm in used_items:
-                used_items.remove(itm)
-                item_to_use.add(itm)
+        # for itm in used_items:
+        #     # if itm in used_items:
+        #     #     used_items.remove(itm)
+        #     item_to_use.add(itm)
 
         for item1 in used_containers:
             for item2 in conts:
@@ -273,27 +326,36 @@ class AntcipatoryPlanner:
                     selected_conts.add(item2)
                     ant_objects = restaurant.get_objects_by_container_name(item2)
                     for obj in ant_objects:
-                        if obj['assetId'] not in item_to_use:
-                            selected_assets.add(obj['assetId'])
+                        if obj['assetId'] not in used_items:
+                            item_to_use.add(obj['assetId'])
 
-        if len(item_to_use) >= 3:
-            sampled_conts = random.sample(list(selected_conts), 4)
-            prior_combos = get_combo(list(item_to_use), sampled_conts)
-        else:
-            for idx, take_one in enumerate(selected_assets):
-                temp = [take_one]
-                temp.extend(list(item_to_use))
-                max_size = min(len(selected_conts), 4)
-                sampled_conts = random.sample(list(selected_conts), max_size)
-                temp_combos = get_combo(temp, sampled_conts)
-                prior_combos.extend(temp_combos)
+        # if len(item_to_use) >= 3:
+        #     sampled_conts = random.sample(list(selected_conts), 4)
+        #     prior_combos = get_combo(list(item_to_use), sampled_conts)
+        # else:
+        #     for idx, take_one in enumerate(selected_assets):
+        #         temp = [take_one]
+        #         temp.extend(list(item_to_use))
+        #         max_size = min(len(selected_conts), 4)
+        #         sampled_conts = random.sample(list(selected_conts), max_size)
+        #         temp_combos = get_combo(temp, sampled_conts)
+        #         prior_combos.extend(temp_combos)
 
-        if len(item_to_use) == 1:
-            one_list_combo = get_combo(list(item_to_use), conts)
+        # if len(item_to_use) == 1:
+        #     one_list_combo = get_combo(list(item_to_use), conts)
+        # print(item_to_use)
+        # print(conts)
+        sampled_conts = random.sample(list(selected_conts), min(len(selected_conts), 4))
+        for it in item_to_use:
+            temp_combos = get_combo([it], sampled_conts)
+            one_list_combo.extend(temp_combos)
+
+        # one_list_combo = list(product(list(item_to_use), conts))
         
-        max_size = min(len(prior_combos), 200)
-        prior_combos = random.sample(prior_combos, max_size)
-        one_list_combo.extend(prior_combos)
+        max_size = min(len(one_list_combo), 200)
+        # prior_combos = random.sample(prior_combos, max_size)
+        # one_list_combo.extend(prior_combos)
+        one_list_combo = random.sample(one_list_combo, max_size)
 
         count = 0
         
@@ -330,22 +392,22 @@ class AntcipatoryPlanner:
         aug_predicates = list()
         current_state = copy.deepcopy(restaurant.get_current_object_state())
         conts = [c for c in KITCHEN_CONTAINERS + SERVING_ROOM_CONTAINERS if c not in SERVER_BOT_RESTRICT]
-        item_to_remove = ['pasta', 'cereal', 'oats', 'milk']
+        item_to_use = set(['pasta', 'cereal', 'oats', 'milk'])
 
         if 'cook_bot' in other_bots:
             conts.append('stove')
 
         
-        prior_combos = list()
+        # prior_combos = list()
         selected_conts = set()
-        selected_assets = set()
-        item_to_use = set()
+        # selected_assets = set()
+        # item_to_use = set()
         one_list_combo = list()
 
-        for itm in item_to_remove:
-            if itm in used_items:
-                used_items.remove(itm)
-                item_to_use.add(itm)
+        # for itm in used_items:
+        #     # if itm in used_items:
+        #     #     used_items.remove(itm)
+        #     item_to_use.add(itm)
 
         for item1 in used_containers:
             for item2 in conts:
@@ -353,31 +415,41 @@ class AntcipatoryPlanner:
                     selected_conts.add(item2)
                     ant_objects = restaurant.get_objects_by_container_name(item2)
                     for obj in ant_objects:
-                        if obj['assetId'] not in item_to_use:
-                            selected_assets.add(obj['assetId'])
+                        if obj['assetId'] not in used_items:
+                            item_to_use.add(obj['assetId'])
 
-        if len(item_to_use) >= 3:
-            sampled_conts = random.sample(list(selected_conts), 4)
-            prior_combos = get_combo(list(item_to_use), sampled_conts)
-        else:
-            for idx, take_one in enumerate(selected_assets):
-                temp = [take_one]
-                temp.extend(list(item_to_use))
-                max_size = min(len(selected_conts), 4)
-                sampled_conts = random.sample(list(selected_conts), max_size)
-                temp_combos = get_combo(temp, sampled_conts)
-                prior_combos.extend(temp_combos)
+        # if len(item_to_use) >= 3:
+        #     sampled_conts = random.sample(list(selected_conts), 4)
+        #     prior_combos = get_combo(list(item_to_use), sampled_conts)
+        # else:
+        #     for idx, take_one in enumerate(selected_assets):
+        #         temp = [take_one]
+        #         temp.extend(list(item_to_use))
+        #         max_size = min(len(selected_conts), 4)
+        #         sampled_conts = random.sample(list(selected_conts), max_size)
+        #         temp_combos = get_combo(temp, sampled_conts)
+        #         prior_combos.extend(temp_combos)
 
-        if len(item_to_use) == 1:
-            one_list_combo = get_combo(list(item_to_use), conts)
+        # if len(item_to_use) == 1:
+        #     one_list_combo = get_combo(list(item_to_use), conts)
+        # print(item_to_use)
+        # print(conts)
+        sampled_conts = random.sample(list(selected_conts), min(len(selected_conts), 4))
+        for it in item_to_use:
+            temp_combos = get_combo([it], sampled_conts)
+            one_list_combo.extend(temp_combos)
+
+        # one_list_combo = list(product(list(item_to_use), conts))
         
-        max_size = min(len(prior_combos), 200)
-        prior_combos = random.sample(prior_combos, max_size)
-        one_list_combo.extend(prior_combos)
+        max_size = min(len(one_list_combo), 200)
+        # prior_combos = random.sample(prior_combos, max_size)
+        # one_list_combo.extend(prior_combos)
+        one_list_combo = random.sample(one_list_combo, max_size)
 
         count = 0
         
         for item_list in one_list_combo:
+            # print(f'{item_list} \n')
             if count >= 50:
                 break
             restaurant.update_container_props(current_state)
@@ -401,6 +473,7 @@ class AntcipatoryPlanner:
             if can_exp_cost < myopic_ex_cost:
                 count+=1
                 aug_predicates.append(tt)
+        # raise NotImplementedError
         return aug_predicates
 
     def get_anticipatory_plan(self, restaurant, task, last_task=False, plan_only=False):
@@ -460,7 +533,7 @@ class AntcipatoryPlanner:
             aug_predicates = self.aug_predicates_for_cleaner(restaurant, used_items, used_containers, myopic_ex_cost, other_bots=other_bots)
 
         # with open(save_file, "a+") as f:
-        #     f.write(f"---Task: {ant_task}---\n")
+        #     f.write(f"---Myopic: {ant_task}: {ant_cost} {myopic_ex_cost}---\n")
         # with open(save_file, "a+") as f:
         #     f.write(f"--No of Predicates: {len(aug_predicates)}\n")
         exhausted = 0
@@ -471,6 +544,8 @@ class AntcipatoryPlanner:
             start_time = time.time()
             restaurant.update_container_props(init_state)
             ant_task_pred = f'(and {aug_pred} {task})'
+            # with open(save_file, "a+") as f:
+            #     f.write(f"---Task: {ant_task_pred}---\n")
             c_plan, c_cost = (
                 self.myopic_planner.get_cost_and_state_from_task(
                     restaurant, ant_task_pred))
@@ -488,9 +563,13 @@ class AntcipatoryPlanner:
             can_state = restaurant.get_final_state_from_plan(c_plan)
             restaurant.update_container_props(can_state)
             can_ex_cost = self.get_anticipated_cost(restaurant)
+            # with open(save_file, "a+") as f:
+            #     f.write(f"---Task Cost: {can_ex_cost} + {c_cost} ---\n")
             can_ant_cost = can_ex_cost + c_cost
             if can_ant_cost < myopic_ant_cost:
                 # found = 1
+                # with open(save_file, "a+") as f:
+                #     f.write(f"---Task: {aug_pred}: {c_cost} = {can_ex_cost}---\n")
                 ant_state = copy.deepcopy(can_state)
                 ant_cost = c_cost
                 plan = c_plan
@@ -500,6 +579,10 @@ class AntcipatoryPlanner:
         
         if plan_only:
             return plan, ant_cost
+
+        # with open(save_file, "a+") as f:
+        #     f.write(f"---Task: {can_ant_cost}: {c_cost} and {can_ex_cost}---\n")
+        # raise NotImplementedError
         
         return ant_state, ant_cost, ant_task, myopic_help_stat
 

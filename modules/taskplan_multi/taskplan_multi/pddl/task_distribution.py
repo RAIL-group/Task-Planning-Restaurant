@@ -5,33 +5,33 @@ def tasks_for_cook():
     tasks = list()
     
     # Bring Items at Stove to Cook
-    tasks.append(
-        ('bring_clean_pan_at_stove', taskplan_multi.pddl.task.bring_clean_item('pan', 'stove'), 0.5)
-    )
-    tasks.append(
-        ('bring_clean_bowl_at_stove', taskplan_multi.pddl.task.bring_clean_item('bowl', 'stove'), 0.5)
-    )
-    tasks.append(
-        ('bring_clean_mug_at_stove', taskplan_multi.pddl.task.bring_clean_item('mug', 'stove'), 0.5)
-    )
-    tasks.append(
-        ('bring_sauce_stove', taskplan_multi.pddl.task.place_something('sauce', 'stove'), 0.5)
-    )
-    tasks.append(
-        ('bring_saltshaker_stove', taskplan_multi.pddl.task.place_something('saltshaker', 'stove'), 0.5)
-    )
-    tasks.append(
-        ('bring_bowl_and_sauce_stove', taskplan_multi.pddl.task.bring_two_items('sauce', 'bowl', 'stove'), 0.5)
-    )
-    tasks.append(
-        ('bring_bowl_and_saltshaker_stove', taskplan_multi.pddl.task.bring_two_items('saltshaker', 'bowl', 'stove'), 0.5)
-    )
-    tasks.append(
-        ('bring_pan_and_sauce_stove', taskplan_multi.pddl.task.bring_two_items('sauce', 'pan', 'stove'), 0.5)
-    )
-    tasks.append(
-        ('bring_pan_and_saltshaker_stove', taskplan_multi.pddl.task.bring_two_items('saltshaker', 'pan', 'stove'), 0.5)
-    )
+    # tasks.append(
+    #     ('bring_clean_pan_at_stove', taskplan_multi.pddl.task.bring_clean_item('pan', 'stove'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_clean_bowl_at_stove', taskplan_multi.pddl.task.bring_clean_item('bowl', 'stove'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_clean_mug_at_stove', taskplan_multi.pddl.task.bring_clean_item('mug', 'stove'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_sauce_stove', taskplan_multi.pddl.task.place_something('sauce', 'stove'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_saltshaker_stove', taskplan_multi.pddl.task.place_something('saltshaker', 'stove'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_bowl_and_sauce_stove', taskplan_multi.pddl.task.bring_two_items('sauce', 'bowl', 'stove'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_bowl_and_saltshaker_stove', taskplan_multi.pddl.task.bring_two_items('saltshaker', 'bowl', 'stove'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_pan_and_sauce_stove', taskplan_multi.pddl.task.bring_two_items('sauce', 'pan', 'stove'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_pan_and_saltshaker_stove', taskplan_multi.pddl.task.bring_two_items('saltshaker', 'pan', 'stove'), 0.5)
+    # )
     
     # Mix Pasta at Stove and Countertop
     tasks.append(
@@ -105,42 +105,42 @@ def tasks_for_server():
     tasks = list()
     
     # Bring Items
-    tasks.append(
-        ('bring_clean_bowl_servingtable1', taskplan_multi.pddl.task.bring_clean_item('bowl', 'servingtable1'), 0.5)
-    )
-    tasks.append(
-        ('bring_clean_mug_servingtable1', taskplan_multi.pddl.task.bring_clean_item('mug', 'servingtable1'), 0.5)
-    )
-    tasks.append(
-        ('bring_sauce_servingtable1', taskplan_multi.pddl.task.place_something('sauce', 'servingtable1'), 0.5)
-    )
-    tasks.append(
-        ('bring_saltshaker_servingtable1', taskplan_multi.pddl.task.place_something('saltshaker', 'servingtable1'), 0.5)
-    )
-    tasks.append(
-        ('bring_clean_bowl_servingtable2', taskplan_multi.pddl.task.bring_clean_item('bowl', 'servingtable2'), 0.5)
-    )
-    tasks.append(
-        ('bring_clean_mug_servingtable2', taskplan_multi.pddl.task.bring_clean_item('mug', 'servingtable2'), 0.5)
-    )
-    tasks.append(
-        ('bring_sauce_servingtable2', taskplan_multi.pddl.task.place_something('sauce', 'servingtable2'), 0.5)
-    )
-    tasks.append(
-        ('bring_saltshaker_servingtable2', taskplan_multi.pddl.task.place_something('saltshaker', 'servingtable2'), 0.5)
-    )
-    tasks.append(
-        ('bring_bowl_and_sauce_servingtable1', taskplan_multi.pddl.task.bring_two_items('sauce', 'bowl', 'servingtable1'), 0.5)
-    )
-    tasks.append(
-        ('bring_bowl_and_saltshaker_servingtable1', taskplan_multi.pddl.task.bring_two_items('saltshaker', 'bowl', 'servingtable1'), 0.5)
-    )
-    tasks.append(
-        ('bring_bowl_and_sauce_servingtable2', taskplan_multi.pddl.task.bring_two_items('sauce', 'bowl', 'servingtable2'), 0.5)
-    )
-    tasks.append(
-        ('bring_bowl_and_saltshaker_servingtable2', taskplan_multi.pddl.task.bring_two_items('saltshaker', 'bowl', 'servingtable2'), 0.5)
-    )
+    # tasks.append(
+    #     ('bring_clean_bowl_servingtable1', taskplan_multi.pddl.task.bring_clean_item('bowl', 'servingtable1'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_clean_mug_servingtable1', taskplan_multi.pddl.task.bring_clean_item('mug', 'servingtable1'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_sauce_servingtable1', taskplan_multi.pddl.task.place_something('sauce', 'servingtable1'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_saltshaker_servingtable1', taskplan_multi.pddl.task.place_something('saltshaker', 'servingtable1'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_clean_bowl_servingtable2', taskplan_multi.pddl.task.bring_clean_item('bowl', 'servingtable2'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_clean_mug_servingtable2', taskplan_multi.pddl.task.bring_clean_item('mug', 'servingtable2'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_sauce_servingtable2', taskplan_multi.pddl.task.place_something('sauce', 'servingtable2'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_saltshaker_servingtable2', taskplan_multi.pddl.task.place_something('saltshaker', 'servingtable2'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_bowl_and_sauce_servingtable1', taskplan_multi.pddl.task.bring_two_items('sauce', 'bowl', 'servingtable1'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_bowl_and_saltshaker_servingtable1', taskplan_multi.pddl.task.bring_two_items('saltshaker', 'bowl', 'servingtable1'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_bowl_and_sauce_servingtable2', taskplan_multi.pddl.task.bring_two_items('sauce', 'bowl', 'servingtable2'), 0.5)
+    # )
+    # tasks.append(
+    #     ('bring_bowl_and_saltshaker_servingtable2', taskplan_multi.pddl.task.bring_two_items('saltshaker', 'bowl', 'servingtable2'), 0.5)
+    # )
 
     # Serve Pasta
     tasks.append(

@@ -50,28 +50,10 @@ def get_problem(restaurant, task):
                     objects[gen_name_child].append(chld_name)
                 init_states.append(f"(is-at {chld_name} {cnt_name})")
                 init_states.append(f"(type {chld_name} {gen_name_child})")
-                # if 'isLiquid' in child and child['isLiquid'] == 1:
-                #     init_states.append(f"(is-liquid {chld_name})")
-                # if 'pickable' in child and child['pickable'] == 1:
-                #     init_states.append(f"(is-pickable {chld_name})")
-                # if 'cookable' in child and child['cookable'] == 1:
-                #     init_states.append(f"(is-cookable {chld_name})")
-                # if 'washable' in child and child['washable'] == 1:
-                #     init_states.append(f"(is-washable {chld_name})")
                 if 'dirty' in child and child['dirty'] == 1:
                     init_states.append(f"(is-dirty {chld_name})")
                 if 'empty' in child and child['empty'] == 1:
                     init_states.append(f"(is-empty {chld_name})")
-                # if 'fillable' in child and child['fillable'] == 1:
-                #     init_states.append(f"(is-fillable {chld_name})")
-                # if 'filled' in child and child['filled'] == 1:
-                #     init_states.append(f"(filled-with water {chld_name})")
-                # if 'jar' in child and child['jar'] == 1:
-                #     init_states.append(f"(is-jar {chld_name})")
-                # if 'slicable' in child and child['slicable'] == 1:
-                #     init_states.append(f"(is-slicable {chld_name})")
-                # if 'container' in child and child['container'] == 1:
-                #     init_states.append(f"(is-container {chld_name})")
     # for state in init_states:
     #     print(state)
     for c1 in restaurant.known_cost:
@@ -100,7 +82,8 @@ def get_problem(restaurant, task):
     # if restaurant.active_all:
     for agent in restaurant.agent_list:
         base = 'base_' + agent
-        base_loc += f'''(hand-is-free {agent}) (rob-at {agent} {base})'''
+        base_loc += f'''(hand-is-free {agent})'''
+    # (rob-at {agent} {base})
     goal = [f'(and {base_loc} {task})']
     # print(goal)
     # else:

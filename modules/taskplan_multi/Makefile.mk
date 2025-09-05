@@ -1,10 +1,10 @@
 help::
 	@echo "Multi agent anticipatory taskplanning in a restaurant setting (multi-ap):"
 
-MA_AP_BASENAME ?= exp-v0
+MA_AP_BASENAME ?= exp-cook-cleaner
 MA_AP_NUM_TRAINING_SEEDS ?= 0
 MA_AP_NUM_TESTING_SEEDS ?= 0
-MA_AP_NUM_EVAL_SEEDS ?= 12
+MA_AP_NUM_EVAL_SEEDS ?= 4
 EXPERIMENT_NAME = beta-v0
 EXP_NUM = 1
 
@@ -66,7 +66,7 @@ $(ma-eval-seeds):
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/figure
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results/$(eval_seed)
-	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo \
+	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo_cook_n_cleaner \
 		--current_seed $(eval_seed) \
 		--save_dir /data/$(MA_AP_BASENAME)/results/$(eval_seed) \
 		--cook_network /data/models/ap_cook.pt \

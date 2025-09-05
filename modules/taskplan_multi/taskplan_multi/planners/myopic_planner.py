@@ -83,6 +83,8 @@ class MyopicPlanner:
             restaurant.update_container_props(no_prep_state)
             file_name = 'np_myopic.txt'
             logfile = os.path.join(args.save_dir, file_name)
+            # task_file_name = 'np_myopic_tasks.txt'
+            # logfile_task = os.path.join(args.save_dir, task_file_name)
             for idx, item in enumerate(task_seq):
                 start = time.time()
                 active_agent = item[0]
@@ -117,6 +119,12 @@ class MyopicPlanner:
                         f" | help: {help_stat}"
                         f" | cost: {cost:0.2f} \n"
                     )
+                # with open(logfile_task, "a+") as f:
+                #     f.write(
+                #         f" | num: T{idx+1}"
+                #         f" | task: {task}"
+                #         f" | plan: {plan}\n"
+                #     )
                 # costs.append(cost)
                 new_state = restaurant.get_final_state_from_plan(plan)
                 restaurant.update_container_props(new_state)

@@ -343,8 +343,10 @@ def generate_restaurant(seed, kitchen_containers_list,
                 continue
             if 'washable' in t and random.random() > 0.5:
                 t['dirty'] = 1
+            # t['dirty'] = 0
             if 'food' in t and random.random() > 0.5:
                 t['empty'] = 1
+            # t['empty'] = 0
             children.append(t)
         kc['children'] = children
         for child in kc['children']:
@@ -400,8 +402,10 @@ def generate_restaurant(seed, kitchen_containers_list,
             t = movables.pop()
             if 'washable' in t and (random.random() > 0.5):
                 t['dirty'] = 1
+            # t['dirty'] = 0
             if 'food' in t and random.random() > 0.5:
                 t['empty'] = 1
+            # t['empty'] = 0
             children.append(t)
         kc['children'] = children
         for child in kc['children']:

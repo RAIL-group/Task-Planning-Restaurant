@@ -166,7 +166,7 @@ def get_domain(types_dict=types_dict):
     (:action restock
         :parameters (?r - robot ?i - item)
         :precondition (and
-            (type ?r server_bot)
+            ;(type ?r server_bot)
             (rob-at ?r pantry)
             (is-holding ?r ?i)
             (is-empty ?i)
