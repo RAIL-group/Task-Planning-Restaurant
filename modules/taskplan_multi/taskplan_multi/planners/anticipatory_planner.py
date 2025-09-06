@@ -477,7 +477,7 @@ class AntcipatoryPlanner:
         return aug_predicates
 
     def get_anticipatory_plan(self, restaurant, task, last_task=False, plan_only=False):
-        # save_file = '/data/figs/ap_time_analysis' + str(restaurant.seed) + '.txt'
+        save_file = '/data/figs/ap_time_analysis' + str(restaurant.seed) + '.txt'
         init_state = copy.deepcopy(restaurant.get_current_object_state())
         plan, ant_cost = (
             self.myopic_planner.get_cost_and_state_from_task(restaurant, task)
@@ -489,7 +489,6 @@ class AntcipatoryPlanner:
         
         myopic_help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
         ant_state = copy.deepcopy(restaurant.get_final_state_from_plan(plan))
-        restaurant.update_container_props(ant_state)
         
         if last_task:
             if plan_only:
@@ -520,7 +519,7 @@ class AntcipatoryPlanner:
                 other_bots.add(p.args[0])
 
         
-        
+        restaurant.update_container_props(ant_state)
         myopic_ex_cost = self.get_anticipated_cost(restaurant)
         myopic_ant_cost = myopic_ex_cost + ant_cost
         
@@ -532,8 +531,8 @@ class AntcipatoryPlanner:
         else:
             aug_predicates = self.aug_predicates_for_cleaner(restaurant, used_items, used_containers, myopic_ex_cost, other_bots=other_bots)
 
-        # with open(save_file, "a+") as f:
-        #     f.write(f"---Myopic: {ant_task}: {ant_cost} {myopic_ex_cost}---\n")
+        with open(save_file, "a+") as f:
+            f.write(f"---Myopic: {ant_task}: {ant_cost} {myopic_ex_cost}---\n")
         # with open(save_file, "a+") as f:
         #     f.write(f"--No of Predicates: {len(aug_predicates)}\n")
         exhausted = 0
@@ -563,8 +562,8 @@ class AntcipatoryPlanner:
             can_state = restaurant.get_final_state_from_plan(c_plan)
             restaurant.update_container_props(can_state)
             can_ex_cost = self.get_anticipated_cost(restaurant)
-            # with open(save_file, "a+") as f:
-            #     f.write(f"---Task Cost: {can_ex_cost} + {c_cost} ---\n")
+            with open(save_file, "a+") as f:
+                f.write(f"---Task: {aug_pred}: {c_cost} = {can_ex_cost}---\n")
             can_ant_cost = can_ex_cost + c_cost
             if can_ant_cost < myopic_ant_cost:
                 # found = 1
@@ -576,7 +575,10 @@ class AntcipatoryPlanner:
                 myopic_ant_cost = can_ant_cost
                 ant_task = ant_task_pred
                 myopic_help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
+            restaurant.update_container_props(init_state)
         
+        with open(save_file, "a+") as f:
+            f.write(f"---Task: {ant_task}: {myopic_ant_cost}---\n")
         if plan_only:
             return plan, ant_cost
 

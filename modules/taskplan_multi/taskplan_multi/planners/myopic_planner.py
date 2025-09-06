@@ -23,14 +23,14 @@ class MyopicPlanner:
             max_planner_time=300
         )
         
-        if plan:
-            move_cost = 0
-            move_plans = [p for p in plan if p.name == "move"]
-            for move in move_plans:
-                src = move.args[1]
-                target = move.args[2]
-                move_cost += proc_data.known_cost[src][target]
-            cost += move_cost
+        # if plan:
+        #     move_cost = 0
+        #     move_plans = [p for p in plan if p.name == "move"]
+        #     for move in move_plans:
+        #         src = move.args[1]
+        #         target = move.args[2]
+        #         move_cost += proc_data.known_cost[src][target]
+        #     cost += move_cost
 
         return plan, cost
 

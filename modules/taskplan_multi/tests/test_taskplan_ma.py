@@ -83,7 +83,6 @@ def test_ma_plot_grid():
     save_file = '/data/figs/data-grid.png'
     plot_state(restaurant, save_path = save_file, title='Grid Map')
 
-
 def test_ma_plan_both():
     seed = 5
     plt.clf()

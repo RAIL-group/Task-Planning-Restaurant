@@ -73,23 +73,23 @@ def make_plotting_grid(grid_map):
 #     return data_list
 
 def get_tasks():
-    tasks_cook = taskplan_multi.pddl.task_distribution.tasks_for_cook()
-    # tasks_server = taskplan_multi.pddl.task_distribution.tasks_for_server()
+    # tasks_cook = taskplan_multi.pddl.task_distribution.tasks_for_cook()
+    tasks_server = taskplan_multi.pddl.task_distribution.tasks_for_server()
     tasks_cleaner = taskplan_multi.pddl.task_distribution.tasks_for_cleaner()
 
-    if len(tasks_cook) >= MAX_TASK_COOK:
-        tasks_cook = random.sample(tasks_cook, MAX_TASK_COOK)
-    else:
-        rem = MAX_TASK_COOK - len(tasks_cook)
-        temp = random.choices(tasks_cook, k=rem)
-        tasks_cook.extend(temp)
-    
-    # if len(tasks_server) >= MAX_TASK_SERVER:
-    #     tasks_server = random.sample(tasks_server, MAX_TASK_SERVER)
+    # if len(tasks_cook) >= MAX_TASK_COOK:
+    #     tasks_cook = random.sample(tasks_cook, MAX_TASK_COOK)
     # else:
-    #     rem = MAX_TASK_SERVER - len(tasks_server)
-    #     temp = random.choices(tasks_server, k=rem)
-    #     tasks_server.extend(temp)
+    #     rem = MAX_TASK_COOK - len(tasks_cook)
+    #     temp = random.choices(tasks_cook, k=rem)
+    #     tasks_cook.extend(temp)
+    
+    if len(tasks_server) >= MAX_TASK_SERVER:
+        tasks_server = random.sample(tasks_server, MAX_TASK_SERVER)
+    else:
+        rem = MAX_TASK_SERVER - len(tasks_server)
+        temp = random.choices(tasks_server, k=rem)
+        tasks_server.extend(temp)
     
     if len(tasks_cleaner) >= MAX_TASK_CLEANER:
         tasks_cleaner = random.sample(tasks_cleaner, MAX_TASK_CLEANER)
@@ -99,12 +99,12 @@ def get_tasks():
         tasks_cleaner.extend(temp)
     
     tasks = list()
-    for task in tasks_cook:
-        val = task[1]
-        tasks.append(('cook_bot', val))
-    # for task in tasks_server:
+    # for task in tasks_cook:
     #     val = task[1]
-    #     tasks.append(('server_bot', val))
+    #     tasks.append(('cook_bot', val))
+    for task in tasks_server:
+        val = task[1]
+        tasks.append(('server_bot', val))
     for task in tasks_cleaner:
         val = task[1]
         tasks.append(('cleaner_bot', val))
@@ -165,7 +165,7 @@ def eval_main(args):
     # Get restaurant data for a send and extract initial object states
     myopic_planner = taskplan_multi.planners.myopic_planner.MyopicPlanner()
     ant_planner = taskplan_multi.planners.anticipatory_planner.AntcipatoryPlanner(args)
-    agents = ['cook_bot', 'cleaner_bot']
+    agents = ['server_bot', 'cleaner_bot']
     # random_choices = [0, 0.25, 0.5, 0.75, 1]
     active_agent = random.choice(agents)
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=args.current_seed, agents=agents, active=active_agent)
