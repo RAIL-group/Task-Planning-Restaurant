@@ -2,6 +2,7 @@ import math
 import numpy as np
 from shapely.geometry import Polygon, Point
 import random
+import common
 import copy
 import json
 
@@ -194,27 +195,15 @@ def change_assets(restaurant):
     MAX_OBJ_PER_CONT = 2
     map_assets = {
         'Countertop_L_10x8': {
-            'assetId': 'Countertop_C_10x10',
+            'assetId': 'Countertop_L_10x8',
             'description': 'place to make food',
             'plid': 'countertop',
 
         },
         'Fridge_29': {
-            'assetId': 'Fridge_14',
+            'assetId': 'Fridge_29',
             'description': 'fridge',
             'plid': 'fridge',
-
-        },
-        'Dining_Table_218_1': {
-            'assetId': 'Desk_229_1',
-            'description': 'table for serving',
-            'plid': 'servingtable1',
-
-        },
-        'Shelving_Unit_303_1': {
-            'assetId': 'Shelving_Unit_303_1',
-            'description': 'shelf',
-            'plid': 'shelf',
 
         },
         'Stool_4_1': {
@@ -223,16 +212,28 @@ def change_assets(restaurant):
             'plid': 'stove',
 
         },
-        'TV_Stand_206_3': {
+        'GarbageBag_21_1': {
             'assetId': 'Cart_1',
             'description': 'bussingcart',
             'plid': 'bussingcart',
 
         },
-        'Dining_Table_205_1': {
-            'assetId': 'Desk_229_1',
-            'description': 'table for serving',
-            'plid': 'servingtable2',
+        'bin_22': {
+            'assetId': 'Side_Table_302_1_6',
+            'description': 'cabinet',
+            'plid': 'cabinet',
+
+        },
+        'Armchair_207_4': {
+            'assetId': 'Sink_1',
+            'description': 'sink',
+            'plid': 'sink',
+
+        },
+        'Side_Table_302_1_6': {
+            'assetId': 'Shelving_Unit_206_1',
+            'description': 'shelf',
+            'plid': 'shelf',
 
         },
         'Sofa_214_1': {
@@ -241,21 +242,23 @@ def change_assets(restaurant):
             'plid': 'pantry',
 
         },
-        'Side_Table_302_1_6': {
-            'assetId': 'Shelving_Unit_324_1',
-            'description': 'cabinet',
-            'plid': 'cabinet',
+        'Dining_Table_218_1': {
+            'assetId': 'Dining_Table_218_1',
+            'description': 'table for serving',
+            'plid': 'servingtable1',
 
         },
-        'Armchair_207_4': {
-            'assetId': 'Sink_10',
-            'description': 'sink',
-            'plid': 'sink',
+        'Dining_Table_205_1': {
+            'assetId': 'Dining_Table_205_1',
+            'description': 'table for serving',
+            'plid': 'servingtable2',
 
         },
+        
+        
     }
 
-    # new_conatiners = []
+    new_conatiners = []
     for idx, container in enumerate(restaurant['objects']):
         if container['assetId'] in list(map_assets.keys()):
             temp = map_assets[container['assetId']]
@@ -266,6 +269,9 @@ def change_assets(restaurant):
             # container.pop('rotation', None)
             # container.pop('layer', None)
             # container.pop('material', None)
+            container.update({'children': []})
+            new_conatiners.append(container)
+    restaurant['objects'] = new_conatiners
         
         # children = list()
         # max_pop = min(len(movables), MAX_OBJ_PER_CONT)
@@ -280,8 +286,7 @@ def change_assets(restaurant):
         #     if 'food' in t and random.random() > 0.5:
         #         t['empty'] = 1
         #     children.append(t)
-        # container.update({'children': children})
-        # new_conatiners.append(container)
+        
     # return new_conatiners
 
 
@@ -302,7 +307,8 @@ class RESTAURANT:
 
         self.restaurant = get_apartment(self.seed)
         change_assets(self.restaurant)
-        self.prev_restaurant = load_restaurant(self.seed, agents)
+        # self.prev_restaurant = load_restaurant(self.seed, agents)
+        # print(self.prev_restaurant)
         self.rooms = self.restaurant['rooms']
         self.doors = self.restaurant['doors']
         self.containers = self.restaurant['objects']
@@ -312,6 +318,9 @@ class RESTAURANT:
                                      gridSize=self.grid_resolution,
                                      width=480, height=480)
         self.occupancy_grid = self.get_occupancy_grid()
+        self.agent = self.restaurant['metadata']['agent']
+        # for idx, container in enumerate(self.containers):
+        #     print(container['position'])
         # for room in self.prev_restaurant['rooms']:
         #     print(room)
         # for room in self.restaurant['rooms']:
@@ -497,7 +506,6 @@ class RESTAURANT:
     def get_occupancy_grid(self):
         event = self.controller.step(action="GetReachablePositions")
         reachable_positions = event.metadata["actionReturn"]
-        print(reachable_positions)
         RPs = reachable_positions
 
         xs = [rp["x"] for rp in reachable_positions]
@@ -604,7 +612,7 @@ class RESTAURANT:
 
     def get_container_pos(self, name):
         for container in self.containers:
-            if container['assetId'] == name:
+            if container['plid'] == name:
                 return container['position']
         return None
 
@@ -747,3 +755,22 @@ class RESTAURANT:
         top_down_image = event.third_party_camera_frames[-1]
         top_down_image = top_down_image[::-1, ...]
         return top_down_image
+    
+    def get_cost_from_occupancy_grid(
+            self, start_pos_x, start_pos_y, end_pos_x, end_pos_y,
+            return_path=False
+    ):
+        occ_grid = self.occupancy_grid.copy()
+        occ_grid[start_pos_x][start_pos_y] = 0
+        occ_grid[end_pos_x][end_pos_y] = 0
+        _, get_path = gridmap.planning.compute_cost_grid_from_position(
+            occ_grid, [start_pos_x, start_pos_y]
+        )
+        did_plan, path = get_path([end_pos_x, end_pos_y])
+        if did_plan:
+            cost = common.compute_path_length(path)
+            if return_path:
+                return cost, path
+            return cost
+        else:
+            return float('inf')

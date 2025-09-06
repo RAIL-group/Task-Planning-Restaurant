@@ -62,6 +62,8 @@ COPY modules/learning modules/learning
 RUN pip3 install modules/learning
 COPY modules/taskplan_multi modules/taskplan_multi
 RUN pip3 install modules/taskplan_multi
+COPY modules/common modules/common
+RUN pip3 install modules/common
 
 # Set up the starting point for running the code
 COPY entrypoint.sh /entrypoint.sh

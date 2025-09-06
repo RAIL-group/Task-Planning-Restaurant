@@ -1,6 +1,7 @@
 import torch
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import taskplan_multi
 import numpy as np
 import os
@@ -90,6 +91,46 @@ def test_ma_plot_grid():
     plt.imshow(restaurant.get_top_down_image())
     plt.savefig(save_file, dpi=1000)
 
+
+def test_ma_plot_path():
+
+    mpl.rcParams['pdf.fonttype'] = 42         # embed TrueType (editable text)
+    mpl.rcParams['ps.fonttype'] = 42
+    mpl.rcParams['path.simplify'] = False  
+    
+    seed = 5
+    fig = plt.figure(figsize=(10, 10), dpi=1000)
+    for ax in fig.get_axes():
+        ax.axis('off')        # hides ticks, labels, and spines
+        ax.set_frame_on(False)
+    save_file = '/data/figs/data-grid-plan.png'
+    save_pdf = '/data/figs/data-grid-plan.pdf'
+
+    random.seed(seed)
+    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, agents=['cook_bot', 'cleaner_bot', 'server_bot'], active='cook_bot')
+    plt.subplot(222)
+    plt.imshow(restaurant.get_top_down_image())
+    plt.subplot(221)
+    grid = np.transpose(restaurant.occupancy_grid)
+    img = make_plotting_grid(grid)
+    plt.imshow(img, cmap='gray_r', alpha=0.5)
+    moves = [('sink', 'stove')]
+    paths = list()
+    for (name1, name2) in moves:
+        src = restaurant.get_container_pos(name1)
+        target = restaurant.get_container_pos(name2)
+        cost, path = restaurant.get_cost_from_occupancy_grid(
+            src[0], src[1], target[0], target[1], return_path=True)
+        path_points = [(path[0][idx], path[1][idx])
+                       for idx in range(len(path[0]))]
+        path = geometry.LineString(path_points)
+        x, y = path.xy
+        plt.plot(x, y, linewidth=2, solid_capstyle='round') 
+    
+
+    plt.tight_layout()
+    plt.savefig(save_file, dpi=1000)
+    fig.savefig(save_pdf, format='pdf', bbox_inches='tight', transparent=True)
 
 def test_ma_plan_both():
     seed = 5
