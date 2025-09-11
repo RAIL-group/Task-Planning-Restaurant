@@ -43,20 +43,15 @@ def plot_tasks_comparison_cost(combined_df, smooth=True, method="ma", window=7, 
             return y.to_numpy()
 
     color_map = {
-        'No-Prep Myopic': 'cyan',
-        'No-Prep Selfish A.P.': 'orangered',
-        'No-Prep Proactive A.P': 'gold',
-        'Prep Myopic': 'royalblue',
-        'Prep Selfish A.P.': 'violet',
-        'Prep Proactive A.P': 'pink',
+        'Myopic': '#65c5da',
+        'Selfish A.P.': '#faa37a',
+        'Courteous A.P.': '#d6dc2e'
     }
+
     marker_map = {
-        'No-Prep Myopic': 'o',
-        'No-Prep Selfish A.P.': 'd',
-        'No-Prep Proactive A.P': 's',
-        'Prep Myopic': 'o',
-        'Prep Selfish A.P.': 'd',
-        'Prep Proactive A.P': 's',
+        'Myopic': 'o',
+        'Selfish A.P.': 'd',
+        'Courteous A.P.': 's',
     }
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -75,17 +70,17 @@ def plot_tasks_comparison_cost(combined_df, smooth=True, method="ma", window=7, 
             x, y,
             marker=marker_map.get(label, '.'),
             color=color_map.get(label, 'black'),
-            alpha=0.25, linewidth=1, label=None
+            alpha=1.0, linewidth=1, label=None
         )
 
         # (2) Plot smoothed (bold) for readability
-        ax.plot(
-            x, y_sm,
-            marker=None,  # keep line clean
-            color=color_map.get(label, 'black'),
-            linewidth=2.25,
-            label=label
-        )
+        # ax.plot(
+        #     x, y_sm,
+        #     marker=None,  # keep line clean
+        #     color=color_map.get(label, 'black'),
+        #     linewidth=2.25,
+        #     label=label
+        # )
 
         # Keep your original uncertainty band (unsmoothed) to avoid misleading CIs
         ax.fill_between(
@@ -103,7 +98,7 @@ def plot_tasks_comparison_cost(combined_df, smooth=True, method="ma", window=7, 
     ax.margins(x=0)
     plt.tight_layout()
 
-    save_file = '/data/figs/compare-average-cost-new.png'
+    save_file = '/data/figures/compare-average-cost-cook-server-cleaner.png'
     plt.savefig(save_file, dpi=1200, bbox_inches='tight')
 
 
@@ -119,7 +114,8 @@ def get_df_group_by_seq(files):
         df['seq'] = df['seq'].str.strip().str.split(':').str[1].str.strip()
         df['num'] = df['num'].str.strip().str.split(':').str[1].str.strip()
         df['cost'] = df['cost'].str.strip().str.split(':').str[1].str.strip().astype(float)
-        df['fail'] = df['help'].str.strip().str.split(':').str[1].str.strip().astype(int)
+        df['help'] = df['help'].str.strip().str.split(':').str[1].str.strip().astype(int)
+        df['time'] = df['time'].str.strip().str.split(':').str[1].str.strip().astype(float)
 
         dfs.append(df)
 
@@ -144,6 +140,7 @@ def get_df_group_by_task(files):
         df['seq'] = df['seq'].str.strip().str.split(':').str[1].str.strip()
         df['num'] = df['num'].str.strip().str.split(':').str[1].str.strip()
         df['cost'] = df['cost'].str.strip().str.split(':').str[1].str.strip().astype(float)
+        df['cost'] = df['cost'] * 1.5
         df['help'] = df['help'].str.strip().str.split(':').str[1].str.strip().astype(int)
         df['time'] = df['time'].str.strip().str.split(':').str[1].str.strip().astype(float)
 
@@ -212,58 +209,26 @@ def compare(args):
             #     files_ap_np_other.append(os.path.join(path, name))
             elif '_ap_joint' in name:
                 files_ap_np_comb.append(os.path.join(path, name))
-            # if 'prep_myopic' in name:
-            #     files_mp_prep.append(os.path.join(path, name))
-            # elif 'prep_ap_self' in name:
-            #     files_ap_prep_self.append(os.path.join(path, name))
-            # elif 'prep_ap_other' in name:
-            #     files_ap_prep_other.append(os.path.join(path, name))
-            # elif 'prep_ap_joint' in name:
-            #     files_ap_prep_comb.append(os.path.join(path, name))
 
 
     # No-Prep Myopic
     np_myopic = get_df_group_by_task(files_mp_np)
-    print(np_myopic)
-    np_myopic['label'] = 'No-Prep Myopic'
-
-    print(f"No-Prep Myopic Task Cost (Avg): {np_myopic['avg_cost'].mean()}")
-
+    np_myopic['label'] = 'Myopic'
+    print(f"Myopic Task Cost (Avg): {np_myopic['avg_cost'].mean()}")
     # No-Prep Selfish Anticipatory Planning
     np_selfish = get_df_group_by_task(files_ap_np_self)
-    np_selfish['label'] = 'No-Prep Selfish A.P.'
+    np_selfish['label'] = 'Selfish A.P.'
+    print(f"Selfish A.P. Task Cost (Avg): {np_selfish['avg_cost'].mean()}")
 
-    print(f"No-Prep Selfish A.P. Task Cost (Avg): {np_selfish['avg_cost'].mean()}")
+    # get_df_group_by_seq()
 
     # No-Prep Anticipatory Planning with joint expected cost
     np_proactive = get_df_group_by_task(files_ap_np_comb)
-    np_proactive['label'] = 'No-Prep Proactive A.P'
+    np_proactive['label'] = 'Courteous A.P.'
+    print(f"Courteous A.P Task Cost (Avg): {np_proactive['avg_cost'].mean()}")
+    combined_df = pd.concat([np_myopic, np_selfish, np_proactive])
 
-    print(f"No-Prep Proactive A.P Task Cost (Avg): {np_proactive['avg_cost'].mean()}")
-
-    # # Prep Myopic
-    # prep_myopic = get_df_group_by_task(files_mp_prep)
-    # prep_myopic['label'] = 'Prep Myopic'
-
-    # print(f"Prep Myopic Task Cost (Avg): {prep_myopic['avg_cost'].mean()}")
-
-    # # # Prep Selfish Anticipatory Planning
-    # prep_selfish = get_df_group_by_task(files_ap_prep_self)
-    # prep_selfish['label'] = 'Prep Selfish A.P.'
-
-    # print(f"Prep Selfish A.P. Task Cost (Avg): {prep_selfish['avg_cost'].mean()}")
-
-    # # # Prep Anticipatory Planning with joint expected cost
-    # prep_proactive = get_df_group_by_task(files_ap_prep_comb)
-    # prep_proactive['label'] = 'Prep Proactive A.P'
-
-    # print(f"Prep Proactive A.P. Task Cost (Avg): {prep_proactive['avg_cost'].mean()}")
-
-    # raise NotImplementedError
-    #Combine and Plot
-    # combined_df = pd.concat([np_myopic, np_selfish, np_proactive, prep_myopic, prep_selfish, prep_proactive])
-    combined_df = pd.concat([np_myopic, np_proactive, np_selfish])
-    print(combined_df)
+    # combined_df = pd.concat([np_myopic, np_selfish])
     plot_tasks_comparison_cost(combined_df)
     raise NotImplementedError
     # df = pd.DataFrame(columns=["Method", "Value", "Error"])

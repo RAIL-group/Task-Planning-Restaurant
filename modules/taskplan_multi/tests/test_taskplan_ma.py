@@ -2,6 +2,7 @@ import torch
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from matplotlib.collections import LineCollection
 import taskplan_multi
 import numpy as np
 import os
@@ -78,7 +79,7 @@ def plot_state(restaurant, save_path='/data/figs/data-grid.png', title='None'):
 
 
 def test_ma_plot_grid():
-    seed = 5
+    seed = 6
     fig = plt.figure(figsize=(10, 10), dpi=1000)
     save_file = '/data/figs/data-grid.png'
     random.seed(seed)
@@ -93,44 +94,192 @@ def test_ma_plot_grid():
 
 
 def test_ma_plot_path():
-
-    mpl.rcParams['pdf.fonttype'] = 42         # embed TrueType (editable text)
+    mpl.rcParams['pdf.fonttype'] = 42
     mpl.rcParams['ps.fonttype'] = 42
-    mpl.rcParams['path.simplify'] = False  
-    
-    seed = 5
+    mpl.rcParams['path.simplify'] = False
+
+    seed = 341
     fig = plt.figure(figsize=(10, 10), dpi=1000)
-    for ax in fig.get_axes():
-        ax.axis('off')        # hides ticks, labels, and spines
-        ax.set_frame_on(False)
-    save_file = '/data/figs/data-grid-plan.png'
-    save_pdf = '/data/figs/data-grid-plan.pdf'
+
+    save_file = '/data/figs/data-grid-plan-procthor-exp-2.png'
+    save_pdf  = '/data/figs/data-grid-plan-procthor-exp-2.pdf'
 
     random.seed(seed)
-    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, agents=['cook_bot', 'cleaner_bot', 'server_bot'], active='cook_bot')
-    plt.subplot(222)
-    plt.imshow(restaurant.get_top_down_image())
-    plt.subplot(221)
+    restaurant = taskplan_multi.environments.restaurant.RESTAURANT(
+        seed=seed, agents=['cook_bot','cleaner_bot','server_bot'], active='cook_bot')
+
+    # Right image
+    ax2 = plt.subplot(221)
+    ax2.imshow(restaurant.get_top_down_image())
+
+    # Left image + paths
+    ax1 = plt.subplot(222)
+    start_hex = "#fcd7e9"  # light
+    end_hex   = "#7b0b41"  # dark
+    custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        "custom_blue", [start_hex, end_hex], N=256
+    )
     grid = np.transpose(restaurant.occupancy_grid)
     img = make_plotting_grid(grid)
-    plt.imshow(img, cmap='gray_r', alpha=0.5)
-    moves = [('sink', 'stove')]
-    paths = list()
-    for (name1, name2) in moves:
-        src = restaurant.get_container_pos(name1)
-        target = restaurant.get_container_pos(name2)
+    ax1.imshow(img, origin='upper')  # or 'lower' if your coords expect it
+
+    # moves = [('base','pantry'), ('pantry','stove'), ('stove','countertop'), ('countertop', 'stove'), ('stove','shelf'), ('shelf','bussingcart'), ('bussingcart','base')]
+    moves = [('base2','sofa'), ('sofa','stool'), ('stool','tvstand')]
+    full_xy = []
+    for k, (name1, name2) in enumerate(moves):
+        src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
+        target = restaurant.get_agent_pos() if name2 == 'base' else restaurant.get_container_pos(name2)
         cost, path = restaurant.get_cost_from_occupancy_grid(
             src[0], src[1], target[0], target[1], return_path=True)
-        path_points = [(path[0][idx], path[1][idx])
-                       for idx in range(len(path[0]))]
-        path = geometry.LineString(path_points)
-        x, y = path.xy
-        plt.plot(x, y, linewidth=2, solid_capstyle='round') 
+
+        pts = list(zip(path[0], path[1]))          # [(x0,y0), (x1,y1), ...]
+        if k > 0 and pts:                          # avoid duplicating the join vertex
+            pts = pts[1:]
+        full_xy.extend(pts)
+
+    # Safety: need at least 2 points
+    if len(full_xy) >= 2:
+        full_xy = np.asarray(full_xy, dtype=float)
+        x, y = full_xy[:, 0], full_xy[:, 1]
+
+        # Segments for a single LineCollection
+        points = full_xy.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+        # Normalize cumulative distance to [0, 1] for a global gradient
+        d = np.hypot(np.diff(x), np.diff(y))
+        t = np.insert(np.cumsum(d), 0, 0.0)
+        if t[-1] > 0:
+            t = t / t[-1]
+
+        lc = LineCollection(
+            segments,
+            cmap=custom_cmap,                      # your hex-based cmap
+            norm=mpl.colors.Normalize(0, 1),
+            linewidths=2.0,
+            zorder=5
+        )
+        lc.set_array(t[:-1])                       # one value per segment
+        # Optional aesthetics:
+        lc.set_capstyle('round')
+        lc.set_joinstyle('round')
+
+        ax1.add_collection(lc)
+        ax1.autoscale_view()
+        ax1.set_aspect('equal', adjustable='box')
+    
+    # Second Robot Moves (Cleaner)
+    start_hex = "#cafee3"  # light
+    end_hex   = "#036432"  # dark
+    custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        "custom_blue", [start_hex, end_hex], N=256
+    )
+    # moves = [('pantry','bussingcart'), ('bussingcart','sink'), ('sink','servingtable2'), ('servingtable2', 'pantry')]
+    moves = [('base2','sofa'), ('sofa','tvstand'), ('tvstand','sofa')]
+    full_xy = []
+    for k, (name1, name2) in enumerate(moves):
+        src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
+        target = restaurant.get_agent_pos() if name2 == 'base' else restaurant.get_container_pos(name2)
+        cost, path = restaurant.get_cost_from_occupancy_grid(
+            src[0], src[1], target[0], target[1], return_path=True)
+
+        pts = list(zip(path[0], path[1]))          # [(x0,y0), (x1,y1), ...]
+        if k > 0 and pts:                          # avoid duplicating the join vertex
+            pts = pts[1:]
+        full_xy.extend(pts)
+
+    # Safety: need at least 2 points
+    if len(full_xy) >= 2:
+        full_xy = np.asarray(full_xy, dtype=float)
+        x, y = full_xy[:, 0], full_xy[:, 1]
+
+        # Segments for a single LineCollection
+        points = full_xy.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+        # Normalize cumulative distance to [0, 1] for a global gradient
+        d = np.hypot(np.diff(x), np.diff(y))
+        t = np.insert(np.cumsum(d), 0, 0.0)
+        if t[-1] > 0:
+            t = t / t[-1]
+
+        lc = LineCollection(
+            segments,
+            cmap=custom_cmap,                      # your hex-based cmap
+            norm=mpl.colors.Normalize(0, 1),
+            linewidths=2.0,
+            zorder=5
+        )
+        lc.set_array(t[:-1])                       # one value per segment
+        # Optional aesthetics:
+        lc.set_capstyle('round')
+        lc.set_joinstyle('round')
+
+        ax1.add_collection(lc)
+        ax1.autoscale_view()
+        ax1.set_aspect('equal', adjustable='box')
     
 
-    plt.tight_layout()
-    plt.savefig(save_file, dpi=1000)
-    fig.savefig(save_pdf, format='pdf', bbox_inches='tight', transparent=True)
+    # Third Robot Moves (Cleaner)
+    start_hex = "#fffddc"  # light
+    end_hex   = "#a19800"  # dark
+    custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        "custom_blue", [start_hex, end_hex], N=256
+    )
+    # moves = [('countertop','shelf'), ('shelf','servingtable1'), ('servingtable1','sink'), ('sink','servingtable1'), ('servingtable1', 'pantry'), ('pantry', 'servingtable1'), ('servingtable1', 'countertop')]
+    moves = [('base2','sofa')]
+    full_xy = []
+    for k, (name1, name2) in enumerate(moves):
+        src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
+        target = restaurant.get_agent_pos() if name2 == 'base' else restaurant.get_container_pos(name2)
+        cost, path = restaurant.get_cost_from_occupancy_grid(
+            src[0], src[1], target[0], target[1], return_path=True)
+
+        pts = list(zip(path[0], path[1]))          # [(x0,y0), (x1,y1), ...]
+        if k > 0 and pts:                          # avoid duplicating the join vertex
+            pts = pts[1:]
+        full_xy.extend(pts)
+
+    # Safety: need at least 2 points
+    if len(full_xy) >= 2:
+        full_xy = np.asarray(full_xy, dtype=float)
+        x, y = full_xy[:, 0], full_xy[:, 1]
+
+        # Segments for a single LineCollection
+        points = full_xy.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+        # Normalize cumulative distance to [0, 1] for a global gradient
+        d = np.hypot(np.diff(x), np.diff(y))
+        t = np.insert(np.cumsum(d), 0, 0.0)
+        if t[-1] > 0:
+            t = t / t[-1]
+
+        lc = LineCollection(
+            segments,
+            cmap=custom_cmap,                      # your hex-based cmap
+            norm=mpl.colors.Normalize(0, 1),
+            linewidths=2.0,
+            zorder=5
+        )
+        lc.set_array(t[:-1])                       # one value per segment
+        # Optional aesthetics:
+        lc.set_capstyle('round')
+        lc.set_joinstyle('round')
+
+        ax1.add_collection(lc)
+        ax1.autoscale_view()
+        ax1.set_aspect('equal', adjustable='box')
+
+    #remove axes (do this AFTER creating subplots)
+    for ax in fig.get_axes():
+        ax.set_axis_off()
+        ax.set_frame_on(False)
+
+    # Tight save without borders
+    plt.subplots_adjust(0,0,1,1, wspace=0.02, hspace=0.02)
+    fig.savefig(save_file, dpi=1000, bbox_inches='tight', pad_inches=0, transparent=True)
+    fig.savefig(save_pdf,  format='pdf', bbox_inches='tight', pad_inches=0, transparent=True)
 
 def test_ma_plan_both():
     seed = 5

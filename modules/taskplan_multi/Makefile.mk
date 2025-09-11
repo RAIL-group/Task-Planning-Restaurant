@@ -1,7 +1,7 @@
 help::
 	@echo "Multi agent anticipatory taskplanning in a restaurant setting (multi-ap):"
 
-MA_AP_BASENAME ?= exp-cook-cleaner
+MA_AP_BASENAME ?= exp-v0
 MA_AP_NUM_TRAINING_SEEDS ?= 0
 MA_AP_NUM_TESTING_SEEDS ?= 0
 MA_AP_NUM_EVAL_SEEDS ?= 4

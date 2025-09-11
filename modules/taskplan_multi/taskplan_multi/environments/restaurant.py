@@ -193,73 +193,107 @@ def change_assets(restaurant):
     assets = load_assets()
     movables = load_movables()
     MAX_OBJ_PER_CONT = 2
+    # map_assets = {
+    #     'Countertop_L_10x8': {
+    #         'assetId': 'Countertop_L_10x8',
+    #         'description': 'place to make food',
+    #         'plid': 'countertop',
+
+    #     },
+    #     'Fridge_29': {
+    #         'assetId': 'Shelving_Unit_206_1',
+    #         'description': 'shelf',
+    #         'plid': 'shelf',
+
+    #     },
+    #     'Stool_4_1': {
+    #         'assetId': 'Washing_Machine_1',
+    #         'description': 'stove',
+    #         'plid': 'stove',
+
+    #     },
+    #     'GarbageBag_21_1': {
+    #         'assetId': 'Cart_1',
+    #         'description': 'bussingcart',
+    #         'plid': 'bussingcart',
+
+    #     },
+    #     'bin_22': {
+    #         'assetId': 'Side_Table_302_1_6',
+    #         'description': 'cabinet',
+    #         'plid': 'cabinet',
+
+    #     },
+    #     'Armchair_207_4': {
+    #         'assetId': 'Fridge_29',
+    #         'description': 'fridge',
+    #         'plid': 'fridge',
+
+    #     },
+    #     'Side_Table_302_1_6': {
+    #         'assetId': 'Sink_1',
+    #         'description': 'sink',
+    #         'plid': 'sink',
+
+    #     },
+    #     'Sofa_214_1': {
+    #         'assetId': 'Shelving_Unit_206_1',
+    #         'description': 'pantry',
+    #         'plid': 'pantry',
+
+    #     },
+    #     'Dining_Table_218_1': {
+    #         'assetId': 'Dining_Table_218_1',
+    #         'description': 'table for serving',
+    #         'plid': 'servingtable1',
+
+    #     },
+    #     'Dining_Table_205_1': {
+    #         'assetId': 'Dining_Table_205_1',
+    #         'description': 'table for serving',
+    #         'plid': 'servingtable2',
+
+    #     },
+        
+        
+    # }
+
     map_assets = {
-        'Countertop_L_10x8': {
-            'assetId': 'Countertop_L_10x8',
+        'Countertop_C_10x6': {
+            'assetId': 'Countertop_C_10x6',
             'description': 'place to make food',
             'plid': 'countertop',
 
         },
-        'Fridge_29': {
-            'assetId': 'Fridge_29',
-            'description': 'fridge',
-            'plid': 'fridge',
+        'TV_Stand_220_1': {
+            'assetId': 'TV_Stand_220_1',
+            'description': 'tvstand',
+            'plid': 'tvstand',
 
         },
-        'Stool_4_1': {
-            'assetId': 'Washing_Machine_1',
-            'description': 'stove',
-            'plid': 'stove',
+        'bin_29': {
+            'assetId': 'Stool_4_1',
+            'description': 'stool',
+            'plid': 'stool',
 
         },
-        'GarbageBag_21_1': {
-            'assetId': 'Cart_1',
-            'description': 'bussingcart',
-            'plid': 'bussingcart',
+        'Sofa_210_1': {
+            'assetId': 'Sofa_210_1',
+            'description': 'sofa',
+            'plid': 'sofa',
 
         },
-        'bin_22': {
-            'assetId': 'Side_Table_302_1_6',
-            'description': 'cabinet',
-            'plid': 'cabinet',
+        'Armchair_208_4': {
+            'assetId': 'Armchair_208_4',
+            'description': 'base2',
+            'plid': 'base2',
 
         },
-        'Armchair_207_4': {
-            'assetId': 'Sink_1',
-            'description': 'sink',
-            'plid': 'sink',
-
-        },
-        'Side_Table_302_1_6': {
-            'assetId': 'Shelving_Unit_206_1',
-            'description': 'shelf',
-            'plid': 'shelf',
-
-        },
-        'Sofa_214_1': {
-            'assetId': 'Shelving_Unit_206_1',
-            'description': 'pantry',
-            'plid': 'pantry',
-
-        },
-        'Dining_Table_218_1': {
-            'assetId': 'Dining_Table_218_1',
-            'description': 'table for serving',
-            'plid': 'servingtable1',
-
-        },
-        'Dining_Table_205_1': {
-            'assetId': 'Dining_Table_205_1',
-            'description': 'table for serving',
-            'plid': 'servingtable2',
-
-        },
-        
-        
     }
 
     new_conatiners = []
     for idx, container in enumerate(restaurant['objects']):
+        print(container['assetId'])
         if container['assetId'] in list(map_assets.keys()):
             temp = map_assets[container['assetId']]
             container.update({'assetId': temp['assetId']})
@@ -269,8 +303,8 @@ def change_assets(restaurant):
             # container.pop('rotation', None)
             # container.pop('layer', None)
             # container.pop('material', None)
-            container.update({'children': []})
-            new_conatiners.append(container)
+        container.update({'children': []})
+        new_conatiners.append(container)
     restaurant['objects'] = new_conatiners
         
         # children = list()
@@ -502,6 +536,10 @@ class RESTAURANT:
         x = round((point[0] - self.grid_offset[0]) / self.grid_resolution)
         y = round((point[1] - self.grid_offset[1]) / self.grid_resolution)
         return x, y
+    
+    def get_agent_pos(self):
+        position = self.agent['position']
+        return self.scale_to_grid(np.array([position['x'], position['z']]))  # noqa: E501
 
     def get_occupancy_grid(self):
         event = self.controller.step(action="GetReachablePositions")
@@ -612,7 +650,7 @@ class RESTAURANT:
 
     def get_container_pos(self, name):
         for container in self.containers:
-            if container['plid'] == name:
+            if 'plid' in container and container['plid'] == name:
                 return container['position']
         return None
 
