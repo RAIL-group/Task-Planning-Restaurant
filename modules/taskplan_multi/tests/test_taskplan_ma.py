@@ -79,14 +79,19 @@ def plot_state(restaurant, save_path='/data/figs/data-grid.png', title='None'):
 
 
 def test_ma_plot_grid():
-    seed = 6
+    seed = 9
     fig = plt.figure(figsize=(10, 10), dpi=1000)
-    save_file = '/data/figs/data-grid.png'
+    save_file = f'/data/figures/data-grid-{seed}.png'
     random.seed(seed)
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=seed, agents=['cook_bot', 'cleaner_bot', 'server_bot'], active='cook_bot')
     grid = np.transpose(restaurant.occupancy_grid)
     img = make_plotting_grid(grid)
     plt.subplot(221)
+    plt.imshow(img, cmap='gray_r', alpha=0.5)
+    containers = restaurant.get_container_pos_list()
+    for (name, val) in containers:
+        _x, _y = val
+        plt.text(_x, _y, name, fontsize=8, color='blue')
     plt.imshow(img, cmap='gray_r', alpha=0.5)
     plt.subplot(222)
     plt.imshow(restaurant.get_top_down_image())
@@ -98,11 +103,11 @@ def test_ma_plot_path():
     mpl.rcParams['ps.fonttype'] = 42
     mpl.rcParams['path.simplify'] = False
 
-    seed = 341
+    seed = 5
     fig = plt.figure(figsize=(10, 10), dpi=1000)
 
-    save_file = '/data/figs/data-grid-plan-procthor-exp-2.png'
-    save_pdf  = '/data/figs/data-grid-plan-procthor-exp-2.pdf'
+    save_file = '/data/figures/data-grid-plan-restaurant-exp-full-sap-t3.png'
+    save_pdf  = '/data/figures/data-grid-plan-restaurant-exp-full-sap-t3.pdf'
 
     random.seed(seed)
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(
@@ -114,17 +119,21 @@ def test_ma_plot_path():
 
     # Left image + paths
     ax1 = plt.subplot(222)
-    start_hex = "#fcd7e9"  # light
-    end_hex   = "#7b0b41"  # dark
+    start_hex = "#fffad8"  # light
+    end_hex   = "#ffe100"  # dark
     custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
         "custom_blue", [start_hex, end_hex], N=256
     )
     grid = np.transpose(restaurant.occupancy_grid)
     img = make_plotting_grid(grid)
     ax1.imshow(img, origin='upper')  # or 'lower' if your coords expect it
-
-    # moves = [('base','pantry'), ('pantry','stove'), ('stove','countertop'), ('countertop', 'stove'), ('stove','shelf'), ('shelf','bussingcart'), ('bussingcart','base')]
-    moves = [('base2','sofa'), ('sofa','stool'), ('stool','tvstand')]
+    #CAP
+    # moves = [('base','pantry'), ('pantry','stove'), ('stove','countertop'), ('countertop', 'stove'), ('stove','shelf'), ('shelf','stove'), ('stove','bussingcart')]
+    #SAP-1    
+    # moves = [('base','pantry'), ('pantry','stove'), ('stove','countertop'), ('countertop', 'stove')]
+     #SAP    
+    moves = [('base','stove'), ('stove','countertop')]
+    # moves = [('base2','sofa'), ('sofa','stool'), ('stool','tvstand')]
     full_xy = []
     for k, (name1, name2) in enumerate(moves):
         src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
@@ -169,13 +178,15 @@ def test_ma_plot_path():
         ax1.set_aspect('equal', adjustable='box')
     
     # Second Robot Moves (Cleaner)
-    start_hex = "#cafee3"  # light
-    end_hex   = "#036432"  # dark
+    start_hex = "#e7f8ef"  # light
+    end_hex   = "#24814e"  # dark
     custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
         "custom_blue", [start_hex, end_hex], N=256
     )
-    # moves = [('pantry','bussingcart'), ('bussingcart','sink'), ('sink','servingtable2'), ('servingtable2', 'pantry')]
-    moves = [('base2','sofa'), ('sofa','tvstand'), ('tvstand','sofa')]
+    # SAP
+    moves = [('pantry', 'servingtable2'), ('servingtable2', 'sink')]
+    # moves = [('pantry','bussingcart'), ('bussingcart','sink'), ('sink','servingtable2'), ('servingtable2','sink')]
+    # moves = [('base2','sofa'), ('sofa','tvstand'), ('tvstand','sofa')]
     full_xy = []
     for k, (name1, name2) in enumerate(moves):
         src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
@@ -220,14 +231,16 @@ def test_ma_plot_path():
         ax1.set_aspect('equal', adjustable='box')
     
 
-    # Third Robot Moves (Cleaner)
-    start_hex = "#fffddc"  # light
-    end_hex   = "#a19800"  # dark
+    # # Third Robot Moves (Cleaner)
+    start_hex = "#faeff9"  # light
+    end_hex   = "#842b7c"  # dark
     custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
         "custom_blue", [start_hex, end_hex], N=256
     )
-    # moves = [('countertop','shelf'), ('shelf','servingtable1'), ('servingtable1','sink'), ('sink','servingtable1'), ('servingtable1', 'pantry'), ('pantry', 'servingtable1'), ('servingtable1', 'countertop')]
-    moves = [('base2','sofa')]
+    # moves = [('countertop','shelf'), ('shelf','servingtable1'), ('servingtable1','sink'), ('sink','servingtable1')]
+    moves = [('countertop','servingtable1'), ('servingtable1','sink'), ('sink','servingtable1')]
+    # moves = [('base2','sofa')]
+    # moves = [('base2','sofa')]
     full_xy = []
     for k, (name1, name2) in enumerate(moves):
         src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
