@@ -80,7 +80,7 @@ def get_domain(types_dict=types_dict):
         :effect (and
             (not (rob-at ?r ?start))
             (rob-at ?r ?end)
-            (increase (total-cost) (known-cost ?start ?end))
+            ;(increase (total-cost) (known-cost ?start ?end))
         )
     )
     (:action pick
@@ -166,7 +166,7 @@ def get_domain(types_dict=types_dict):
     (:action restock
         :parameters (?r - robot ?i - item)
         :precondition (and
-            ;(type ?r server_bot)
+            (type ?r server_bot)
             (rob-at ?r pantry)
             (is-holding ?r ?i)
             (is-empty ?i)

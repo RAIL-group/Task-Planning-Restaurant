@@ -56,6 +56,7 @@ def change_state(restaurant):
                 candidate_state = restaurant.place_object(obj, container)
     return candidate_state
 
+
 def get_representative_value(values, weights=None):
     """
     Calculate a representative value for a list of numbers.
@@ -129,9 +130,13 @@ class AntcipatoryPlanner:
         if prep_state:
             restaurant.update_container_props(prep_state)
             file_name = 'prep_ap_' + ap_concern + '.txt'
-            self.concern = ap_concern
             logfile = os.path.join(args.save_dir, file_name)
             for idx, item in enumerate(task_seq):
+                if (idx + 1) % 2 == 1:
+                    new_prep_state = self.get_prepared_state_by_cleaner(restaurant, n_iterations=50)
+                    if new_prep_state is not None:
+                        restaurant.update_container_props(new_prep_state)
+                self.concern = ap_concern
                 start = time.time()
                 active_agent = item[0]
                 task = item[1]
@@ -158,7 +163,6 @@ class AntcipatoryPlanner:
         if no_prep_state:
             restaurant.update_container_props(no_prep_state)
             file_name = 'np_ap_' + ap_concern + '.txt'
-            self.concern = ap_concern
             logfile = os.path.join(args.save_dir, file_name)
             # task_file_name = 'ap_myopic_tasks.txt'
             # logfile_task = os.path.join(args.save_dir, task_file_name)
@@ -166,6 +170,7 @@ class AntcipatoryPlanner:
                 start = time.time()
                 active_agent = item[0]
                 task = item[1]
+                self.concern = ap_concern
                 restaurant.active_robot = active_agent
                 new_state, cost, new_task, help_stat = self.get_anticipatory_plan(restaurant, task)
                 end = time.time()
@@ -537,6 +542,8 @@ class AntcipatoryPlanner:
         #     f.write(f"--No of Predicates: {len(aug_predicates)}\n")
         exhausted = 0
         # random.shuffle(aug_predicates)
+        found = False
+        added = 'N/A'
         for aug_pred in aug_predicates:
             if exhausted >= 2:
                 break
@@ -562,11 +569,12 @@ class AntcipatoryPlanner:
             can_state = restaurant.get_final_state_from_plan(c_plan)
             restaurant.update_container_props(can_state)
             can_ex_cost = self.get_anticipated_cost(restaurant)
-            with open(save_file, "a+") as f:
-                f.write(f"---Task: {aug_pred}: {c_cost} = {can_ex_cost}---\n")
+            # with open(save_file, "a+") as f:
+            #     f.write(f"---Task: {aug_pred}: {c_cost} = {can_ex_cost}---\n")
             can_ant_cost = can_ex_cost + c_cost
             if can_ant_cost < myopic_ant_cost:
-                # found = 1
+                found = True
+                added = aug_pred
                 # with open(save_file, "a+") as f:
                 #     f.write(f"---Task: {aug_pred}: {c_cost} = {can_ex_cost}---\n")
                 ant_state = copy.deepcopy(can_state)
@@ -577,8 +585,12 @@ class AntcipatoryPlanner:
                 myopic_help_stat = taskplan_multi.utils.get_status_of_asking_help(plan)
             restaurant.update_container_props(init_state)
         
-        with open(save_file, "a+") as f:
-            f.write(f"---Task: {ant_task}: {myopic_ant_cost}---\n")
+        if found:
+            with open(save_file, "a+") as f:
+                f.write(f"{self.concern} -----{ant_task}: {myopic_ant_cost}---\n")
+        else:
+            with open(save_file, "a+") as f:
+                f.write(f"{self.concern}---A.P.: Same as Myopic---\n")
         if plan_only:
             return plan, ant_cost
 
@@ -631,6 +643,73 @@ class AntcipatoryPlanner:
                 ant_plan = copy.deepcopy(plan)
         return ant_plan, ant_cost
     
+    def get_prepared_state_by_cleaner(self, restaurant, n_iterations=1000):
+        def safe_exp(x):
+            try:
+                return math.exp(x)
+            except OverflowError:
+                # If the argument is too large in magnitude, return an approximation
+                return 0.0
+
+        total_budget = 1000
+        self.concern = 'joint'
+        # save_file = '/data/figs/idle_prep' + str(
+        #     restaurant.seed) + '.txt'
+        prepared_state = copy.deepcopy(restaurant.get_current_object_state())
+        int_cost = self.get_anticipated_cost(restaurant)
+        i = 0
+        temp = 100
+        cooling_rate = 0.95
+        conts = [c for c in KITCHEN_CONTAINERS + SERVING_ROOM_CONTAINERS if c not in CLEANER_BOT_RESTRICT]
+        assets = list()
+        for c in conts:
+            obs = restaurant.get_objects_by_container_name(c)
+            for obj in obs:
+                if 'washable' in obj and 'dirty' in obj and obj['dirty'] == 1:
+                    assets.append(obj['assetId'])
+        
+        active_agent = 'cook_bot'
+        # with open(save_file, "a+") as f:
+        #     f.write(
+        #         f"| Containers: {conts}\n"
+        #         f"| assets: {assets}\n")
+        restaurant.active_robot = active_agent
+        while (i < n_iterations and total_budget > 0):
+            restaurant.update_container_props(prepared_state)
+            i += 1
+            best_cost = 0
+            # with open(save_file, "a+") as f:
+            #         f.write(f"| itr{i} | budget {total_budget}\n")
+            current_prep = copy.deepcopy(prepared_state)
+            for item in assets:
+                restaurant.update_container_props(prepared_state)
+                task_to_solve = taskplan_multi.pddl.task.clean_something(item)
+                plan, cost = (
+                    self.myopic_planner.get_cost_and_state_from_task(
+                        restaurant, task_to_solve)
+                )
+                actual_cost = max(cost - 500, 0)
+                # with open(save_file, "a+") as f:
+                #     f.write(f"| task_to_solve: {task_to_solve} | assets: {cost} | best_cost: {best_cost}\n")
+                if plan is None:
+                    continue
+                candidate_state = restaurant.get_final_state_from_plan(plan)
+                restaurant.update_container_props(candidate_state)
+                can_exp_cost = self.get_anticipated_cost(restaurant)
+                delta = (can_exp_cost-int_cost)
+                exp = safe_exp(-delta/temp)
+                if (delta < 0 or random.uniform(0, 1) < exp) and (total_budget-actual_cost) >= 0:
+                    current_prep = copy.deepcopy(candidate_state)
+                    int_cost = can_exp_cost
+                    best_cost = actual_cost
+                temp = max(temp * cooling_rate, 1)
+            prepared_state = copy.deepcopy(current_prep)
+            total_budget = total_budget - best_cost
+            if best_cost == 0:
+                break
+        return prepared_state
+
+
     def get_prepared_state(self, restaurant, n_iterations=1000):
         def safe_exp(x):
             try:

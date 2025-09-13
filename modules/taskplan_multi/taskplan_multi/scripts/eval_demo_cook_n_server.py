@@ -28,11 +28,11 @@ FOOT_PRINT = np.array([
     [1, 1, 1],
 ])
 
-EVAL_NO = 5
-MAX_TASK_COOK = 30
-MAX_TASK_SERVER = 30
-MAX_TASK_CLEANER = 30
-TASK_PER_SEQ = 30
+EVAL_NO = 2
+MAX_TASK_COOK = 15
+MAX_TASK_SERVER = 15
+MAX_TASK_CLEANER = 15
+TASK_PER_SEQ = 10
 
 def make_plotting_grid(grid_map):
     grid = np.ones([grid_map.shape[0], grid_map.shape[1], 3]) * 0.75
@@ -77,19 +77,19 @@ def get_tasks():
     tasks_server = taskplan_multi.pddl.task_distribution.tasks_for_server()
     # tasks_cleaner = taskplan_multi.pddl.task_distribution.tasks_for_cleaner()
 
-    if len(tasks_cook) >= MAX_TASK_COOK:
-        tasks_cook = random.sample(tasks_cook, MAX_TASK_COOK)
-    else:
-        rem = MAX_TASK_COOK - len(tasks_cook)
-        temp = random.choices(tasks_cook, k=rem)
-        tasks_cook.extend(temp)
+    # if len(tasks_cook) >= MAX_TASK_COOK:
+    #     tasks_cook = random.sample(tasks_cook, MAX_TASK_COOK)
+    # else:
+    #     rem = MAX_TASK_COOK - len(tasks_cook)
+    #     temp = random.choices(tasks_cook, k=rem)
+    #     tasks_cook.extend(temp)
     
-    if len(tasks_server) >= MAX_TASK_SERVER:
-        tasks_server = random.sample(tasks_server, MAX_TASK_SERVER)
-    else:
-        rem = MAX_TASK_SERVER - len(tasks_server)
-        temp = random.choices(tasks_server, k=rem)
-        tasks_server.extend(temp)
+    # if len(tasks_server) >= MAX_TASK_SERVER:
+    #     tasks_server = random.sample(tasks_server, MAX_TASK_SERVER)
+    # else:
+    #     rem = MAX_TASK_SERVER - len(tasks_server)
+    #     temp = random.choices(tasks_server, k=rem)
+    #     tasks_server.extend(temp)
     
     # if len(tasks_cleaner) >= MAX_TASK_CLEANER:
     #     tasks_cleaner = random.sample(tasks_cleaner, MAX_TASK_CLEANER)
@@ -99,19 +99,32 @@ def get_tasks():
     #     tasks_cleaner.extend(temp)
     
     tasks = list()
-    for task in tasks_cook:
-        val = task[1]
-        tasks.append(('cook_bot', val))
-    for task in tasks_server:
-        val = task[1]
-        tasks.append(('server_bot', val))
-    # for task in tasks_cleaner:
+    count = 0
+    while count < TASK_PER_SEQ:
+        count+=1
+        if random.uniform(0, 1) > 0.5:
+            task1 = random.choice(tasks_cook)
+            task2 = random.choice(tasks_server)
+            tasks.append(('cook_bot', task1[1]))
+            tasks.append(('server_bot', task2[1]))
+        else:
+            task1 = random.choice(tasks_server)
+            task2 = random.choice(tasks_cook)
+            tasks.append(('server_bot', task1[1]))
+            tasks.append(('cook_bot', task2[1]))
+
+    # for task in tasks_cook:
     #     val = task[1]
-    #     tasks.append(('cleaner_bot', val))
-    # print(len(tasks))
-    selected_tasks = random.sample(tasks, TASK_PER_SEQ)
+    #     tasks.append(('cook_bot', val))
+    # for task in tasks_server:
+    #     val = task[1]
+    #     tasks.append(('server_bot', val))
+
+    # selected_tasks = random.sample(tasks, TASK_PER_SEQ)
+    # selected_tasks = random.sample(tasks, TASK_PER_SEQ)
+    # selected_tasks = random.sample(tasks, TASK_PER_SEQ)
     # random.shuffle(tasks)
-    return selected_tasks
+    return tasks
 
 def plot_state(restaurant, args, image_name='init', title='None'):
     grid = np.transpose(restaurant.grid)
@@ -165,23 +178,27 @@ def eval_main(args):
     # Get restaurant data for a send and extract initial object states
     myopic_planner = taskplan_multi.planners.myopic_planner.MyopicPlanner()
     ant_planner = taskplan_multi.planners.anticipatory_planner.AntcipatoryPlanner(args)
-    agents = ['cook_bot', 'server_bot']
+    agents = ['cook_bot', 'server_bot', 'cleaner_bot']
     # random_choices = [0, 0.25, 0.5, 0.75, 1]
     active_agent = random.choice(agents)
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(seed=args.current_seed, agents=agents, active=active_agent)
     # task_sequence = get_tasks()
+    # print(task_sequence)
+    # print(len(task_sequence))
+    # raise NotImplementedError
     
     no_prep_state = copy.deepcopy(restaurant.get_current_object_state())
-    init_exp_cost = ant_planner.get_anticipated_cost(restaurant)
-    plot_state(restaurant, args, image_name='no-prep-init', title=f'Not Prepared State (INIT) \n Exp Cost: {init_exp_cost}')
+    # init_exp_cost = ant_planner.get_anticipated_cost(restaurant)
+    # plot_state(restaurant, args, image_name='no-prep-init', title=f'Not Prepared State (INIT) \n Exp Cost: {init_exp_cost}')
     
-    prep_state = None
-    prep_state = load_prepared_state(args)
-    if prep_state is not None:
-        # prep_state = ant_planner.get_prepared_state(restaurant, n_iterations=2000)
-        restaurant.update_container_props(prep_state)
-        prep_exp_cost = ant_planner.get_anticipated_cost(restaurant)
-        plot_state(restaurant, args, image_name='prep', title=f'Prepared State \n Exp Cost: {prep_exp_cost}')
+    # prep_state = copy.deepcopy(restaurant.get_current_object_state())
+    # prep_state = load_prepared_state(args)
+    # if prep_state is not None:
+    # prep_state = ant_planner.get_prepared_state_by_cleaner(restaurant, n_iterations=100)
+    # restaurant.update_container_props(prep_state)
+    # prep_exp_cost = ant_planner.get_anticipated_cost(restaurant)
+    # plot_state(restaurant, args, image_name='prep', title=f'Prepared State \n Exp Cost: {prep_exp_cost}')
+    # raise NotImplementedError
     # logfile_prep_learned = os.path.join(args.save_dir, f'prep_state_{args.current_seed}.txt')
     # with open(logfile_prep_learned, "w+") as f:
     #     f.write(json.dumps(prep_state))
@@ -190,9 +207,9 @@ def eval_main(args):
     for i in range(EVAL_NO):
         restaurant.active_all = False
         sampled_task = get_tasks()
-        myopic_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=no_prep_state, prep_state=prep_state)
-        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=no_prep_state, prep_state=prep_state, ap_concern='self')
-        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=no_prep_state, prep_state=prep_state, ap_concern='joint')
+        myopic_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=no_prep_state, ap=ant_planner)
+        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=no_prep_state, ap_concern='self')
+        ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=no_prep_state, ap_concern='joint')
         # ant_planner.get_seq_cost(args, restaurant, sampled_task, i, no_prep_state=None, prep_state=prep_state, ap_concern='other')
         # random.shuffle(sampled_task)
     plt.clf()

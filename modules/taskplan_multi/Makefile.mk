@@ -1,10 +1,10 @@
 help::
 	@echo "Multi agent anticipatory taskplanning in a restaurant setting (multi-ap):"
 
-MA_AP_BASENAME ?= exp-plot
+MA_AP_BASENAME ?= exp-idle-prep-cook-2-tasks
 MA_AP_NUM_TRAINING_SEEDS ?= 0
 MA_AP_NUM_TESTING_SEEDS ?= 0
-MA_AP_NUM_EVAL_SEEDS ?= 4
+MA_AP_NUM_EVAL_SEEDS ?= 10
 EXPERIMENT_NAME = beta-v0
 EXP_NUM = 1
 
@@ -57,7 +57,7 @@ $(ma-train-file):
 ma-train: $(ma-train-file)
 
 ma-eval-seeds := \
-	$(shell for ii in $$(seq 20 $$((20 + $(MA_AP_NUM_EVAL_SEEDS) - 1))); \
+	$(shell for ii in $$(seq 0 $$((0 + $(MA_AP_NUM_EVAL_SEEDS) - 1))); \
 		do echo "$(DATA_BASE_DIR)/$(MA_AP_BASENAME)/figure/eval_$${ii}.png"; done)
 
 $(ma-eval-seeds): eval_seed = $(shell echo $@ | grep -Eo '[0-9]+' | tail -1)
@@ -66,7 +66,7 @@ $(ma-eval-seeds):
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/figure
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results
 	@mkdir -p $(DATA_BASE_DIR)/$(MA_AP_BASENAME)/results/$(eval_seed)
-	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo_server_n_cleaner \
+	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.eval_demo_cook_n_server \
 		--current_seed $(eval_seed) \
 		--save_dir /data/$(MA_AP_BASENAME)/results/$(eval_seed) \
 		--cook_network /data/models/ap_cook.pt \

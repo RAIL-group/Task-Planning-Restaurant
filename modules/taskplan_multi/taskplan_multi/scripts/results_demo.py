@@ -204,13 +204,13 @@ def compare(args):
     #             files_ap_prep_comb.append(os.path.join(path, name))
     for path, _, files in os.walk(root):
         for name in files:
-            if '_myopic' in name:
+            if 'prep_myopic' in name:
                 files_mp_np.append(os.path.join(path, name))
-            elif '_ap_self' in name:
+            elif 'prep_ap_self' in name:
                 files_ap_np_self.append(os.path.join(path, name))
             # elif 'np_ap_other' in name:
             #     files_ap_np_other.append(os.path.join(path, name))
-            elif '_ap_joint' in name:
+            elif 'prep_ap_joint' in name:
                 files_ap_np_comb.append(os.path.join(path, name))
             # if 'prep_myopic' in name:
             #     files_mp_prep.append(os.path.join(path, name))

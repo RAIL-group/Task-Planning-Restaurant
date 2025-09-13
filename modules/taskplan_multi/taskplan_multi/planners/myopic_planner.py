@@ -15,7 +15,7 @@ class MyopicPlanner:
 
     def get_cost_and_state_from_task(self, proc_data, task):
         pddl_problem = taskplan_multi.pddl.problem.get_problem(proc_data, task)
-        planner = 'ff-astar'
+        planner = 'ff-wastar2'
         plan, cost = solve_from_pddl(
             self.domain,
             pddl_problem,
@@ -23,14 +23,14 @@ class MyopicPlanner:
             max_planner_time=300
         )
         
-        # if plan:
-        #     move_cost = 0
-        #     move_plans = [p for p in plan if p.name == "move"]
-        #     for move in move_plans:
-        #         src = move.args[1]
-        #         target = move.args[2]
-        #         move_cost += proc_data.known_cost[src][target]
-        #     cost += move_cost
+        if plan:
+            move_cost = 0
+            move_plans = [p for p in plan if p.name == "move"]
+            for move in move_plans:
+                src = move.args[1]
+                target = move.args[2]
+                move_cost += proc_data.known_cost[src][target]
+            cost += move_cost
 
         return plan, cost
 
@@ -78,7 +78,7 @@ class MyopicPlanner:
                     failed+=1
         return failed
     
-    def get_seq_cost(self, args, restaurant, task_seq, seq_num, no_prep_state=None, prep_state=None):
+    def get_seq_cost(self, args, restaurant, task_seq, seq_num, no_prep_state=None, prep_state=None, ap=None):
         if no_prep_state:
             restaurant.update_container_props(no_prep_state)
             file_name = 'np_myopic.txt'
@@ -135,6 +135,13 @@ class MyopicPlanner:
             file_name = 'prep_myopic.txt'
             logfile = os.path.join(args.save_dir, file_name)
             for idx, item in enumerate(task_seq):
+                start = time.time()
+                if ap is not None:
+                    if (idx + 1) % 2 == 1:
+                        new_prep_state = ap.get_prepared_state_by_cleaner(restaurant, n_iterations=50)
+                        if new_prep_state is not None:
+                            restaurant.update_container_props(new_prep_state)
+                    # ap.concern = 'joint'
                 active_agent = item[0]
                 task = item[1]
                 restaurant.active_robot = active_agent
@@ -142,6 +149,8 @@ class MyopicPlanner:
                     self.get_cost_and_state_from_task(
                         restaurant, task)
                 )
+                end = time.time()
+                elapsed = end - start
                 if plan is None:
                     # costs.append(10000)
                     with open(logfile, "a+") as f:
