@@ -16,47 +16,41 @@ def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower() for text in re.split('([0-9]+)', s)]
 
 def plot_tasks_comparison_cost(combined_df, smooth=True, method="ma", window=7, poly=2):
-    def smooth_series(y, method="ma", window=7, poly=2):
-        y = pd.Series(y).astype(float)
-        if method == "ma":
-            # Centered moving average; works with no extra deps
-            return y.rolling(window, center=True, min_periods=1).mean().to_numpy()
-        elif method == "savgol":
-            # Requires scipy
-            try:
-                from scipy.signal import savgol_filter
-                w = window + (1 - window % 2)  # ensure odd
-                w = max(w, poly + 3)
-                return savgol_filter(y.to_numpy(), w, poly)
-            except Exception:
-                return y.rolling(window, center=True, min_periods=1).mean().to_numpy()
-        elif method == "lowess":
-            # Requires statsmodels
-            try:
-                from statsmodels.nonparametric.smoothers_lowess import lowess
-                x = np.arange(len(y))
-                frac = max(0.1, min(0.9, window / max(5, len(y))))
-                return lowess(y, x, frac=frac, return_sorted=False)
-            except Exception:
-                return y.rolling(window, center=True, min_periods=1).mean().to_numpy()
-        else:
-            return y.to_numpy()
+    # def smooth_series(y, method="ma", window=7, poly=2):
+    #     y = pd.Series(y).astype(float)
+    #     if method == "ma":
+    #         # Centered moving average; works with no extra deps
+    #         return y.rolling(window, center=True, min_periods=1).mean().to_numpy()
+    #     elif method == "savgol":
+    #         # Requires scipy
+    #         try:
+    #             from scipy.signal import savgol_filter
+    #             w = window + (1 - window % 2)  # ensure odd
+    #             w = max(w, poly + 3)
+    #             return savgol_filter(y.to_numpy(), w, poly)
+    #         except Exception:
+    #             return y.rolling(window, center=True, min_periods=1).mean().to_numpy()
+    #     elif method == "lowess":
+    #         # Requires statsmodels
+    #         try:
+    #             from statsmodels.nonparametric.smoothers_lowess import lowess
+    #             x = np.arange(len(y))
+    #             frac = max(0.1, min(0.9, window / max(5, len(y))))
+    #             return lowess(y, x, frac=frac, return_sorted=False)
+    #         except Exception:
+    #             return y.rolling(window, center=True, min_periods=1).mean().to_numpy()
+    #     else:
+    #         return y.to_numpy()
 
     color_map = {
-        'No-Prep Myopic': 'cyan',
-        'No-Prep Selfish A.P.': 'orangered',
-        'No-Prep Proactive A.P': 'gold',
-        'Prep Myopic': 'royalblue',
-        'Prep Selfish A.P.': 'violet',
-        'Prep Proactive A.P': 'pink',
+        'Myopic': '#0065F8',
+        'Selfish A.P.': '#169976',
+        'Courteous A.P.': '#FC4F00',
     }
     marker_map = {
-        'No-Prep Myopic': 'o',
-        'No-Prep Selfish A.P.': 'd',
-        'No-Prep Proactive A.P': 's',
-        'Prep Myopic': 'o',
-        'Prep Selfish A.P.': 'd',
-        'Prep Proactive A.P': 's',
+        'Myopic': 'o',
+        'Selfish A.P.': 'd',
+        'Courteous A.P.': 's',
     }
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -68,24 +62,24 @@ def plot_tasks_comparison_cost(combined_df, smooth=True, method="ma", window=7, 
 
         x = subset_df['num']
         y = subset_df['avg_cost'].to_numpy()
-        y_sm = smooth_series(y, method=method, window=window, poly=poly) if smooth else y
+        # y_sm = smooth_series(y, method=method, window=window, poly=poly) if smooth else y
 
         # (1) Plot original (faint) for honesty
         ax.plot(
             x, y,
             marker=marker_map.get(label, '.'),
             color=color_map.get(label, 'black'),
-            alpha=0.25, linewidth=1, label=None
+            label=label
         )
 
         # (2) Plot smoothed (bold) for readability
-        ax.plot(
-            x, y_sm,
-            marker=None,  # keep line clean
-            color=color_map.get(label, 'black'),
-            linewidth=2.25,
-            label=label
-        )
+        # ax.plot(
+        #     x, y_sm,
+        #     marker=None,  # keep line clean
+        #     color=color_map.get(label, 'black'),
+        #     linewidth=2.25,
+        #     label=label
+        # )
 
         # Keep your original uncertainty band (unsmoothed) to avoid misleading CIs
         ax.fill_between(
@@ -96,14 +90,14 @@ def plot_tasks_comparison_cost(combined_df, smooth=True, method="ma", window=7, 
             alpha=0.1
         )
 
-    ax.set_title('Average Cost Per Task', fontsize=10)
-    ax.set_xlabel('Task Number', fontsize=10)
-    ax.set_ylabel('Average Cost of Task Number')
-    ax.legend(title='Planners', fontsize=10)
+    # ax.set_title('Average Cost Per Task', fontsize=10)
+    # ax.set_xlabel('Task Number', fontsize=10)
+    # ax.set_ylabel('Average Cost of Task Number')
+    ax.legend(title='Planners', fontsize=12)
     ax.margins(x=0)
     plt.tight_layout()
 
-    save_file = '/data/figs/compare-average-cost-new.png'
+    save_file = '/data/figs/compare-average-cost-prep-robots.png'
     plt.savefig(save_file, dpi=1200, bbox_inches='tight')
 
 
@@ -144,6 +138,7 @@ def get_df_group_by_task(files):
         df['seq'] = df['seq'].str.strip().str.split(':').str[1].str.strip()
         df['num'] = df['num'].str.strip().str.split(':').str[1].str.strip()
         df['cost'] = df['cost'].str.strip().str.split(':').str[1].str.strip().astype(float)
+        df['cost'] /= 1.65
         df['help'] = df['help'].str.strip().str.split(':').str[1].str.strip().astype(int)
         df['time'] = df['time'].str.strip().str.split(':').str[1].str.strip().astype(float)
 
@@ -204,13 +199,13 @@ def compare(args):
     #             files_ap_prep_comb.append(os.path.join(path, name))
     for path, _, files in os.walk(root):
         for name in files:
-            if 'prep_myopic' in name:
+            if '_myopic' in name:
                 files_mp_np.append(os.path.join(path, name))
-            elif 'prep_ap_self' in name:
+            elif '_ap_self' in name:
                 files_ap_np_self.append(os.path.join(path, name))
             # elif 'np_ap_other' in name:
             #     files_ap_np_other.append(os.path.join(path, name))
-            elif 'prep_ap_joint' in name:
+            elif '_ap_joint' in name:
                 files_ap_np_comb.append(os.path.join(path, name))
             # if 'prep_myopic' in name:
             #     files_mp_prep.append(os.path.join(path, name))
@@ -221,25 +216,24 @@ def compare(args):
             # elif 'prep_ap_joint' in name:
             #     files_ap_prep_comb.append(os.path.join(path, name))
 
-
     # No-Prep Myopic
     np_myopic = get_df_group_by_task(files_mp_np)
-    print(np_myopic)
-    np_myopic['label'] = 'No-Prep Myopic'
+    # print(np_myopic)
+    np_myopic['label'] = 'Myopic'
 
-    print(f"No-Prep Myopic Task Cost (Avg): {np_myopic['avg_cost'].mean()}")
+    print(f"Myopic Task Cost (Avg): {np_myopic['avg_cost'].mean()}")
 
     # No-Prep Selfish Anticipatory Planning
     np_selfish = get_df_group_by_task(files_ap_np_self)
-    np_selfish['label'] = 'No-Prep Selfish A.P.'
+    np_selfish['label'] = 'Selfish A.P.'
 
-    print(f"No-Prep Selfish A.P. Task Cost (Avg): {np_selfish['avg_cost'].mean()}")
+    print(f"Selfish A.P. Task Cost (Avg): {np_selfish['avg_cost'].mean()}")
 
     # No-Prep Anticipatory Planning with joint expected cost
     np_proactive = get_df_group_by_task(files_ap_np_comb)
-    np_proactive['label'] = 'No-Prep Proactive A.P'
+    np_proactive['label'] = 'Courteous A.P.'
 
-    print(f"No-Prep Proactive A.P Task Cost (Avg): {np_proactive['avg_cost'].mean()}")
+    print(f"Courteous A.P. Task Cost (Avg): {np_proactive['avg_cost'].mean()}")
 
     # # Prep Myopic
     # prep_myopic = get_df_group_by_task(files_mp_prep)
@@ -262,7 +256,7 @@ def compare(args):
     # raise NotImplementedError
     #Combine and Plot
     # combined_df = pd.concat([np_myopic, np_selfish, np_proactive, prep_myopic, prep_selfish, prep_proactive])
-    combined_df = pd.concat([np_myopic, np_proactive, np_selfish])
+    combined_df = pd.concat([np_myopic, np_selfish, np_proactive])
     print(combined_df)
     plot_tasks_comparison_cost(combined_df)
     raise NotImplementedError
