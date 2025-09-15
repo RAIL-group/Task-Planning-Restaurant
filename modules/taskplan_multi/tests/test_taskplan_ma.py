@@ -79,7 +79,7 @@ def plot_state(restaurant, save_path='/data/figs/data-grid.png', title='None'):
 
 
 def test_ma_plot_grid():
-    seed = 9
+    seed = 111
     fig = plt.figure(figsize=(10, 10), dpi=1000)
     save_file = f'/data/figures/data-grid-{seed}.png'
     random.seed(seed)
@@ -103,11 +103,12 @@ def test_ma_plot_path():
     mpl.rcParams['ps.fonttype'] = 42
     mpl.rcParams['path.simplify'] = False
 
-    seed = 5
+    seed = 341 #111 #341
     fig = plt.figure(figsize=(10, 10), dpi=1000)
 
-    save_file = '/data/figures/data-grid-plan-restaurant-exp-full-sap-t3.png'
-    save_pdf  = '/data/figures/data-grid-plan-restaurant-exp-full-sap-t3.pdf'
+    fname = '2-robot-court'
+    save_file = f'/data/figures/res-exp-{fname}.png'
+    save_pdf  = f'/data/figures/res-exp-{fname}.pdf'
 
     random.seed(seed)
     restaurant = taskplan_multi.environments.restaurant.RESTAURANT(
@@ -118,9 +119,22 @@ def test_ma_plot_path():
     ax2.imshow(restaurant.get_top_down_image())
 
     # Left image + paths
+    # Yellow
     ax1 = plt.subplot(222)
-    start_hex = "#fffad8"  # light
-    end_hex   = "#ffe100"  # dark
+    # # Myopic
+    # start_hex = "#a2d6e3"  # light # differen shades:  #86e7ff #3ad8ff
+    # end_hex   = "#1f5967"  # dark
+    
+    # Selfish
+    # start_hex = "#e7f8ef"  # light
+    # end_hex   = "#24814e"  # dark # 248165 #2a7b62
+    
+    # Courteous
+    start_hex = "#fef4d1"  # light
+    end_hex   = "#ddae07"  # dark # f1b72b f1862b
+    
+    
+    
     custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
         "custom_blue", [start_hex, end_hex], N=256
     )
@@ -130,10 +144,13 @@ def test_ma_plot_path():
     #CAP
     # moves = [('base','pantry'), ('pantry','stove'), ('stove','countertop'), ('countertop', 'stove'), ('stove','shelf'), ('shelf','stove'), ('stove','bussingcart')]
     #SAP-1    
-    # moves = [('base','pantry'), ('pantry','stove'), ('stove','countertop'), ('countertop', 'stove')]
+    # moves = [('base','pantry'), ('pantry','stove'), ('stove','bussingcart'), ('bussingcart','countertop')]
      #SAP    
-    moves = [('base','stove'), ('stove','countertop')]
+    # moves = [('base','stove'), ('stove','countertop')]
+    moves = [('base','countertop'), ('countertop','tvstand')]
     # moves = [('base2','sofa'), ('sofa','stool'), ('stool','tvstand')]
+    # moves = [('base','fridge'), ('fridge','table'), ('table','fridge')]
+    # moves = [('base','countertop'), ('countertop','table2'), ('table2', 'stove'), ('stove', 'fridge')]
     full_xy = []
     for k, (name1, name2) in enumerate(moves):
         src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
@@ -178,15 +195,15 @@ def test_ma_plot_path():
         ax1.set_aspect('equal', adjustable='box')
     
     # Second Robot Moves (Cleaner)
-    start_hex = "#e7f8ef"  # light
-    end_hex   = "#24814e"  # dark
-    custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
-        "custom_blue", [start_hex, end_hex], N=256
-    )
+    # start_hex = "#e7f8ef"  # light
+    # end_hex   = "#f1b72b"  # dark
+    # custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+    #     "custom_blue", [start_hex, end_hex], N=256
+    # )
     # SAP
-    moves = [('pantry', 'servingtable2'), ('servingtable2', 'sink')]
+    # moves = [('pantry', 'servingtable2'), ('servingtable2', 'sink')]
     # moves = [('pantry','bussingcart'), ('bussingcart','sink'), ('sink','servingtable2'), ('servingtable2','sink')]
-    # moves = [('base2','sofa'), ('sofa','tvstand'), ('tvstand','sofa')]
+    moves = [('base2','sofa')]
     full_xy = []
     for k, (name1, name2) in enumerate(moves):
         src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
@@ -230,59 +247,52 @@ def test_ma_plot_path():
         ax1.autoscale_view()
         ax1.set_aspect('equal', adjustable='box')
     
+    # # moves = [('countertop','shelf'), ('shelf','servingtable1'), ('servingtable1','sink'), ('sink','servingtable1')]
+    # moves = [('countertop','servingtable1'), ('servingtable1','sink'), ('sink','servingtable1')]
+    # # moves = [('base2','sofa')]
+    # # moves = [('base2','sofa')]
+    # full_xy = []
+    # for k, (name1, name2) in enumerate(moves):
+    #     src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
+    #     target = restaurant.get_agent_pos() if name2 == 'base' else restaurant.get_container_pos(name2)
+    #     cost, path = restaurant.get_cost_from_occupancy_grid(
+    #         src[0], src[1], target[0], target[1], return_path=True)
 
-    # # Third Robot Moves (Cleaner)
-    start_hex = "#faeff9"  # light
-    end_hex   = "#842b7c"  # dark
-    custom_cmap = mpl.colors.LinearSegmentedColormap.from_list(
-        "custom_blue", [start_hex, end_hex], N=256
-    )
-    # moves = [('countertop','shelf'), ('shelf','servingtable1'), ('servingtable1','sink'), ('sink','servingtable1')]
-    moves = [('countertop','servingtable1'), ('servingtable1','sink'), ('sink','servingtable1')]
-    # moves = [('base2','sofa')]
-    # moves = [('base2','sofa')]
-    full_xy = []
-    for k, (name1, name2) in enumerate(moves):
-        src = restaurant.get_agent_pos() if name1 == 'base' else restaurant.get_container_pos(name1)
-        target = restaurant.get_agent_pos() if name2 == 'base' else restaurant.get_container_pos(name2)
-        cost, path = restaurant.get_cost_from_occupancy_grid(
-            src[0], src[1], target[0], target[1], return_path=True)
+    #     pts = list(zip(path[0], path[1]))          # [(x0,y0), (x1,y1), ...]
+    #     if k > 0 and pts:                          # avoid duplicating the join vertex
+    #         pts = pts[1:]
+    #     full_xy.extend(pts)
 
-        pts = list(zip(path[0], path[1]))          # [(x0,y0), (x1,y1), ...]
-        if k > 0 and pts:                          # avoid duplicating the join vertex
-            pts = pts[1:]
-        full_xy.extend(pts)
+    # # Safety: need at least 2 points
+    # if len(full_xy) >= 2:
+    #     full_xy = np.asarray(full_xy, dtype=float)
+    #     x, y = full_xy[:, 0], full_xy[:, 1]
 
-    # Safety: need at least 2 points
-    if len(full_xy) >= 2:
-        full_xy = np.asarray(full_xy, dtype=float)
-        x, y = full_xy[:, 0], full_xy[:, 1]
+    #     # Segments for a single LineCollection
+    #     points = full_xy.reshape(-1, 1, 2)
+    #     segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
-        # Segments for a single LineCollection
-        points = full_xy.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    #     # Normalize cumulative distance to [0, 1] for a global gradient
+    #     d = np.hypot(np.diff(x), np.diff(y))
+    #     t = np.insert(np.cumsum(d), 0, 0.0)
+    #     if t[-1] > 0:
+    #         t = t / t[-1]
 
-        # Normalize cumulative distance to [0, 1] for a global gradient
-        d = np.hypot(np.diff(x), np.diff(y))
-        t = np.insert(np.cumsum(d), 0, 0.0)
-        if t[-1] > 0:
-            t = t / t[-1]
+    #     lc = LineCollection(
+    #         segments,
+    #         cmap=custom_cmap,                      # your hex-based cmap
+    #         norm=mpl.colors.Normalize(0, 1),
+    #         linewidths=2.0,
+    #         zorder=5
+    #     )
+    #     lc.set_array(t[:-1])                       # one value per segment
+    #     # Optional aesthetics:
+    #     lc.set_capstyle('round')
+    #     lc.set_joinstyle('round')
 
-        lc = LineCollection(
-            segments,
-            cmap=custom_cmap,                      # your hex-based cmap
-            norm=mpl.colors.Normalize(0, 1),
-            linewidths=2.0,
-            zorder=5
-        )
-        lc.set_array(t[:-1])                       # one value per segment
-        # Optional aesthetics:
-        lc.set_capstyle('round')
-        lc.set_joinstyle('round')
-
-        ax1.add_collection(lc)
-        ax1.autoscale_view()
-        ax1.set_aspect('equal', adjustable='box')
+    #     ax1.add_collection(lc)
+    #     ax1.autoscale_view()
+    #     ax1.set_aspect('equal', adjustable='box')
 
     #remove axes (do this AFTER creating subplots)
     for ax in fig.get_axes():

@@ -193,103 +193,160 @@ def change_assets(restaurant):
     assets = load_assets()
     movables = load_movables()
     MAX_OBJ_PER_CONT = 2
-    map_assets = {
-        'Countertop_L_10x8': {
-            'assetId': 'Countertop_L_10x8',
-            'description': 'place to make food',
-            'plid': 'countertop',
-
-        },
-        'Fridge_29': {
-            'assetId': 'Shelving_Unit_206_1',
-            'description': 'shelf',
-            'plid': 'shelf',
-
-        },
-        'Stool_4_1': {
-            'assetId': 'Washing_Machine_1',
-            'description': 'stove',
-            'plid': 'stove',
-
-        },
-        'GarbageBag_21_1': {
-            'assetId': 'Cart_1',
-            'description': 'bussingcart',
-            'plid': 'bussingcart',
-
-        },
-        'bin_22': {
-            'assetId': 'Side_Table_302_1_6',
-            'description': 'cabinet',
-            'plid': 'cabinet',
-
-        },
-        'Armchair_207_4': {
-            'assetId': 'Fridge_29',
-            'description': 'fridge',
-            'plid': 'fridge',
-
-        },
-        'Side_Table_302_1_6': {
-            'assetId': 'Sink_1',
-            'description': 'sink',
-            'plid': 'sink',
-
-        },
-        'Sofa_214_1': {
-            'assetId': 'Shelving_Unit_206_1',
-            'description': 'pantry',
-            'plid': 'pantry',
-
-        },
-        'Dining_Table_218_1': {
-            'assetId': 'Dining_Table_218_1',
-            'description': 'table for serving',
-            'plid': 'servingtable1',
-
-        },
-        'Dining_Table_205_1': {
-            'assetId': 'Dining_Table_205_1',
-            'description': 'table for serving',
-            'plid': 'servingtable2',
-
-        },
-        
-        
-    }
-
     # map_assets = {
-    #     'Countertop_C_10x6': {
-    #         'assetId': 'Countertop_C_10x6',
+    #     'Countertop_L_10x8': {
+    #         'assetId': 'Countertop_L_10x8',
     #         'description': 'place to make food',
     #         'plid': 'countertop',
 
     #     },
-    #     'TV_Stand_220_1': {
-    #         'assetId': 'TV_Stand_220_1',
-    #         'description': 'tvstand',
-    #         'plid': 'tvstand',
+    #     'Fridge_29': {
+    #         'assetId': 'Shelving_Unit_206_1',
+    #         'description': 'shelf',
+    #         'plid': 'shelf',
 
     #     },
-    #     'bin_29': {
-    #         'assetId': 'Stool_4_1',
-    #         'description': 'stool',
-    #         'plid': 'stool',
+    #     'Stool_4_1': {
+    #         'assetId': 'Washing_Machine_1',
+    #         'description': 'stove',
+    #         'plid': 'stove',
 
     #     },
-    #     'Sofa_210_1': {
-    #         'assetId': 'Sofa_210_1',
-    #         'description': 'sofa',
-    #         'plid': 'sofa',
+    #     'GarbageBag_21_1': {
+    #         'assetId': 'Cart_1',
+    #         'description': 'bussingcart',
+    #         'plid': 'bussingcart',
 
     #     },
-    #     'Armchair_208_4': {
-    #         'assetId': 'Armchair_208_4',
-    #         'description': 'base2',
-    #         'plid': 'base2',
+    #     'bin_22': {
+    #         'assetId': 'Side_Table_302_1_6',
+    #         'description': 'cabinet',
+    #         'plid': 'cabinet',
+
+    #     },
+    #     'Armchair_207_4': {
+    #         'assetId': 'Fridge_29',
+    #         'description': 'fridge',
+    #         'plid': 'fridge',
+
+    #     },
+    #     'Side_Table_302_1_6': {
+    #         'assetId': 'Sink_1',
+    #         'description': 'sink',
+    #         'plid': 'sink',
+
+    #     },
+    #     'Sofa_214_1': {
+    #         'assetId': 'Shelving_Unit_206_1',
+    #         'description': 'pantry',
+    #         'plid': 'pantry',
+
+    #     },
+    #     'Dining_Table_218_1': {
+    #         'assetId': 'Dining_Table_218_1',
+    #         'description': 'table for serving',
+    #         'plid': 'servingtable1',
+
+    #     },
+    #     'Dining_Table_205_1': {
+    #         'assetId': 'Dining_Table_205_1',
+    #         'description': 'table for serving',
+    #         'plid': 'servingtable2',
+
+    #     },
+        
+        
+    # }
+
+    # map_assets = {
+    #     'Countertop_L_10x4': {
+    #         'assetId': 'Countertop_L_10x4',
+    #         'description': 'place to make food',
+    #         'plid': 'countertop',
+
+    #     },
+    #     'Fridge_29': {
+    #         'assetId': 'Fridge_29',
+    #         'description': 'fridge',
+    #         'plid': 'fridge',
+
+    #     },
+    #     'Side_Table_209_2_1': {
+    #         'assetId': 'Side_Table_209_2_1',
+    #         'description': 'sidetable',
+    #         'plid': 'sidetable',
+
+    #     },
+    #     'RoboTHOR_sofa_alrid': {
+    #         'assetId': 'Sink_1',
+    #         'description': 'sink',
+    #         'plid': 'sink',
+
+    #     },
+    #     'Shelving_Unit_001_1': {
+    #         'assetId': 'Shelving_Unit_001_1',
+    #         'description': 'shelf',
+    #         'plid': 'shelf',
+
+    #     },
+    #     'Dining_Table_218_1': {
+    #         'assetId': 'Dining_Table_218_1',
+    #         'description': 'table',
+    #         'plid': 'table',
+
+    #     },
+    #     'TV_Stand_211_1': {
+    #         'assetId': 'TV_Stand_211_1',
+    #         'description': 'table2',
+    #         'plid': 'table2',
+
+    #     },
+    #     'Stool_4_1': {
+    #         'assetId': 'Washing_Machine_1',
+    #         'description': 'stove',
+    #         'plid': 'stove',
 
     #     },
     # }
+
+    map_assets = {
+        'Countertop_C_10x6': {
+            'assetId': 'Countertop_C_10x6',
+            'description': 'place to make food',
+            'plid': 'countertop',
+
+        },
+        'TV_Stand_220_1': {
+            'assetId': 'TV_Stand_220_1',
+            'description': 'tvstand',
+            'plid': 'tvstand',
+
+        },
+        'bin_29': {
+            'assetId': 'Stool_4_1',
+            'description': 'stool',
+            'plid': 'stool',
+
+        },
+        'Sofa_210_1': {
+            'assetId': 'Sofa_210_1',
+            'description': 'sofa',
+            'plid': 'sofa',
+
+        },
+        'Armchair_208_4': {
+            'assetId': 'Armchair_208_4',
+            'description': 'base2',
+            'plid': 'base2',
+
+        },
+        'Dining_Table_221_1': {
+            'assetId': 'Dining_Table_221_1',
+            'description': 'table',
+            'plid': 'table',
+
+        },
+    }
 
     new_conatiners = []
     for idx, container in enumerate(restaurant['objects']):
