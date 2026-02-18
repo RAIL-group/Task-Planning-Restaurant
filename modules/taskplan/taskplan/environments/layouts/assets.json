@@ -1,0 +1,88 @@
+{
+    "servingtable1": {
+        "description": "table for serving",
+        "id": "servingtable|1",
+        "assetId": "servingtable1",
+        "children": []
+    },
+    "servingtable2": {
+        "description": "table for serving",
+        "id": "servingtable|2",
+        "assetId": "servingtable2",
+        "children": []
+    },
+    "servingtable3": {
+        "description": "table for serving",
+        "id": "servingtable|3",
+        "assetId": "servingtable3",
+        "children": []
+    },
+    "breadshelf": {
+        "description": "shelf for bread",
+        "id": "breadshelf|0",
+        "assetId": "breadshelf",
+        "children": []
+    },
+    "dishshelf": {
+        "description": "shelf for dishes",
+        "assetId": "dishshelf",
+        "id": "dishshelf|6",
+        "children": []
+    },
+    "coffeeshelf": {
+        "description": "shelf for coffee",
+        "id": "coffeeshelf|1",
+        "assetId": "coffeeshelf",
+        "children": []
+    },
+    "cupshelf": {
+        "description": "shelf for cup",
+        "id": "cupshelf|2",
+        "assetId": "cupshelf",
+        "children": []
+    },
+    "cutleryshelf": {
+        "description": "shelf for cutleries",
+        "assetId": "cutleryshelf",
+        "id": "cutleryshelf|4",
+        "children": []
+    },
+    "spreadshelf": {
+        "description": "shelf for bread spreads",
+        "assetId": "spreadshelf",
+        "id": "spreadshelf|5",
+        "children": []
+    },
+    "coffeemachine": {
+        "description": "machine to make coffee",
+        "id": "coffeemachine|0",
+        "assetId": "coffeemachine",
+        "children": [],
+        "fillable": 1
+    },
+    "countertop": {
+        "description": "place to make food",
+        "id": "countertop|0",
+        "assetId": "countertop",
+        "children": []
+    },
+    "fountain": {
+        "description": "fountain for water",
+        "id": "fountain|0",
+        "assetId": "fountain",
+        "children": [
+            {
+                "description": "water",
+                "assetId": "water",
+                "id": "water|0",
+                "isLiquid": 1
+            }
+        ]
+    },
+    "dishwasher": {
+        "description": "dishwasher",
+        "id": "dishwasher|0",
+        "assetId": "dishwasher",
+        "children": []
+    }
+}
