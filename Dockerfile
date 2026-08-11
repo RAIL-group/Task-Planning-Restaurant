@@ -24,7 +24,7 @@ RUN curl -sSL https://downloads.sourceforge.net/project/virtualgl/"${VIRTUALGL_V
 
 
 # Install python dependencies
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3 get-pip.py && rm get-pip.py
+RUN curl https://bootstrap.pypa.io/pip/3.8/get-pip.py -o get-pip.py && python3 get-pip.py && rm get-pip.py
 COPY modules/requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install torch==2.0.0+cu118 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
@@ -47,6 +47,18 @@ RUN git clone https://github.com/caelan/pddlstream.git \
 RUN cd pddlstream\
 	&& ./downward/build.py
 ENV PYTHONPATH="/pddlstream:${PYTHONPATH}"
+
+# Install Temporal Fast Downward (durative-action / TIL support for the
+# decentralized planner; the classical FD build above cannot parse
+# :durative-action domains at all). Using the neighthan/tfd fork -- a
+# python3 port of TFD v0.4 (IPC 2014) -- since upstream caelan/TFD is
+# python2-only and this image has no python2 interpreter.
+# Its scripts shebang `#!/usr/bin/env python`, which this image doesn't
+# have (only python3) -- add the unqualified alias so they resolve.
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+RUN git clone https://github.com/neighthan/tfd.git /tfd \
+	&& cd /tfd && ./build
+ENV TFD_ROOT="/tfd/downward"
 
 # Copy and install the remaining code
 COPY modules/conftest.py modules/conftest.py

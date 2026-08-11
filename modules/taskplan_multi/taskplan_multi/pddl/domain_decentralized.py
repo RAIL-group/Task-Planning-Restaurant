@@ -1,6 +1,6 @@
-types_dict = {
+DEFAULT_TYPES = {
     "object": ["robot", "item", "location"],
-    "robot": ["cook_bot", "server_bot", "cleaner_bot"],
+    "robot": ["cook_bot", "server_bot"],
     "location": [
         "base", "servingtable", "bussingcart", "stove", "cabinet",
         "sink", "countertop", "fridge", "pantry", "shelf"
@@ -11,16 +11,8 @@ types_dict = {
     ]
 }
 
+
 def generate_types_section(types_dict):
-    """
-    Generate the :types section of a PDDL domain dynamically from a dictionary.
-
-    Args:
-        types_dict (dict): A dictionary where keys are categories and values are lists of types/objects.
-
-    Returns:
-        str: The formatted :types section as a string.
-    """
     lines = []
     for base_type, subtypes in types_dict.items():
         if subtypes:
@@ -28,21 +20,25 @@ def generate_types_section(types_dict):
     return "        " + "\n        ".join(lines)
 
 
-def get_domain(types_dict=types_dict):
+def get_domain(types_dict=DEFAULT_TYPES):
     """
-    Generate the PDDL domain with dynamic types based on the provided dictionary.
-    
-    Args:
-        custom_types (dict): A dictionary where the keys are type categories and the values are lists of objects.
-                             Example: {"pan": ["pan1", "pan2"], "robot": ["cook_bot", "server_bot"]}
-    
-    Returns:
-        str: The updated PDDL domain as a string.
+    Decentralized, single-agent-per-plan restaurant domain.
+
+    Unlike taskplan_multi.pddl.domain (which gates every action behind a
+    shared `robot-active` flag so one classical plan can borrow a second
+    robot's actions via `ask-help`), this domain never puts more than one
+    robot's actions in a plan — each robot only ever appears as the sole
+    `robot` object in its own problem. There is also no
+    restrict-reach/restrict-place-to ("no restriction on spaces").
+
+    Cross-robot contention is handled entirely through `reserved`: an item
+    another robot has already broadcast a plan for can't be `pick`ed until
+    this robot explicitly executes `wait-for` on it — an ordinary action,
+    not a special-cased delay.
     """
-    # Base PDDL domain template
     DOMAIN_PDDL_TEMPLATE = """
     (define
-    (domain restaurant)
+    (domain restaurant_decentralized)
 
     (:requirements :strips :typing :action-costs :existential-preconditions)
 
@@ -52,15 +48,13 @@ def get_domain(types_dict=types_dict):
 
     (:predicates
         (rob-at ?r - robot ?loc - location)
-        (robot-active ?r - robot)
         (is-at ?obj - item ?loc - location)
         (type ?obj - item ?t - object)
         (hand-is-free ?r - robot)
-        (restrict-place-to ?loc - location)
         (is-holding ?r - robot ?obj - item)
-        (restrict-reach ?r - robot ?loc - location)
         (is-dirty ?obj - item)
         (is-empty ?obj - item)
+        (reserved ?obj - item)
         (meal-served ?obj1 - item ?obj2 - item ?loc - location)
         (item-in-item ?obj1 - item ?obj2 - item ?loc - location)
     )
@@ -75,7 +69,6 @@ def get_domain(types_dict=types_dict):
         :precondition (and
             (not (= ?start ?end))
             (rob-at ?r ?start)
-            (robot-active ?r)
         )
         :effect (and
             (not (rob-at ?r ?start))
@@ -89,8 +82,7 @@ def get_domain(types_dict=types_dict):
             (is-at ?obj ?loc)
             (rob-at ?r ?loc)
             (hand-is-free ?r)
-            (not (restrict-reach ?r ?loc))
-            (robot-active ?r)
+            (not (reserved ?obj))
         )
         :effect (and
             (not (is-at ?obj ?loc))
@@ -104,10 +96,7 @@ def get_domain(types_dict=types_dict):
         :precondition (and
             (not (hand-is-free ?r))
             (rob-at ?r ?loc)
-            (not (restrict-place-to ?loc))
             (is-holding ?r ?obj)
-            (not (restrict-reach ?r ?loc))
-            (robot-active ?r)
         )
         :effect (and
             (is-at ?obj ?loc)
@@ -176,22 +165,19 @@ def get_domain(types_dict=types_dict):
             (increase (total-cost) 30)
         )
     )
-    ;(:action ask-help
-    ;    :parameters (?r1 - robot)
-    ;    :precondition (and
-    ;        (not (robot-active ?r1))
-    ;    )
-    ;    :effect (and
-    ;        (robot-active ?r1)
-    ;        (increase (total-cost) 500) ; Cost of asking help
-    ;    )
-    ;)
+    (:action wait-for
+        :parameters (?r - robot ?obj - item)
+        :precondition (and
+            (reserved ?obj)
+        )
+        :effect (and
+            (not (reserved ?obj))
+            (increase (total-cost) 1)
+        )
+    )
     )
     """
 
-    # Generate the types section dynamically from the provided dictionary
     types_section = generate_types_section(types_dict)
-
-    # Insert the dynamic types section into the PDDL template
     domain_pddl = DOMAIN_PDDL_TEMPLATE.format(types_section=types_section)
     return domain_pddl

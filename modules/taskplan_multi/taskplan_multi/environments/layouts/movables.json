@@ -6,33 +6,15 @@
         "washable": 1
     },
     {
-        "description": "bowl",
-        "assetId": "bowl2",
-        "id": "bowl|2",
-        "washable": 1
-    },
-    {
         "description": "pan",
         "assetId": "pan1",
         "id": "pan|1",
         "washable": 1
     },
     {
-        "description": "pan2",
-        "assetId": "pan2",
-        "id": "pan|2",
-        "washable": 1
-    },
-    {
         "description": "mug",
         "assetId": "mug1",
         "id": "mug|1",
-        "washable": 1
-    },
-    {
-        "description": "mug",
-        "assetId": "mug2",
-        "id": "mug|2",
         "washable": 1
     },
     {

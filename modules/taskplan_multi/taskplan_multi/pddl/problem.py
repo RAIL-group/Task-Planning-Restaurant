@@ -30,8 +30,8 @@ def get_problem(restaurant, task):
         if agent == 'cleaner_bot':
             for item in CLEANER_BOT_RESTRICT:
                 init_states.append(f"(restrict-reach {agent} {item})")
-    # if not restaurant.active_all:
-    #     init_states.append(f"(robot-active {restaurant.active_robot})")
+    if not restaurant.active_all:
+        init_states.append(f"(robot-active {restaurant.active_robot})")
     for container in containers:
         cnt_name = container['assetId']
         gen_name = ''.join([i for i in cnt_name if not i.isdigit()])

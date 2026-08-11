@@ -8,6 +8,16 @@ MA_AP_NUM_EVAL_SEEDS ?= 10
 EXPERIMENT_NAME = beta-v0
 EXP_NUM = 1
 
+# Target for concurrent myopic planner demo
+.PHONY: concurrent-demo
+concurrent-demo: build
+	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.demo_concurrent_myopic
+
+# Target for decentralized broadcast+reservation planning demo
+.PHONY: decentralized-demo
+decentralized-demo: build
+	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.demo_decentralized
+
 # Target for a demo
 .PHONY: multi-agent-demo
 multi-agent-demo: build
@@ -88,6 +98,12 @@ ma-plot-plan::
 		--cook_network /data/models/ap_cook.pt \
 		--cleaner_network /data/models/ap_cleaner.pt \
 		--server_network /data/models/ap_server.pt
+
+.PHONY: ma-gen-tasks-llm
+ma-gen-tasks-llm:
+	@$(DOCKER_PYTHON) -m taskplan_multi.scripts.gen_tasks_llm \
+		--model claude-sonnet-4-6 \
+		$(if $(OUTPUT),--output /data/$(OUTPUT),)
 
 .PHONY: ma-result-demo
 ma-result-demo: 

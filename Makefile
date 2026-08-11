@@ -1,4 +1,6 @@
 MAKEFLAGS += --no-print-directory
+-include .env
+export
 ## ==== Core Arguments and Parameters ====
 MAJOR ?= 0
 MINOR ?= 1
@@ -30,6 +32,7 @@ IMAGE_NAME = ${APP_NAME}
 DOCKER_CORE_VOLUMES = \
 	--env XPASSTHROUGH=$(XPASSTHROUGH) \
 	--env DISPLAY=$(DISPLAY) \
+	--env ANTHROPIC_API_KEY=$(ANTHROPIC_API_KEY) \
 	$(DOCKER_GPU_ARG) \
 	--volume="$(RAIL_SIM_DIR)/v$(RAIL_SIM_VERSION):/unity/:ro" \
 	--volume="$(DATA_BASE_DIR):/data/:rw" \

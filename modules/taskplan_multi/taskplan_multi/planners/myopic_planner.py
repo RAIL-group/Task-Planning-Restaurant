@@ -52,6 +52,88 @@ class MyopicPlanner:
         # cost += move_cost
         # return plan, cost
     
+    def get_timed_plan(self, proc_data, task):
+        """
+        Wraps get_cost_and_state_from_task and annotates each action with
+        its start and end time, using PDDL action costs as durations:
+            move       -> known_cost[src][dst]
+            pick/place/mix/serve -> 10
+            wash/restock         -> 30
+            ask-help             -> 500
+
+        Returns (steps, pddl_plan, total_cost) where steps is a list of dicts:
+            {
+                't_start':     int,
+                't_end':       int,
+                'action':      str,   # action name
+                'args':        tuple, # raw PDDL args
+                'description': str,   # human-readable summary
+            }
+        pddl_plan is the raw plan list from the solver (used for broadcast-state
+        projection in concurrent simulations).
+        Returns (None, None, cost) if no plan is found.
+        """
+        _FIXED_COST = {
+            'pick': 10, 'place': 10, 'mix': 10, 'serve': 10,
+            'wash': 30, 'restock': 30, 'ask-help': 500,
+        }
+
+        plan, cost = self.get_cost_and_state_from_task(proc_data, task)
+        if plan is None:
+            return None, None, cost
+
+        steps = []
+        t = 0
+        for action in plan:
+            name, args = action.name, action.args
+
+            if name == 'move':
+                robot, src, dst = args[0], args[1], args[2]
+                duration = proc_data.known_cost[src][dst]
+                desc = f"{robot} moves {src} -> {dst}"
+            elif name == 'pick':
+                robot, obj, loc = args[0], args[1], args[2]
+                duration = _FIXED_COST['pick']
+                desc = f"{robot} picks {obj} from {loc}"
+            elif name == 'place':
+                robot, obj, loc = args[0], args[1], args[2]
+                duration = _FIXED_COST['place']
+                desc = f"{robot} places {obj} at {loc}"
+            elif name == 'wash':
+                robot, item = args[0], args[1]
+                duration = _FIXED_COST['wash']
+                desc = f"{robot} washes {item}"
+            elif name == 'mix':
+                robot, item, bowl, loc = args[0], args[1], args[2], args[3]
+                duration = _FIXED_COST['mix']
+                desc = f"{robot} mixes {item} into {bowl} at {loc}"
+            elif name == 'serve':
+                robot, item, bowl, loc = args[0], args[1], args[2], args[3]
+                duration = _FIXED_COST['serve']
+                desc = f"{robot} serves {item} in {bowl} at {loc}"
+            elif name == 'restock':
+                robot, item = args[0], args[1]
+                duration = _FIXED_COST['restock']
+                desc = f"{robot} restocks {item}"
+            elif name == 'ask-help':
+                robot = args[0]
+                duration = _FIXED_COST['ask-help']
+                desc = f"ask {robot} for help"
+            else:
+                duration = 0
+                desc = f"{name} {' '.join(str(a) for a in args)}"
+
+            steps.append({
+                't_start': t,
+                't_end': t + duration,
+                'action': name,
+                'args': args,
+                'description': desc,
+            })
+            t += duration
+
+        return steps, plan, cost
+
     def get_expected_cost(self, proc_data, task_distribution):
         expected_costs = list()
         for task in task_distribution:
